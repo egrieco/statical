@@ -1,7 +1,6 @@
 #![allow(unused_imports)]
 
 use color_eyre::eyre::{self, WrapErr};
-use tracing::{event, info, instrument, span, warn, Level};
 
 /// The string literal `"hello, world!"`
 /// ```
