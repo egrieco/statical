@@ -1,8 +1,8 @@
 [package]
 name = "statical"
-version = "1.0.0"
+version = "0.1.0"
 authors = ["Elio Grieco <grieco@egx.com>"]
-edition = "2018"
+edition = "2021"
 description = "A calendar aggregator and generator to make maintaining calendars on static websites easier."
 readme = "README.md"
 # repository = "https://github.com/egrieco/statical"
@@ -16,11 +16,11 @@ name = "main"
 harness = false
 
 [dependencies]
-color-eyre = "0"
-tracing = { version = "0", features = ["attributes"] }
-tracing-subscriber = "0"
-tracing-error = "0"
-structopt = "0"
+color-eyre = "0.6.1"
+tracing = { version = "0.1.34", features = ["attributes"] }
+tracing-subscriber = "0.3.11"
+tracing-error = "0.2.0"
+clap = "3.1.17"
 # serde = { version = "1", features = ["derive"] }
 # config = { version = "0", features = ["hjson"] }  # also supports ini, yaml
 # termcolor = "1"
@@ -39,6 +39,6 @@ structopt = "0"
 # fasteval = "0"  # calculator language
 
 [dev-dependencies]
-pretty_assertions = "0"
-indoc = "1"
-criterion = "0"
+pretty_assertions = "1.2.1"
+indoc = "1.0.6"
+criterion = "0.3.5"
