@@ -25,20 +25,20 @@ fn main() -> eyre::Result<()> {
     let args = Opt::parse();
     color_eyre::install()?;
 
-    println!("Arguments: {:#?}", args);
+    println!("  Arguments: {:#?}", args);
     if let Some(file) = args.file {
-        println!("Provided path is: {:?}", file);
+        println!("  Provided path is: {:?}", file);
         if file.exists() {
-            println!("  file exists");
+            println!("    File exists");
             let buf = BufReader::new(File::open(file)?);
             parse_calendar(buf)?;
         }
     }
 
     if let Some(url) = args.url {
-        println!("Provided url is: {:?}", url);
+        println!("  Provided url is: {:?}", url);
         let ics_string = ureq::get(&url).call()?.into_string()?;
-        println!("URL exists");
+        println!("    URL exists");
         parse_calendar(ics_string.as_bytes())?;
     }
 

@@ -40,7 +40,7 @@ impl Event {
         let mut end: Option<OffsetDateTime> = None;
 
         for property in event.properties {
-            eprintln!("Parsing {}: {:?}", property.name, property.value);
+            eprintln!("  Parsing {}: {:?}", property.name, property.value);
 
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
@@ -48,7 +48,7 @@ impl Event {
                 "DTSTART" => start = property_to_time(&property)?,
                 "DTEND" => end = property_to_time(&property)?,
                 _ => {
-                    eprintln!("Ignoring {}: {:?}", property.name, property.value);
+                    eprintln!("  Ignoring {}: {:?}", property.name, property.value);
                     if let Some(params) = property.params {
                         println!("{:#?}", params);
                     }
