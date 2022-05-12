@@ -2,6 +2,7 @@ use std::fmt;
 
 use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
+use regex::Regex;
 use time::{macros::format_description, Duration, OffsetDateTime, PrimitiveDateTime};
 use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 
@@ -78,26 +79,50 @@ impl Event {
 
 /// Given a time based ical property, parse it into a OffsetDateTime
 fn property_to_time(property: &ical::property::Property) -> Result<Option<OffsetDateTime>> {
-    eprintln!("attempting to parse: {}", property.name);
-    let timezone = if let Some(params) = &property.params {
-        let (_, zones) = params
-            .into_iter()
-            .find(|(name, _zones)| name == "TZID")
-            .unwrap();
-        eprintln!("zones: {:#?}", zones);
-        zones.first().and_then(|tz_name| get_by_name(tz_name))
+    eprintln!("  attempting to parse: {}", property.name);
+
+    let date_format = Regex::new("^(\\d+T\\d+)(Z)$")?;
+    let date_captures = date_format
+        .captures(
+            property
+                .value
+                .as_ref()
+                .context("no value for this property")?,
+        )
+        .expect("could not get captures");
+
+    let timezone = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {
+        get_by_name("UTC")
     } else {
-        // need to set a default timezone
-        get_by_name("America/Phoenix")
+        // if necessary, parse the primitive time and zone separately
+        eprintln!(
+            "  attempting to parse with separate time zone: {}",
+            property.name
+        );
+        if let Some(params) = &property.params {
+            let (_, zones) = params
+                .into_iter()
+                .find(|(name, _zones)| name == "TZID")
+                .unwrap();
+            eprintln!("zones: {:#?}", zones);
+            zones.first().and_then(|tz_name| get_by_name(tz_name))
+        } else {
+            // need to set a default timezone
+            get_by_name("America/Phoenix")
+        }
     };
+
+    // parse the time without zone information
     let primitive_time = PrimitiveDateTime::parse(
-        property
-            .value
-            .as_ref()
-            .context("no value for this property")?,
+        date_captures
+            .get(1)
+            .map(|c| c.as_str())
+            .expect("could not get capture"),
         format_description!("[year][month][day]T[hour][minute][second]"),
     )
     .context("could not parse this time")?;
+
+    // adjust the timezone
     Ok(Some(
         primitive_time
             .assume_timezone(timezone.expect("no timezone determined for start time"))
