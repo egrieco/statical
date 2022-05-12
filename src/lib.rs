@@ -4,6 +4,9 @@ use color_eyre::eyre::{self, WrapErr};
 use ical::IcalParser;
 use std::io::BufRead;
 
+mod event;
+use crate::event::Event;
+
 /// Parse calendar data from ICS
 ///
 /// The ICS data can be either a file or a url. Anything that implements BufRead such as a File or String::as_bytes().
@@ -15,12 +18,7 @@ where
     for entry in reader {
         if let Ok(calendar) = entry {
             for event in calendar.events {
-                for property in event.properties {
-                    println!("{}: {:?}", property.name, property.value);
-                    if let Some(params) = property.params {
-                        println!("{:#?}", params);
-                    }
-                }
+                println!("{:#?}", Event::new(event));
             }
         }
     }
