@@ -15,6 +15,10 @@ struct Opt {
     /// The calendar file to read
     #[clap(short, long)]
     file: Option<PathBuf>,
+
+    /// The calendar url to read
+    #[clap(short, long)]
+    url: Option<String>,
 }
 
 fn main() -> eyre::Result<()> {
@@ -31,6 +35,17 @@ fn main() -> eyre::Result<()> {
             for entry in reader {
                 println!("{:#?}", entry);
             }
+        }
+    }
+
+    if let Some(url) = args.url {
+        println!("Provided url is: {:?}", url);
+        let ics_string = ureq::get(&url).call()?.into_string()?;
+        println!("URL exists");
+        // let buf = BufReader::new(ics_string);
+        let reader = IcalParser::new(ics_string.as_bytes());
+        for entry in reader {
+            println!("{:#?}", entry);
         }
     }
 

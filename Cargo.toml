@@ -19,6 +19,7 @@ harness = false
 clap = { version = "3.1.17", features = ["derive"] }
 color-eyre = "0.6.1"
 ical = "0.7.0"
+ureq = "2.4.0"
 # serde = { version = "1", features = ["derive"] }
 # config = { version = "0", features = ["hjson"] }  # also supports ini, yaml
 # termcolor = "1"
