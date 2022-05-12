@@ -1,3 +1,5 @@
+use std::fmt;
+
 use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use time::{macros::format_description, Duration, OffsetDateTime, PrimitiveDateTime};
@@ -9,6 +11,25 @@ pub struct Event {
     description: Option<String>,
     start: OffsetDateTime,
     duration: Duration,
+}
+
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({} for {})\n{}",
+            self.summary.as_ref().unwrap_or(&"NO SUMMARY".to_string()),
+            self.start
+                .format(format_description!(
+                    "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
+                ))
+                .expect("could not format time"),
+            self.duration,
+            self.description
+                .as_ref()
+                .unwrap_or(&"NO DESCRIPTION".to_string())
+        )
+    }
 }
 
 impl Event {

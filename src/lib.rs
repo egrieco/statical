@@ -18,7 +18,7 @@ where
     for entry in reader {
         if let Ok(calendar) = entry {
             for event in calendar.events {
-                println!("{:#?}", Event::new(event));
+                println!("{}", Event::new(event)?);
             }
         }
     }
