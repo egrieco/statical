@@ -13,7 +13,16 @@ where
 {
     let reader = IcalParser::new(buf);
     for entry in reader {
-        println!("{:#?}", entry);
+        if let Ok(calendar) = entry {
+            for event in calendar.events {
+                for property in event.properties {
+                    println!("{}: {:?}", property.name, property.value);
+                    if let Some(params) = property.params {
+                        println!("{:#?}", params);
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
