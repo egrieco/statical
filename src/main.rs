@@ -31,10 +31,7 @@ fn main() -> eyre::Result<()> {
         if file.exists() {
             println!("  file exists");
             let buf = BufReader::new(File::open(file)?);
-            let reader = IcalParser::new(buf);
-            for entry in reader {
-                println!("{:#?}", entry);
-            }
+            parse_calendar(buf)?;
         }
     }
 
@@ -42,11 +39,7 @@ fn main() -> eyre::Result<()> {
         println!("Provided url is: {:?}", url);
         let ics_string = ureq::get(&url).call()?.into_string()?;
         println!("URL exists");
-        // let buf = BufReader::new(ics_string);
-        let reader = IcalParser::new(ics_string.as_bytes());
-        for entry in reader {
-            println!("{:#?}", entry);
-        }
+        parse_calendar(ics_string.as_bytes())?;
     }
 
     Ok(())
