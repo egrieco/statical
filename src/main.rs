@@ -25,13 +25,15 @@ fn main() -> eyre::Result<()> {
     let args = Opt::parse();
     color_eyre::install()?;
 
+    let mut events = Vec::new();
+
     println!("  Arguments: {:#?}", args);
     if let Some(file) = args.file {
         println!("  Provided path is: {:?}", file);
         if file.exists() {
             println!("    File exists");
             let buf = BufReader::new(File::open(file)?);
-            parse_calendar(buf)?;
+            events.append(&mut parse_calendar(buf)?);
         }
     }
 
@@ -39,8 +41,11 @@ fn main() -> eyre::Result<()> {
         println!("  Provided url is: {:?}", url);
         let ics_string = ureq::get(&url).call()?.into_string()?;
         println!("    URL exists");
-        parse_calendar(ics_string.as_bytes())?;
+        events.append(&mut parse_calendar(ics_string.as_bytes())?);
     }
 
+    for event in events {
+        println!("{}", event);
+    }
     Ok(())
 }
