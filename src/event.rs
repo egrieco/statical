@@ -81,7 +81,7 @@ impl Event {
 fn property_to_time(property: &ical::property::Property) -> Result<Option<OffsetDateTime>> {
     eprintln!("  attempting to parse: {}", property.name);
 
-    let date_format = Regex::new("^(\\d+T\\d+)(Z)$")?;
+    let date_format = Regex::new("^(\\d+T\\d+)(Z)?$")?;
     let date_captures = date_format
         .captures(
             property
