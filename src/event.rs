@@ -18,13 +18,14 @@ impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} ({} for {})\n{}",
+            "{} ({} to {} for {})\n{}",
             self.summary.as_ref().unwrap_or(&"NO SUMMARY".to_string()),
             self.start
                 .format(format_description!(
                     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
                 ))
-                .expect("could not format time"),
+                .expect("could not format start time"),
+            self.end().format(format_description!("[hour repr:12]:[minute][period case:lower]")).expect("could not format end time"),
             self.duration,
             self.description
                 .as_ref()
@@ -34,6 +35,10 @@ impl fmt::Display for Event {
 }
 
 impl Event {
+    pub fn end(&self) -> OffsetDateTime {
+        self.start + self.duration
+    }
+
     pub fn new(event: IcalEvent) -> Result<Event> {
         let mut summary = None;
         let mut description = None;
