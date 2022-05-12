@@ -14,7 +14,7 @@ use statical::*;
 struct Opt {
     /// The calendar file to read
     #[clap(short, long)]
-    file: PathBuf,
+    file: Option<PathBuf>,
 }
 
 fn main() -> eyre::Result<()> {
@@ -22,13 +22,15 @@ fn main() -> eyre::Result<()> {
     color_eyre::install()?;
 
     println!("Arguments: {:#?}", args);
-    println!("Provided path is: {:?}", args.file);
-    if args.file.exists() {
-        println!("  file exists");
-        let buf = BufReader::new(File::open(args.file)?);
-        let reader = IcalParser::new(buf);
-        for entry in reader {
-            println!("{:#?}", entry);
+    if let Some(file) = args.file {
+        println!("Provided path is: {:?}", file);
+        if file.exists() {
+            println!("  file exists");
+            let buf = BufReader::new(File::open(file)?);
+            let reader = IcalParser::new(buf);
+            for entry in reader {
+                println!("{:#?}", entry);
+            }
         }
     }
 
