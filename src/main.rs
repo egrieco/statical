@@ -1,13 +1,10 @@
-#![allow(unused_imports)]
-
 extern crate ical;
 
-use clap::{Args, Parser};
+use clap::Parser;
 use color_eyre::eyre::{self, WrapErr};
-use ical::IcalParser;
-use std::{fs::File, io::BufReader, path::PathBuf};
+use statical::model::calendar::Calendar;
 
-use statical::*;
+use std::{fs::File, io::BufReader, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -26,7 +23,7 @@ fn main() -> eyre::Result<()> {
     color_eyre::install()?;
 
     println!("  Arguments: {:#?}", args);
-    let mut events = Vec::new();
+    let mut calendars = Vec::new();
 
     if let Some(files) = args.file {
         for file in files {
@@ -34,7 +31,7 @@ fn main() -> eyre::Result<()> {
             if file.exists() {
                 println!("    File exists");
                 let buf = BufReader::new(File::open(file)?);
-                events.append(&mut parse_calendar(buf)?);
+                calendars.append(&mut Calendar::parse_calendars(buf)?);
             }
         }
     }
@@ -44,12 +41,12 @@ fn main() -> eyre::Result<()> {
             println!("  Provided url is: {:?}", url);
             let ics_string = ureq::get(&url).call()?.into_string()?;
             println!("    URL exists");
-            events.append(&mut parse_calendar(ics_string.as_bytes())?);
+            calendars.append(&mut Calendar::parse_calendars(ics_string.as_bytes())?);
         }
     }
 
-    for event in events {
-        println!("{:?}", event);
+    for calendar in calendars {
+        println!("{:?}", calendar);
     }
     Ok(())
 }
