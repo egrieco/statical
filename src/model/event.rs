@@ -105,10 +105,7 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<Offset
             property.name
         );
         if let Some(params) = &property.params {
-            let (_, zones) = params
-                .into_iter()
-                .find(|(name, _zones)| name == "TZID")
-                .unwrap();
+            let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
             eprintln!("zones: {:#?}", zones);
             zones.first().and_then(|tz_name| get_by_name(tz_name))
         } else {
