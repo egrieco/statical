@@ -49,7 +49,7 @@ fn main() -> eyre::Result<()> {
     }
 
     for event in events {
-        println!("{}", event);
+        println!("{:?}", event);
     }
     Ok(())
 }
