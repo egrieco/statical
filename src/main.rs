@@ -3,6 +3,7 @@ extern crate ical;
 use clap::Parser;
 use color_eyre::eyre::{self, WrapErr};
 use statical::model::calendar::Calendar;
+use statical::view::week::WeekCollection;
 
 use std::{fs::File, io::BufReader, path::PathBuf};
 
@@ -45,8 +46,7 @@ fn main() -> eyre::Result<()> {
         }
     }
 
-    for calendar in calendars {
-        println!("{:?}", calendar);
-    }
+    WeekCollection::new(&calendars);
+
     Ok(())
 }

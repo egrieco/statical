@@ -13,6 +13,10 @@ pub struct Calendar {
 }
 
 impl Calendar {
+    pub fn events(&self) -> &Vec<Event> {
+        &self.events
+    }
+
     pub fn new(calendar: &IcalCalendar) -> Result<Calendar> {
         // eprintln!("Parsing calendar: {:#?}", calendar);
         let mut name = None;

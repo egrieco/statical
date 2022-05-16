@@ -6,6 +6,11 @@ use regex::Regex;
 use time::{macros::format_description, Duration, OffsetDateTime, PrimitiveDateTime};
 use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 
+const MISSING_SUMMARY: &str = "None";
+
+type Year = i32;
+type Week = u8;
+
 #[derive(Debug)]
 pub struct Event {
     summary: Option<String>,
@@ -35,8 +40,24 @@ impl fmt::Display for Event {
 }
 
 impl Event {
+    pub fn summary(&self) -> &str {
+        self.summary.as_deref().unwrap_or(MISSING_SUMMARY)
+    }
+
+    pub fn start(&self) -> OffsetDateTime {
+        self.start
+    }
+
     pub fn end(&self) -> OffsetDateTime {
         self.start + self.duration
+    }
+
+    pub fn year(&self) -> Year {
+        self.start.year()
+    }
+
+    pub fn week(&self) -> Week {
+        self.start.sunday_based_week()
     }
 
     pub fn new(event: IcalEvent) -> Result<Event> {
