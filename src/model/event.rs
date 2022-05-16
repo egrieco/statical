@@ -8,8 +8,8 @@ use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 
 const MISSING_SUMMARY: &str = "None";
 
-type Year = i32;
-type Week = u8;
+pub type Year = i32;
+pub type Week = u8;
 
 #[derive(Debug)]
 pub struct Event {
