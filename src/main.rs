@@ -46,7 +46,7 @@ fn main() -> eyre::Result<()> {
         }
     }
 
-    WeekCollection::new(&calendars);
+    WeekCollection::new(&calendars).unwrap().create_week_pages();
 
     Ok(())
 }

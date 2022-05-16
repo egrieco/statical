@@ -16,13 +16,6 @@ impl WeekCollection<'_> {
 
         for calendar in calendars {
             for event in calendar.events() {
-                println!(
-                    "Event: {} ({} {}) {}",
-                    event.summary(),
-                    event.year(),
-                    event.week(),
-                    event.start(),
-                );
                 weeks
                     .entry((event.year(), event.week()))
                     .or_insert(Vec::new())
@@ -30,5 +23,22 @@ impl WeekCollection<'_> {
             }
         }
         Ok(WeekCollection { weeks })
+    }
+
+    pub fn create_week_pages(&self) -> Result<()> {
+        for ((year, week), events) in &self.weeks {
+            println!("week: {}", week);
+            for event in events {
+                println!(
+                    "  event: ({} {} {}) {} {}",
+                    event.start().weekday(),
+                    event.year(),
+                    event.week(),
+                    event.summary(),
+                    event.start(),
+                );
+            }
+        }
+        Ok(())
     }
 }
