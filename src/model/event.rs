@@ -3,6 +3,7 @@ use std::fmt;
 use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
+use serde::Serialize;
 use time::{macros::format_description, Duration, OffsetDateTime, PrimitiveDateTime};
 use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 
@@ -11,7 +12,7 @@ const MISSING_SUMMARY: &str = "None";
 pub type Year = i32;
 pub type Week = u8;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Event {
     summary: Option<String>,
     description: Option<String>,

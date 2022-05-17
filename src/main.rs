@@ -1,4 +1,5 @@
 extern crate ical;
+extern crate serde_json;
 
 use clap::StructOpt;
 use color_eyre::eyre::{self};
@@ -12,9 +13,10 @@ fn main() -> eyre::Result<()> {
 
     println!("  Arguments: {:#?}", args);
 
-    CalendarCollection::new(args)?
+    let calendar_collection = CalendarCollection::new(args)?;
+    calendar_collection
         .week_collection()?
-        .create_week_pages()?;
+        .create_week_pages(&calendar_collection)?;
 
     Ok(())
 }

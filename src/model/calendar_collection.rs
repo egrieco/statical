@@ -1,5 +1,7 @@
 use color_eyre::eyre::{self, Result, WrapErr};
+use std::task::Context;
 use std::{fs::File, io::BufReader};
+use tera::Tera;
 
 use crate::model::calendar::Calendar;
 use crate::options::Opt;
@@ -7,6 +9,7 @@ use crate::view::week::WeekCollection;
 
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
+    tera: Tera,
 }
 
 impl CalendarCollection {
@@ -33,10 +36,29 @@ impl CalendarCollection {
             }
         }
 
-        Ok(CalendarCollection { calendars })
+        Ok(CalendarCollection {
+            calendars,
+            tera: Tera::new("templates/**/*.html")?,
+        })
     }
 
     pub fn week_collection(&self) -> Result<WeekCollection> {
-        WeekCollection::new(&self.calendars)
+        WeekCollection::new(&self)
+    }
+
+    /// Get a reference to the calendar collection's calendars.
+    #[must_use]
+    pub fn calendars(&self) -> &[Calendar] {
+        self.calendars.as_ref()
+    }
+
+    /// Get a reference to the calendar collection's tera.
+    #[must_use]
+    pub fn tera(&self) -> &Tera {
+        &self.tera
+    }
+
+    pub fn render(&self, template_name: &str, context: &tera::Context) -> eyre::Result<String> {
+        Ok(self.tera.render(template_name, context)?)
     }
 }

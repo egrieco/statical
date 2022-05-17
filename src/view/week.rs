@@ -1,6 +1,8 @@
 use color_eyre::eyre::{self, Result, WrapErr};
 use std::collections::BTreeMap;
+use tera::Context;
 
+use crate::model::calendar_collection::CalendarCollection;
 use crate::model::event::{Week, Year};
 use crate::model::{calendar::Calendar, event::Event};
 
@@ -11,10 +13,10 @@ pub struct WeekCollection<'a> {
 }
 
 impl WeekCollection<'_> {
-    pub fn new(calendars: &Vec<Calendar>) -> Result<WeekCollection> {
+    pub fn new(calendar_collection: &CalendarCollection) -> Result<WeekCollection> {
         let mut weeks: WeekMap = BTreeMap::new();
 
-        for calendar in calendars {
+        for calendar in calendar_collection.calendars() {
             for event in calendar.events() {
                 weeks
                     .entry((event.year(), event.week()))
@@ -25,7 +27,7 @@ impl WeekCollection<'_> {
         Ok(WeekCollection { weeks })
     }
 
-    pub fn create_week_pages(&self) -> Result<()> {
+    pub fn create_week_pages(&self, calendar_collection: &CalendarCollection) -> Result<()> {
         for ((year, week), events) in &self.weeks {
             println!("week: {}", week);
             for event in events {
@@ -38,6 +40,10 @@ impl WeekCollection<'_> {
                     event.start(),
                 );
             }
+            let mut context = Context::new();
+            context.insert("events", events);
+            let template_out = calendar_collection.render("week.html", &context)?;
+            println!("{}", template_out);
         }
         Ok(())
     }
