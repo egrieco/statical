@@ -1,23 +1,14 @@
 extern crate ical;
 
-use clap::Parser;
+use clap::StructOpt;
 use color_eyre::eyre::{self, WrapErr};
 use statical::model::calendar::Calendar;
 use statical::view::week::WeekCollection;
+use std::{fs::File, io::BufReader};
 
-use std::{fs::File, io::BufReader, path::PathBuf};
+mod options;
 
-#[derive(Parser, Debug)]
-#[clap(author, version, about)]
-struct Opt {
-    /// The calendar file to read
-    #[clap(short, long)]
-    file: Option<Vec<PathBuf>>,
-
-    /// The calendar url to read
-    #[clap(short, long)]
-    url: Option<Vec<String>>,
-}
+use crate::options::Opt;
 
 fn main() -> eyre::Result<()> {
     let args = Opt::parse();
