@@ -115,6 +115,37 @@ impl CalendarCollection {
         Ok(self.tera.render_to(template_name, context, write)?)
     }
 
+    pub fn create_month_pages(&self, output_dir: &Path) -> Result<()> {
+        if !output_dir.is_dir() {
+            bail!("Month pages path does not exist: {:?}", output_dir)
+        }
+
+        for ((year, month), events) in &self.months {
+            println!("month: {}", month);
+            for event in events {
+                println!(
+                    "  event: ({} {} {}) {} {}",
+                    event.start().weekday(),
+                    event.year(),
+                    event.week(),
+                    event.summary(),
+                    event.start(),
+                );
+            }
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(format!("{}-{}.html", year, month)));
+
+            let mut context = Context::new();
+            context.insert("year", &year);
+            context.insert("month", &month);
+            context.insert("events", events);
+            println!("Writing template to file: {:?}", template_out_file);
+            self.render_to("month.html", &context, File::create(template_out_file)?)?;
+        }
+        Ok(())
+    }
+
     pub fn create_week_pages(&self, output_dir: &Path) -> Result<()> {
         if !output_dir.is_dir() {
             bail!("Week pages path does not exist: {:?}", output_dir)

@@ -15,6 +15,10 @@ fn main() -> eyre::Result<()> {
     let calendar_collection = CalendarCollection::new(args)?;
     calendar_collection
         // TODO take the output path from the config
+        .create_month_pages(&PathBuf::from("output/month"))?;
+
+    calendar_collection
+        // TODO take the output path from the config
         .create_week_pages(&PathBuf::from("output/week"))?;
 
     calendar_collection
