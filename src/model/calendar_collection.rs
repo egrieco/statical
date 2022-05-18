@@ -1,4 +1,5 @@
 use color_eyre::eyre::{self, Result, WrapErr};
+use std::io::Write;
 use std::task::Context;
 use std::{fs::File, io::BufReader};
 use tera::Tera;
@@ -60,5 +61,14 @@ impl CalendarCollection {
 
     pub fn render(&self, template_name: &str, context: &tera::Context) -> eyre::Result<String> {
         Ok(self.tera.render(template_name, context)?)
+    }
+
+    pub fn render_to(
+        &self,
+        template_name: &str,
+        context: &tera::Context,
+        write: impl Write,
+    ) -> eyre::Result<()> {
+        Ok(self.tera.render_to(template_name, context, write)?)
     }
 }

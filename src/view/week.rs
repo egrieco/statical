@@ -1,5 +1,7 @@
-use color_eyre::eyre::{self, Result, WrapErr};
+use color_eyre::eyre::{self, bail, Result, WrapErr};
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::path::{Path, PathBuf};
 use tera::Context;
 
 use crate::model::calendar_collection::CalendarCollection;
@@ -27,7 +29,15 @@ impl WeekCollection<'_> {
         Ok(WeekCollection { weeks })
     }
 
-    pub fn create_week_pages(&self, calendar_collection: &CalendarCollection) -> Result<()> {
+    pub fn create_week_pages(
+        &self,
+        calendar_collection: &CalendarCollection,
+        output_dir: &Path,
+    ) -> Result<()> {
+        if !output_dir.is_dir() {
+            bail!("Week pages path does not exist: {:?}", output_dir)
+        }
+
         for ((year, week), events) in &self.weeks {
             println!("week: {}", week);
             for event in events {
@@ -40,10 +50,18 @@ impl WeekCollection<'_> {
                     event.start(),
                 );
             }
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(format!("{}-{}.html", year, week)));
+
             let mut context = Context::new();
             context.insert("events", events);
-            let template_out = calendar_collection.render("week.html", &context)?;
-            println!("{}", template_out);
+            println!("Writing template to file: {:?}", template_out_file);
+            let template_out = calendar_collection.render_to(
+                "week.html",
+                &context,
+                File::create(template_out_file)?,
+            )?;
         }
         Ok(())
     }
