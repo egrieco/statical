@@ -57,8 +57,12 @@ impl Event {
         self.start.year()
     }
 
+    /// Returns the week number of the event
+    ///
+    /// This returns the ISO week (as opposed to the `sunday_based_week()` or `monday_based_week()` functions)
+    /// since there is a `from_iso_week_date()` function we can use when rendering the week view.
     pub fn week(&self) -> WeekNum {
-        self.start.sunday_based_week()
+        self.start.iso_week()
     }
 
     pub fn new(event: IcalEvent) -> Result<Event> {
