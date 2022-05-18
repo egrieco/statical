@@ -1,19 +1,16 @@
 extern crate ical;
 extern crate serde_json;
 
-use std::path::PathBuf;
-
 use clap::StructOpt;
 use color_eyre::eyre::{self};
 use statical::{model::calendar_collection::CalendarCollection, options::Opt};
+use std::path::PathBuf;
 
 mod options;
 
 fn main() -> eyre::Result<()> {
     let args = Opt::parse();
     color_eyre::install()?;
-
-    println!("  Arguments: {:#?}", args);
 
     let calendar_collection = CalendarCollection::new(args)?;
     calendar_collection
