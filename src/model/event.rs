@@ -10,7 +10,7 @@ use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 const MISSING_SUMMARY: &str = "None";
 
 pub type Year = i32;
-pub type Week = u8;
+pub type WeekNum = u8;
 
 #[derive(Debug, Serialize)]
 pub struct Event {
@@ -57,7 +57,7 @@ impl Event {
         self.start.year()
     }
 
-    pub fn week(&self) -> Week {
+    pub fn week(&self) -> WeekNum {
         self.start.sunday_based_week()
     }
 

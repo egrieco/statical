@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 use tera::Context;
 
 use crate::model::calendar_collection::CalendarCollection;
-use crate::model::event::{Week, Year};
+use crate::model::event::{WeekNum, Year};
 use crate::model::{calendar::Calendar, event::Event};
 
-type WeekMap<'a> = BTreeMap<(Year, Week), Vec<&'a Event>>;
+type WeekMap<'a> = BTreeMap<(Year, WeekNum), Vec<&'a Event>>;
 
 pub struct WeekCollection<'a> {
     weeks: WeekMap<'a>,
