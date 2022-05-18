@@ -1,6 +1,7 @@
 use color_eyre::eyre::{self, Result, WrapErr};
 use std::collections::BTreeMap;
 use std::io::Write;
+use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::Tera;
 use time::{Date, Month as MonthEnum};
@@ -12,21 +13,24 @@ use crate::options::Opt;
 use crate::view::week::WeekCollection;
 
 /// Type alias representing a specific month in time
-type Month = (Year, MonthEnum);
+type Month = (Year, u8);
 /// Type alias representing a specific week in time
 type Week = (Year, WeekNum);
 /// Type alias representing a specific day in time
 type Day = Date;
 
 /// A BTreeMap of Vecs grouped by specific months
-type MonthMap<'a> = BTreeMap<Month, Vec<&'a Event>>;
+type MonthMap = BTreeMap<Month, Vec<Rc<Event>>>;
 /// A BTreeMap of Vecs grouped by specific weeks
-type WeekMap<'a> = BTreeMap<Week, Vec<&'a Event>>;
+type WeekMap = BTreeMap<Week, Vec<Rc<Event>>>;
 /// A BTreeMap of Vecs grouped by specific days
-type DayMap<'a> = BTreeMap<Day, Vec<&'a Event>>;
+type DayMap = BTreeMap<Day, Vec<Rc<Event>>>;
 
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
+    months: MonthMap,
+    weeks: WeekMap,
+    days: DayMap,
     tera: Tera,
 }
 
@@ -54,8 +58,34 @@ impl CalendarCollection {
             }
         }
 
+        // add events to maps
+        let mut months = MonthMap::new();
+        let mut weeks = WeekMap::new();
+        let mut days = DayMap::new();
+
+        for calendar in &calendars {
+            for event in calendar.events() {
+                months
+                    .entry((event.year(), event.start().month() as u8))
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+
+                weeks
+                    .entry((event.year(), event.week()))
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+
+                days.entry(event.start().date())
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+            }
+        }
+
         Ok(CalendarCollection {
             calendars,
+            months,
+            weeks,
+            days,
             tera: Tera::new("templates/**/*.html")?,
         })
     }

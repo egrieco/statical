@@ -2,6 +2,7 @@ use color_eyre::eyre::{self, Result, WrapErr};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use std::io::BufRead;
+use std::rc::Rc;
 
 use crate::model::event::Event;
 
@@ -9,11 +10,11 @@ use crate::model::event::Event;
 pub struct Calendar {
     name: Option<String>,
     description: Option<String>,
-    events: Vec<Event>,
+    events: Vec<Rc<Event>>,
 }
 
 impl Calendar {
-    pub fn events(&self) -> &Vec<Event> {
+    pub fn events(&self) -> &Vec<Rc<Event>> {
         &self.events
     }
 
@@ -39,7 +40,7 @@ impl Calendar {
         })
     }
 
-    pub fn push(&mut self, event: Event) {
+    pub fn push(&mut self, event: Rc<Event>) {
         self.events.push(event)
     }
 
@@ -57,7 +58,7 @@ impl Calendar {
             if let Ok(calendar) = entry {
                 let mut new_calendar = Calendar::new(&calendar)?;
                 for event in calendar.events {
-                    let new_event = Event::new(event)?;
+                    let new_event = Rc::new(Event::new(event)?);
                     eprintln!("{}", new_event);
                     new_calendar.push(new_event);
                 }

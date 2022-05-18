@@ -15,7 +15,7 @@ pub struct WeekCollection<'a> {
 }
 
 impl WeekCollection<'_> {
-    pub fn new(calendar_collection: &CalendarCollection) -> Result<WeekCollection> {
+    pub fn new<'a>(calendar_collection: &'a CalendarCollection) -> Result<WeekCollection<'a>> {
         let mut weeks: WeekMap = BTreeMap::new();
 
         for calendar in calendar_collection.calendars() {
