@@ -168,6 +168,8 @@ impl CalendarCollection {
             template_out_file.push(PathBuf::from(format!("{}-{}.html", year, week)));
 
             let mut context = Context::new();
+            context.insert("year", &year);
+            context.insert("week", &week);
             context.insert("events", events);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("week.html", &context, File::create(template_out_file)?)?;
