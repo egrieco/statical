@@ -17,9 +17,8 @@ fn main() -> eyre::Result<()> {
 
     let calendar_collection = CalendarCollection::new(args)?;
     calendar_collection
-        .week_collection()?
         // TODO take the output path from the config
-        .create_week_pages(&calendar_collection, &PathBuf::from("output/week"))?;
+        .create_week_pages(&PathBuf::from("output/week"))?;
 
     Ok(())
 }

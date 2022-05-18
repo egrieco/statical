@@ -1,16 +1,16 @@
-use color_eyre::eyre::{self, Result, WrapErr};
+use color_eyre::eyre::{self, bail, Result, WrapErr};
 use std::collections::BTreeMap;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
-use tera::Tera;
+use tera::{Context, Tera};
 use time::{Date, Month as MonthEnum};
 
 use super::event::Event;
 use crate::model::calendar::Calendar;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
-use crate::view::week::WeekCollection;
 
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
@@ -90,10 +90,6 @@ impl CalendarCollection {
         })
     }
 
-    pub fn week_collection(&self) -> Result<WeekCollection> {
-        WeekCollection::new(&self)
-    }
-
     /// Get a reference to the calendar collection's calendars.
     #[must_use]
     pub fn calendars(&self) -> &[Calendar] {
@@ -117,5 +113,34 @@ impl CalendarCollection {
         write: impl Write,
     ) -> eyre::Result<()> {
         Ok(self.tera.render_to(template_name, context, write)?)
+    }
+
+    pub fn create_week_pages(&self, output_dir: &Path) -> Result<()> {
+        if !output_dir.is_dir() {
+            bail!("Week pages path does not exist: {:?}", output_dir)
+        }
+
+        for ((year, week), events) in &self.weeks {
+            println!("week: {}", week);
+            for event in events {
+                println!(
+                    "  event: ({} {} {}) {} {}",
+                    event.start().weekday(),
+                    event.year(),
+                    event.week(),
+                    event.summary(),
+                    event.start(),
+                );
+            }
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(format!("{}-{}.html", year, week)));
+
+            let mut context = Context::new();
+            context.insert("events", events);
+            println!("Writing template to file: {:?}", template_out_file);
+            self.render_to("week.html", &context, File::create(template_out_file)?)?;
+        }
+        Ok(())
     }
 }

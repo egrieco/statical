@@ -1,6 +1,5 @@
 pub mod model;
 pub mod options;
-pub mod view;
 
 #[cfg(test)]
 mod tests {
