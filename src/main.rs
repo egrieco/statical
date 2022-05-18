@@ -17,5 +17,9 @@ fn main() -> eyre::Result<()> {
         // TODO take the output path from the config
         .create_week_pages(&PathBuf::from("output/week"))?;
 
+    calendar_collection
+        // TODO take the output path from the config
+        .create_day_pages(&PathBuf::from("output/day"))?;
+
     Ok(())
 }

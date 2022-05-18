@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
-use time::{Date, Month as MonthEnum};
+use time::{format_description, Date, Month as MonthEnum};
 
 use super::event::Event;
 use crate::model::calendar::Calendar;
@@ -140,6 +140,41 @@ impl CalendarCollection {
             context.insert("events", events);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("week.html", &context, File::create(template_out_file)?)?;
+        }
+        Ok(())
+    }
+
+    pub fn create_day_pages(&self, output_dir: &Path) -> Result<()> {
+        if !output_dir.is_dir() {
+            bail!("Day pages path does not exist: {:?}", output_dir)
+        }
+
+        for (day, events) in &self.days {
+            println!("day: {}", day);
+            for event in events {
+                println!(
+                    "  event: ({} {} {}) {} {}",
+                    event.start().weekday(),
+                    event.year(),
+                    event.week(),
+                    event.summary(),
+                    event.start(),
+                );
+            }
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(format!(
+                "{}.html",
+                day.format(&format_description::parse("[year]-[month]-[day]")?)?
+            )));
+
+            let mut context = Context::new();
+            context.insert("year", &day.year());
+            context.insert("month", &day.month());
+            context.insert("day", &day.day());
+            context.insert("events", events);
+            println!("Writing template to file: {:?}", template_out_file);
+            self.render_to("day.html", &context, File::create(template_out_file)?)?;
         }
         Ok(())
     }
