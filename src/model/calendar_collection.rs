@@ -1,12 +1,29 @@
 use color_eyre::eyre::{self, Result, WrapErr};
+use std::collections::BTreeMap;
 use std::io::Write;
-use std::task::Context;
 use std::{fs::File, io::BufReader};
 use tera::Tera;
+use time::{Date, Month as MonthEnum};
 
+use super::event::Event;
 use crate::model::calendar::Calendar;
+use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
 use crate::view::week::WeekCollection;
+
+/// Type alias representing a specific month in time
+type Month = (Year, MonthEnum);
+/// Type alias representing a specific week in time
+type Week = (Year, WeekNum);
+/// Type alias representing a specific day in time
+type Day = Date;
+
+/// A BTreeMap of Vecs grouped by specific months
+type MonthMap<'a> = BTreeMap<Month, Vec<&'a Event>>;
+/// A BTreeMap of Vecs grouped by specific weeks
+type WeekMap<'a> = BTreeMap<Week, Vec<&'a Event>>;
+/// A BTreeMap of Vecs grouped by specific days
+type DayMap<'a> = BTreeMap<Day, Vec<&'a Event>>;
 
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
