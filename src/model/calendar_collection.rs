@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
-use time::{format_description, Date, Month as MonthEnum};
+use time::{macros::format_description, Date, Month as MonthEnum};
 
 use super::event::Event;
 use crate::model::calendar::Calendar;
@@ -225,7 +225,7 @@ impl CalendarCollection {
             template_out_file.push(output_dir);
             template_out_file.push(PathBuf::from(format!(
                 "{}.html",
-                day.format(&format_description::parse("[year]-[month]-[day]")?)?
+                day.format(format_description!("[year]-[month]-[day]"))?
             )));
 
             let mut context = Context::new();
