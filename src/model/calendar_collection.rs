@@ -189,6 +189,7 @@ impl CalendarCollection {
                     date: (sunday + (*o as i64).days())
                         .format(&date_format)
                         .unwrap_or("bad date".to_string()),
+                    wday: (sunday + (*o as i64).days()).weekday().to_string(),
                     events: week_day_map
                         .get(o)
                         .map(|l| l.iter().map(|e| e.context()).collect())
