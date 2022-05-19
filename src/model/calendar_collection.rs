@@ -1,5 +1,5 @@
 use color_eyre::eyre::{self, bail, Result, WrapErr};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -8,7 +8,7 @@ use tera::{Context, Tera};
 use time::ext::NumericalDuration;
 use time::{macros::format_description, Date, Month as MonthEnum};
 
-use super::event::Event;
+use super::event::{Event, UnparsedProperties};
 use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::{EventContext, WeekNum, Year};
@@ -41,6 +41,7 @@ pub struct CalendarCollection {
 impl CalendarCollection {
     pub fn new(args: Opt) -> eyre::Result<CalendarCollection> {
         let mut calendars = Vec::new();
+        let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         if let Some(files) = args.file {
             for file in files {
@@ -48,7 +49,10 @@ impl CalendarCollection {
                 if file.exists() {
                     println!("    File exists");
                     let buf = BufReader::new(File::open(file)?);
-                    calendars.append(&mut Calendar::parse_calendars(buf)?);
+                    let (parsed_calendars, calendar_unparsed_properties) =
+                        &mut Calendar::parse_calendars(buf)?;
+                    unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+                    calendars.append(parsed_calendars);
                 }
             }
         };
@@ -58,7 +62,10 @@ impl CalendarCollection {
                 println!("  Provided url is: {:?}", url);
                 let ics_string = ureq::get(&url).call()?.into_string()?;
                 println!("    URL exists");
-                calendars.append(&mut Calendar::parse_calendars(ics_string.as_bytes())?);
+                let (parsed_calendars, calendar_unparsed_properties) =
+                    &mut Calendar::parse_calendars(ics_string.as_bytes())?;
+                unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+                calendars.append(parsed_calendars);
             }
         }
 
@@ -83,6 +90,16 @@ impl CalendarCollection {
                     .or_insert(Vec::new())
                     .push(event.clone());
             }
+        }
+
+        // print unparsed properties
+        // TODO should probably put this behind a flag
+        println!(
+            "The following {} properties were present but have not been parsed:",
+            unparsed_properties.len()
+        );
+        for property in unparsed_properties {
+            println!("  {}", property);
         }
 
         Ok(CalendarCollection {

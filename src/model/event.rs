@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
 use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
@@ -11,6 +11,8 @@ const MISSING_SUMMARY: &str = "None";
 
 pub type Year = i32;
 pub type WeekNum = u8;
+
+pub type UnparsedProperties = HashSet<String>;
 
 #[derive(Debug, Serialize)]
 pub struct Event {
@@ -101,13 +103,15 @@ impl Event {
         self.start.iso_week()
     }
 
-    pub fn new(event: IcalEvent) -> Result<Event> {
+    pub fn new(event: IcalEvent) -> Result<(Event, UnparsedProperties)> {
         let mut summary = None;
         let mut description = None;
         let mut start: Option<OffsetDateTime> = None;
         let mut end: Option<OffsetDateTime> = None;
         let mut rrule = None;
         let mut location = None;
+
+        let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for property in event.properties {
             eprintln!("  Parsing {}: {:?}", property.name, property.value);
@@ -121,6 +125,7 @@ impl Event {
                 "LOCATION" => location = property.value,
                 _ => {
                     eprintln!("  Ignoring {}: {:?}", property.name, property.value);
+                    unparsed_properties.insert(property.name);
                     if let Some(params) = property.params {
                         println!("{:#?}", params);
                     }
@@ -139,14 +144,17 @@ impl Event {
             bail!("event has no end time")
         }
 
-        Ok(Event {
-            summary,
-            description,
-            start: start.unwrap(),
-            duration: end.unwrap() - start.unwrap(),
-            rrule,
-            location,
-        })
+        Ok((
+            Event {
+                summary,
+                description,
+                start: start.unwrap(),
+                duration: end.unwrap() - start.unwrap(),
+                rrule,
+                location,
+            },
+            unparsed_properties,
+        ))
     }
 }
 
