@@ -18,6 +18,8 @@ pub struct Event {
     description: Option<String>,
     start: OffsetDateTime,
     duration: Duration,
+    rrule: Option<String>,
+    location: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -104,6 +106,8 @@ impl Event {
         let mut description = None;
         let mut start: Option<OffsetDateTime> = None;
         let mut end: Option<OffsetDateTime> = None;
+        let mut rrule = None;
+        let mut location = None;
 
         for property in event.properties {
             eprintln!("  Parsing {}: {:?}", property.name, property.value);
@@ -113,6 +117,8 @@ impl Event {
                 "DESCRIPTION" => description = property.value,
                 "DTSTART" => start = property_to_time(&property)?,
                 "DTEND" => end = property_to_time(&property)?,
+                "RRULE" => rrule = property.value,
+                "LOCATION" => location = property.value,
                 _ => {
                     eprintln!("  Ignoring {}: {:?}", property.name, property.value);
                     if let Some(params) = property.params {
@@ -138,6 +144,8 @@ impl Event {
             description,
             start: start.unwrap(),
             duration: end.unwrap() - start.unwrap(),
+            rrule,
+            location,
         })
     }
 }
