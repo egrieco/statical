@@ -20,6 +20,14 @@ pub struct Event {
     duration: Duration,
 }
 
+#[derive(Debug, Serialize)]
+pub struct EventContext {
+    summary: String,
+    description: String,
+    start: String,
+    duration: String,
+}
+
 impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -41,6 +49,25 @@ impl fmt::Display for Event {
 }
 
 impl Event {
+    /// Returns and EventContext suitable for providing values to Tera templates
+    pub fn context(&self) -> EventContext {
+        EventContext {
+            summary: self.summary().into(),
+            description: self
+                .description
+                .as_deref()
+                .unwrap_or("NO Description")
+                .into(),
+            start: self
+                .start()
+                .format(format_description!(
+                    "[hour repr:12]:[minute][period case:lower]"
+                ))
+                .unwrap_or("NO START TIME".to_string()),
+            duration: self.duration.to_string(),
+        }
+    }
+
     pub fn summary(&self) -> &str {
         self.summary.as_deref().unwrap_or(MISSING_SUMMARY)
     }

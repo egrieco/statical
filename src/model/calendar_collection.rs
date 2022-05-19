@@ -5,11 +5,13 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
+use time::ext::NumericalDuration;
 use time::{format_description, Date, Month as MonthEnum};
 
 use super::event::Event;
 use crate::model::calendar::Calendar;
-use crate::model::event::{WeekNum, Year};
+use crate::model::day::DayContext;
+use crate::model::event::{EventContext, WeekNum, Year};
 use crate::options::Opt;
 
 /// Type alias representing a specific month in time
@@ -25,6 +27,8 @@ type MonthMap = BTreeMap<Month, Vec<Rc<Event>>>;
 type WeekMap = BTreeMap<Week, Vec<Rc<Event>>>;
 /// A BTreeMap of Vecs grouped by specific days
 type DayMap = BTreeMap<Day, Vec<Rc<Event>>>;
+
+type WeekDayMap = BTreeMap<u8, Vec<Rc<Event>>>;
 
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
@@ -153,6 +157,9 @@ impl CalendarCollection {
 
         for ((year, week), events) in &self.weeks {
             println!("week: {}", week);
+
+            let mut week_day_map: WeekDayMap = BTreeMap::new();
+
             for event in events {
                 println!(
                     "  event: ({} {} {}) {} {}",
@@ -162,15 +169,45 @@ impl CalendarCollection {
                     event.summary(),
                     event.start(),
                 );
+                let day_of_week = event.start().weekday().number_days_from_sunday();
+                week_day_map
+                    .entry(day_of_week)
+                    .or_insert(Vec::new())
+                    .push(event.clone());
             }
             let mut template_out_file = PathBuf::new();
             template_out_file.push(output_dir);
             template_out_file.push(PathBuf::from(format!("{}-{}.html", year, week)));
 
+            let date_format = format_description::parse("[year]-[month]-[day]")?;
+
+            // create week days
+            let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+            let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
+                .iter()
+                .map(|o| DayContext {
+                    date: (sunday + (*o as i64).days())
+                        .format(&date_format)
+                        .unwrap_or("bad date".to_string()),
+                    events: week_day_map
+                        .get(o)
+                        .map(|l| l.iter().map(|e| e.context()).collect())
+                        .unwrap_or(Vec::new()),
+                })
+                .collect();
+
             let mut context = Context::new();
             context.insert("year", &year);
             context.insert("week", &week);
+            context.insert("week_dates", &week_dates);
+            // context.insert(
+            //     "week_dates",
+            //     &week_dates
+            //         .map(|d| d.format(&date_format).unwrap_or("bad date".to_string()))
+            //         .collect::<Vec<String>>(),
+            // );
             context.insert("events", events);
+            context.insert("events_by_day", &week_day_map);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("week.html", &context, File::create(template_out_file)?)?;
         }
