@@ -200,14 +200,6 @@ impl CalendarCollection {
             context.insert("year", &year);
             context.insert("week", &week);
             context.insert("week_dates", &week_dates);
-            // context.insert(
-            //     "week_dates",
-            //     &week_dates
-            //         .map(|d| d.format(&date_format).unwrap_or("bad date".to_string()))
-            //         .collect::<Vec<String>>(),
-            // );
-            context.insert("events", events);
-            context.insert("events_by_day", &week_day_map);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("week.html", &context, File::create(template_out_file)?)?;
         }
