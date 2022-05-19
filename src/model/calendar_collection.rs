@@ -246,7 +246,10 @@ impl CalendarCollection {
             bail!("Day pages path does not exist: {:?}", output_dir)
         }
 
-        for (day, events) in &self.days {
+        let mut previous_file_name: Option<String> = None;
+
+        let mut days_iter = self.days.iter().peekable();
+        while let Some((day, events)) = days_iter.next() {
             println!("day: {}", day);
             for event in events {
                 println!(
@@ -258,20 +261,32 @@ impl CalendarCollection {
                     event.start(),
                 );
             }
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(format!(
+            let file_name = format!(
                 "{}.html",
                 day.format(format_description!("[year]-[month]-[day]"))?
-            )));
+            );
+            // TODO should we raise the error on format() failing?
+            let next_file_name = days_iter.peek().map(|(next_day, _events)| {
+                next_day
+                    .format(format_description!("[year]-[month]-[day]"))
+                    .map(|file_root| format!("{}.html", file_root))
+                    .ok()
+            });
+
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("year", &day.year());
             context.insert("month", &day.month());
             context.insert("day", &day.day());
             context.insert("events", events);
+            context.insert("previous_file_name", &previous_file_name);
+            context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("day.html", &context, File::create(template_out_file)?)?;
+            previous_file_name = Some(file_name);
         }
         Ok(())
     }
