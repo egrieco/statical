@@ -25,6 +25,7 @@ pub struct EventContext {
     summary: String,
     description: String,
     start: String,
+    end: String,
     duration: String,
 }
 
@@ -56,14 +57,20 @@ impl Event {
             description: self
                 .description
                 .as_deref()
-                .unwrap_or("NO Description")
+                .unwrap_or("NO DESCRIPTION")
                 .into(),
             start: self
                 .start()
                 .format(format_description!(
-                    "[hour repr:12]:[minute][period case:lower]"
+                    "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
                 .unwrap_or("NO START TIME".to_string()),
+            end: self
+                .end()
+                .format(format_description!(
+                    "[hour repr:12 padding:none]:[minute][period case:lower]"
+                ))
+                .unwrap_or("NO END TIME".to_string()),
             duration: self.duration.to_string(),
         }
     }

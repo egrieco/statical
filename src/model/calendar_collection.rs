@@ -196,6 +196,8 @@ impl CalendarCollection {
 
             let mut context = Context::new();
             context.insert("year", &year);
+            // TODO handle weeks where the month changes
+            context.insert("month", &sunday.month());
             context.insert("week", &week);
             context.insert("week_dates", &week_dates);
             println!("Writing template to file: {:?}", template_out_file);

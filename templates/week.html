@@ -8,17 +8,22 @@
     <title>Week View</title>
   </head>
   <body>
-    <h1>Events for week {{ week }} of {{ year }}</h1>
+    <h1>Events for week {{ week }} of {{ month }} {{ year }}</h1>
     <div class="week">
       {% for day in week_dates %}
       <div class="day">
-        <h2>{{ day.wday }}</h2>
-        <p>{{ day.date }}</p>
-        <ol>
+        <p class="header">
+          <span class="wday">{{ day.wday }}</span>
+          <span class="date">{{ day.month }} {{ day.day }}</span>
+        </p>
+        <div class="events">
           {% for event in day.events %}
-          <li>{{ event.summary }} ({{ event.duration }} hours)</li>
+          <div class="event">
+            <p class="time">{{ event.start }} - {{ event.end }} ({{ event.duration }} hours)</p>
+            <p class="summary">{{ event.summary }}</p>
+          </div>
           {% endfor %}
-        </ol>
+        </div>
       </div>
       {% endfor %}
     </div>
