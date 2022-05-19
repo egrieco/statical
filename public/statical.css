@@ -5,11 +5,13 @@ body {
 .week {
   display: flex;
   height: 100%;
+  width: 100%;
 }
 
 .day {
   margin: 0.25em;
   background-color: aliceblue;
+  flex-grow: 1;
   /* padding: 0 0.75em; */
 }
 
@@ -24,6 +26,12 @@ body {
 
 .header .date {
   white-space: nowrap;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.5em;
 }
 
 .event {

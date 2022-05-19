@@ -168,7 +168,10 @@ impl CalendarCollection {
             bail!("Week pages path does not exist: {:?}", output_dir)
         }
 
-        for ((year, week), events) in &self.weeks {
+        let mut previous_file_name: Option<String> = None;
+
+        let mut weeks_iter = self.weeks.iter().peekable();
+        while let Some(((year, week), events)) = weeks_iter.next() {
             println!("week: {}", week);
 
             let mut week_day_map: WeekDayMap = BTreeMap::new();
@@ -188,9 +191,13 @@ impl CalendarCollection {
                     .or_insert(Vec::new())
                     .push(event.clone());
             }
+            let file_name = format!("{}-{}.html", year, week);
+            let next_file_name = weeks_iter.peek().map(|((next_year, next_week), _events)| {
+                format!("{}-{}.html", next_year, next_week)
+            });
             let mut template_out_file = PathBuf::new();
             template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(format!("{}-{}.html", year, week)));
+            template_out_file.push(PathBuf::from(&file_name));
 
             // create week days
             let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
@@ -213,8 +220,11 @@ impl CalendarCollection {
             context.insert("month", &sunday.month());
             context.insert("week", &week);
             context.insert("week_dates", &week_dates);
+            context.insert("previous_file_name", &previous_file_name);
+            context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("week.html", &context, File::create(template_out_file)?)?;
+            previous_file_name = Some(file_name);
         }
         Ok(())
     }
