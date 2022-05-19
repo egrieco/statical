@@ -45,9 +45,7 @@ impl CalendarCollection {
 
         if let Some(files) = args.file {
             for file in files {
-                println!("  Provided path is: {:?}", file);
                 if file.exists() {
-                    println!("    File exists");
                     let buf = BufReader::new(File::open(file)?);
                     let (parsed_calendars, calendar_unparsed_properties) =
                         &mut Calendar::parse_calendars(buf)?;
@@ -59,9 +57,7 @@ impl CalendarCollection {
 
         if let Some(urls) = args.url {
             for url in urls {
-                println!("  Provided url is: {:?}", url);
                 let ics_string = ureq::get(&url).call()?.into_string()?;
-                println!("    URL exists");
                 let (parsed_calendars, calendar_unparsed_properties) =
                     &mut Calendar::parse_calendars(ics_string.as_bytes())?;
                 unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());

@@ -27,12 +27,12 @@ impl Calendar {
         let mut description = None;
 
         for property in &calendar.properties {
-            eprintln!("{:#?}", property);
             match property.name.as_str() {
                 "X-WR-CALNAME" => name = property.value.clone(),
                 "X-WR-CALDESC" => description = property.value.clone(),
                 _ => {
-                    eprintln!("  Ignoring {}: {:?}", property.name, property.value);
+                    // TODO collect the unparsed properties
+                    // eprintln!("  Ignoring {}: {:?}", property.name, property.value);
                 }
             }
         }
@@ -59,14 +59,12 @@ impl Calendar {
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for entry in reader {
-            eprintln!("{:#?}", entry);
             if let Ok(calendar) = entry {
                 let mut new_calendar = Calendar::new(&calendar)?;
                 for event in calendar.events {
                     let (new_event, event_unparsed_properties) = Event::new(event)?;
                     unparsed_properties.extend(event_unparsed_properties.into_iter());
                     let rc_event = Rc::new(new_event);
-                    eprintln!("{}", rc_event);
                     new_calendar.push(rc_event);
                 }
                 calendars.push(new_calendar);

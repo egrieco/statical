@@ -114,8 +114,6 @@ impl Event {
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for property in event.properties {
-            eprintln!("  Parsing {}: {:?}", property.name, property.value);
-
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
                 "DESCRIPTION" => description = property.value,
@@ -124,11 +122,11 @@ impl Event {
                 "RRULE" => rrule = property.value,
                 "LOCATION" => location = property.value,
                 _ => {
-                    eprintln!("  Ignoring {}: {:?}", property.name, property.value);
                     unparsed_properties.insert(property.name);
-                    if let Some(params) = property.params {
-                        println!("{:#?}", params);
-                    }
+                    // TODO collect unparsed params as well
+                    // if let Some(params) = property.params {
+                    //     println!("{:#?}", params);
+                    // }
                 }
             }
         }
@@ -160,8 +158,6 @@ impl Event {
 
 /// Given a time based ical property, parse it into a OffsetDateTime
 fn property_to_time(property: &ical::property::Property) -> Result<Option<OffsetDateTime>> {
-    eprintln!("  attempting to parse: {}", property.name);
-
     let date_format = Regex::new("^(\\d+T\\d+)(Z)?$")?;
     let date_captures = date_format
         .captures(
@@ -176,13 +172,8 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<Offset
         get_by_name("UTC")
     } else {
         // if necessary, parse the primitive time and zone separately
-        eprintln!(
-            "  attempting to parse with separate time zone: {}",
-            property.name
-        );
         if let Some(params) = &property.params {
             let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
-            eprintln!("zones: {:#?}", zones);
             zones.first().and_then(|tz_name| get_by_name(tz_name))
         } else {
             // need to set a default timezone
