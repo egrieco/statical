@@ -21,4 +21,8 @@ A calendar aggregator and generator to make maintaining calendars on static webs
   - [ ] index pages for each time interval
   - [ ] link pages with forward and back links
   - [ ] add a sparse setting and decide how to handle missing intervals
+  - [ ] add default CSS
+- [ ] Styling
+  - [ ] Add weekday vs weekend classes
+  - [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
 - [ ] add an option to generate example templates or provide them in the docs/repo
