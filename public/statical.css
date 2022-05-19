@@ -1,0 +1,9 @@
+.week {
+  display: flex;
+}
+
+.day {
+  margin: 0.25em;
+  background-color: aliceblue;
+  padding: 0 0.75em;
+}

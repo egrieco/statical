@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../../public/statical.css" />
+    <title>Week View</title>
+  </head>
+  <body>
+    <h1>Events for week {{ week }} of {{ year }}</h1>
+    <div class="week">
+      {% for day in week_dates %}
+      <div class="day">
+        <h2>{{ day.wday }}</h2>
+        <p>{{ day.date }}</p>
+        <ol>
+          {% for event in day.events %}
+          <li>{{ event.summary }} ({{ event.duration }} hours)</li>
+          {% endfor %}
+        </ol>
+      </div>
+      {% endfor %}
+    </div>
+  </body>
+</html>
