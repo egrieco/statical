@@ -137,7 +137,10 @@ impl CalendarCollection {
             bail!("Month pages path does not exist: {:?}", output_dir)
         }
 
-        for ((year, month), events) in &self.months {
+        let mut previous_file_name: Option<String> = None;
+
+        let mut months_iter = self.months.iter().peekable();
+        while let Some(((year, month), events)) = months_iter.next() {
             println!("month: {}", month);
             for event in events {
                 println!(
@@ -149,16 +152,25 @@ impl CalendarCollection {
                     event.start(),
                 );
             }
+            let file_name = format!("{}-{}.html", year, month);
+            let next_file_name = months_iter
+                .peek()
+                .map(|((next_year, next_month), _events)| {
+                    format!("{}-{}.html", next_year, next_month)
+                });
             let mut template_out_file = PathBuf::new();
             template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(format!("{}-{}.html", year, month)));
+            template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("year", &year);
             context.insert("month", &month);
             context.insert("events", events);
+            context.insert("previous_file_name", &previous_file_name);
+            context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
             self.render_to("month.html", &context, File::create(template_out_file)?)?;
+            previous_file_name = Some(file_name);
         }
         Ok(())
     }
