@@ -16,10 +16,13 @@ name = "main"
 harness = false
 
 [dependencies]
+chrono = "0.4.19"
+chrono-tz = "0.6.1"
 clap = { version = "3.1.17", features = ["derive"] }
 color-eyre = "0.6.1"
 ical = "0.7.0"
 regex = "1.5.5"
+rrule = "0.7.3"
 serde = { version = "1.0.137", features = ["derive", "rc"] }
 serde_json = "1.0.81"
 tera = "1.15.0"

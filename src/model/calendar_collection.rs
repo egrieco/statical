@@ -1,4 +1,7 @@
+use chrono::TimeZone;
+use chrono_tz::UTC;
 use color_eyre::eyre::{self, bail, Result, WrapErr};
+use rrule::DateFilter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -6,12 +9,14 @@ use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
-use time::{macros::format_description, Date, Month as MonthEnum};
+use time::format_description::well_known::Rfc2822;
+use time::OffsetDateTime;
+use time::{macros::format_description, Date};
 
 use super::event::{Event, UnparsedProperties};
 use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
-use crate::model::event::{EventContext, WeekNum, Year};
+use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
 
 /// Type alias representing a specific month in time
@@ -65,13 +70,33 @@ impl CalendarCollection {
             }
         }
 
+        // get start and end date for entire collection
+        let cal_start: OffsetDateTime = dbg!(calendars
+            .iter()
+            .map(|c| c.start())
+            .reduce(|min_start, start| min_start.min(start))
+            .unwrap_or(OffsetDateTime::now_utc()));
+        let cal_end = dbg!(calendars
+            .iter()
+            .map(|c| c.end())
+            .reduce(|max_end, end| max_end.max(end))
+            // TODO consider a better approach to finding the correct number of days
+            .unwrap_or(OffsetDateTime::now_utc() + 30.days()));
+
         // add events to maps
         let mut months = MonthMap::new();
         let mut weeks = WeekMap::new();
         let mut days = DayMap::new();
+        let mut repeating_events: Vec<Rc<Event>> = Vec::new();
 
         for calendar in &calendars {
             for event in calendar.events() {
+                if let Some(rrule) = event.rrule() {
+                    // TODO might want to make this a map based on UID
+                    println!("Event with rrule found: {:#?}", event);
+                    repeating_events.push(event.clone());
+                }
+
                 months
                     .entry((event.year(), event.start().month() as u8))
                     .or_insert(Vec::new())
@@ -88,6 +113,28 @@ impl CalendarCollection {
             }
         }
 
+        // add event recurrences
+        println!(
+            "{} recurring events from {:?} to {:?}",
+            repeating_events.len(),
+            cal_start.format(&Rfc2822),
+            cal_end.format(&Rfc2822)
+        );
+        // we need to convert from the time-rs library to chrono for RRule's sake
+        let repeat_start = UTC.timestamp(cal_start.unix_timestamp(), 0);
+        let repeat_end = UTC.timestamp(cal_end.unix_timestamp(), 0);
+        for event in repeating_events {
+            for recuring_event in event
+                .rrule()
+                .unwrap()
+                // setting inclusive to false to prevent injecting duplicate events
+                .all_between(repeat_start, repeat_end, false)
+            {
+                // add event to groups
+                println!("{:#?}", recuring_event);
+            }
+        }
+
         // print unparsed properties
         // TODO should probably put this behind a flag
         println!(
@@ -97,6 +144,7 @@ impl CalendarCollection {
         for property in unparsed_properties {
             println!("  {}", property);
         }
+        // expand events with RRules
 
         Ok(CalendarCollection {
             calendars,

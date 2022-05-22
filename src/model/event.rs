@@ -3,8 +3,12 @@ use std::{collections::HashSet, fmt};
 use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
+use rrule::RRule;
 use serde::Serialize;
-use time::{macros::format_description, Duration, OffsetDateTime, PrimitiveDateTime};
+use time::{
+    macros::{format_description, offset},
+    Duration, OffsetDateTime, PrimitiveDateTime,
+};
 use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
 
 const MISSING_SUMMARY: &str = "None";
@@ -103,6 +107,34 @@ impl Event {
         self.start.iso_week()
     }
 
+    pub fn rrule(&self) -> Option<RRule> {
+        println!("Attempting to parse: {:?}", self.rrule);
+        if let Some(rrule_str) = &self.rrule {
+            match format!(
+                "DTSTART:{}\n{}",
+                self.start()
+                    // ensure that DTSTART is provided in UTC
+                    .to_offset(offset!(+0))
+                    .format(format_description!(
+                        "[year][month][day]T[hour][minute][second]Z"
+                    ))
+                    .unwrap()
+                    .to_string(),
+                rrule_str
+            )
+            .parse()
+            {
+                Ok(rrule) => Some(rrule),
+                Err(e) => {
+                    println!("Could not parse rrule: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    }
+
     pub fn new(event: IcalEvent) -> Result<(Event, UnparsedProperties)> {
         let mut summary = None;
         let mut description = None;
@@ -117,9 +149,9 @@ impl Event {
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
                 "DESCRIPTION" => description = property.value,
-                "DTSTART" => start = property_to_time(&property)?,
-                "DTEND" => end = property_to_time(&property)?,
-                "RRULE" => rrule = property.value,
+                "DTSTART" => start = dbg!(property_to_time(&property)?),
+                "DTEND" => end = dbg!(property_to_time(&property)?),
+                "RRULE" => rrule = dbg!(property.value),
                 "LOCATION" => location = property.value,
                 _ => {
                     unparsed_properties.insert(property.name);
@@ -142,6 +174,7 @@ impl Event {
             bail!("event has no end time")
         }
 
+        // TODO parse the rrule here, store None if it does not parse
         Ok((
             Event {
                 summary,

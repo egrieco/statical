@@ -4,6 +4,9 @@ use ical::IcalParser;
 use std::collections::HashSet;
 use std::io::BufRead;
 use std::rc::Rc;
+use time::ext::NumericalDuration;
+use time::util::days_in_year_month;
+use time::OffsetDateTime;
 
 use crate::model::event::Event;
 
@@ -13,6 +16,8 @@ use super::event::UnparsedProperties;
 pub struct Calendar {
     name: Option<String>,
     description: Option<String>,
+    start: OffsetDateTime,
+    end: OffsetDateTime,
     events: Vec<Rc<Event>>,
 }
 
@@ -36,14 +41,28 @@ impl Calendar {
                 }
             }
         }
+        // calculate calendar start and end dates
+        // default to today and one month from today
+        let now = OffsetDateTime::now_utc();
+        let year = now.year();
+        let month = now.month();
+
+        // build the new calendar
         Ok(Calendar {
             name,
             description,
+            start: now,
+            end: now.saturating_add((days_in_year_month(year, month) as i64).days()),
             events: Vec::new(),
         })
     }
 
     pub fn push(&mut self, event: Rc<Event>) {
+        // collect calendar start and end dates, we need this for rrule expansion
+        self.start = dbg!(self.start.min(event.start()));
+        self.end = dbg!(self.end.max(event.end()));
+
+        // add event to calendar event list
         self.events.push(event)
     }
 
@@ -71,5 +90,15 @@ impl Calendar {
             }
         }
         Ok((calendars, unparsed_properties))
+    }
+
+    #[must_use]
+    pub fn start(&self) -> OffsetDateTime {
+        self.start
+    }
+
+    #[must_use]
+    pub fn end(&self) -> OffsetDateTime {
+        self.end
     }
 }
