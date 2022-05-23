@@ -187,6 +187,22 @@ impl Event {
             unparsed_properties,
         ))
     }
+
+    /// Creates a duplicate event with a different start datetime.
+    ///
+    /// This is useful when we are creating events from rrule expansions.
+    pub fn duplicate_with_date(&self, date: OffsetDateTime) -> Event {
+        // TODO might want to link this event back to its parent event in some way, maybe even have a separate event class
+        Event {
+            summary: self.summary.clone(),
+            description: self.description.clone(),
+            start: date,
+            duration: self.duration,
+            // we're un-setting the rrule to prevent recursion issues here
+            rrule: None,
+            location: self.location.clone(),
+        }
+    }
 }
 
 /// Given a time based ical property, parse it into a OffsetDateTime

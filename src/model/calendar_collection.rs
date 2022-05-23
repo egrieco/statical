@@ -1,7 +1,4 @@
-use chrono::TimeZone;
-use chrono_tz::UTC;
 use color_eyre::eyre::{self, bail, Result, WrapErr};
-use rrule::DateFilter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -87,16 +84,15 @@ impl CalendarCollection {
         let mut months = MonthMap::new();
         let mut weeks = WeekMap::new();
         let mut days = DayMap::new();
-        let mut repeating_events: Vec<Rc<Event>> = Vec::new();
 
+        // expand recurring events
+        for calendar in calendars.iter_mut() {
+            calendar.expand_recurrences(cal_start, cal_end);
+        }
+
+        // add events to interval maps
         for calendar in &calendars {
             for event in calendar.events() {
-                if let Some(rrule) = event.rrule() {
-                    // TODO might want to make this a map based on UID
-                    println!("Event with rrule found: {:#?}", event);
-                    repeating_events.push(event.clone());
-                }
-
                 months
                     .entry((event.year(), event.start().month() as u8))
                     .or_insert(Vec::new())
@@ -113,28 +109,6 @@ impl CalendarCollection {
             }
         }
 
-        // add event recurrences
-        println!(
-            "{} recurring events from {:?} to {:?}",
-            repeating_events.len(),
-            cal_start.format(&Rfc2822),
-            cal_end.format(&Rfc2822)
-        );
-        // we need to convert from the time-rs library to chrono for RRule's sake
-        let repeat_start = UTC.timestamp(cal_start.unix_timestamp(), 0);
-        let repeat_end = UTC.timestamp(cal_end.unix_timestamp(), 0);
-        for event in repeating_events {
-            for recuring_event in event
-                .rrule()
-                .unwrap()
-                // setting inclusive to false to prevent injecting duplicate events
-                .all_between(repeat_start, repeat_end, false)
-            {
-                // add event to groups
-                println!("{:#?}", recuring_event);
-            }
-        }
-
         // print unparsed properties
         // TODO should probably put this behind a flag
         println!(
@@ -144,7 +118,6 @@ impl CalendarCollection {
         for property in unparsed_properties {
             println!("  {}", property);
         }
-        // expand events with RRules
 
         Ok(CalendarCollection {
             calendars,
