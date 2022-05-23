@@ -19,6 +19,7 @@ pub struct Calendar {
     start: OffsetDateTime,
     end: OffsetDateTime,
     events: Vec<Rc<Event>>,
+    recurring_events: Vec<Rc<Event>>,
 }
 
 impl Calendar {
@@ -54,6 +55,7 @@ impl Calendar {
             start: now,
             end: now.saturating_add((days_in_year_month(year, month) as i64).days()),
             events: Vec::new(),
+            recurring_events: Vec::new(),
         })
     }
 
@@ -62,8 +64,13 @@ impl Calendar {
         self.start = self.start.min(event.start());
         self.end = self.end.max(event.end());
 
-        // add event to calendar event list
-        self.events.push(event)
+        if event.rrule().is_some() {
+            // add event to recurring_events
+            self.recurring_events.push(event)
+        } else {
+            // add event to calendar event list
+            self.events.push(event)
+        }
     }
 
     /// Parse calendar data from ICS
