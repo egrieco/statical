@@ -59,8 +59,8 @@ impl Calendar {
 
     pub fn push(&mut self, event: Rc<Event>) {
         // collect calendar start and end dates, we need this for rrule expansion
-        self.start = dbg!(self.start.min(event.start()));
-        self.end = dbg!(self.end.max(event.end()));
+        self.start = self.start.min(event.start());
+        self.end = self.end.max(event.end());
 
         // add event to calendar event list
         self.events.push(event)

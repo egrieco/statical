@@ -71,17 +71,17 @@ impl CalendarCollection {
         }
 
         // get start and end date for entire collection
-        let cal_start: OffsetDateTime = dbg!(calendars
+        let cal_start: OffsetDateTime = calendars
             .iter()
             .map(|c| c.start())
             .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or(OffsetDateTime::now_utc()));
-        let cal_end = dbg!(calendars
+            .unwrap_or(OffsetDateTime::now_utc());
+        let cal_end = calendars
             .iter()
             .map(|c| c.end())
             .reduce(|max_end, end| max_end.max(end))
             // TODO consider a better approach to finding the correct number of days
-            .unwrap_or(OffsetDateTime::now_utc() + 30.days()));
+            .unwrap_or(OffsetDateTime::now_utc() + 30.days());
 
         // add events to maps
         let mut months = MonthMap::new();

@@ -149,9 +149,9 @@ impl Event {
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
                 "DESCRIPTION" => description = property.value,
-                "DTSTART" => start = dbg!(property_to_time(&property)?),
-                "DTEND" => end = dbg!(property_to_time(&property)?),
-                "RRULE" => rrule = dbg!(property.value),
+                "DTSTART" => start = property_to_time(&property)?,
+                "DTEND" => end = property_to_time(&property)?,
+                "RRULE" => rrule = property.value,
                 "LOCATION" => location = property.value,
                 _ => {
                     unparsed_properties.insert(property.name);
