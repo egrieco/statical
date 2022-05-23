@@ -9,7 +9,7 @@ use time::{
     macros::{format_description, offset},
     Duration, OffsetDateTime, PrimitiveDateTime,
 };
-use time_tz::{timezones::get_by_name, PrimitiveDateTimeExt};
+use time_tz::{timezones::get_by_name, OffsetDateTimeExt, PrimitiveDateTimeExt, Tz};
 
 const MISSING_SUMMARY: &str = "None";
 
@@ -59,7 +59,7 @@ impl fmt::Display for Event {
 
 impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
-    pub fn context(&self) -> EventContext {
+    pub fn context(&self, tz: &Tz) -> EventContext {
         EventContext {
             summary: self.summary().into(),
             description: self
@@ -69,12 +69,14 @@ impl Event {
                 .into(),
             start: self
                 .start()
+                .to_timezone(tz)
                 .format(format_description!(
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
                 .unwrap_or("NO START TIME".to_string()),
             end: self
                 .end()
+                .to_timezone(tz)
                 .format(format_description!(
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))

@@ -9,6 +9,8 @@ use time::ext::NumericalDuration;
 use time::format_description::well_known::Rfc2822;
 use time::OffsetDateTime;
 use time::{macros::format_description, Date};
+use time_tz::timezones::{self, find_by_name};
+use time_tz::Tz;
 
 use super::event::{Event, UnparsedProperties};
 use crate::model::calendar::Calendar;
@@ -32,16 +34,17 @@ type DayMap = BTreeMap<Day, Vec<Rc<Event>>>;
 
 type WeekDayMap = BTreeMap<u8, Vec<Rc<Event>>>;
 
-pub struct CalendarCollection {
+pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
+    display_tz: &'a Tz,
     months: MonthMap,
     weeks: WeekMap,
     days: DayMap,
     tera: Tera,
 }
 
-impl CalendarCollection {
-    pub fn new(args: Opt) -> eyre::Result<CalendarCollection> {
+impl<'a> CalendarCollection<'a> {
+    pub fn new(args: Opt) -> eyre::Result<CalendarCollection<'a>> {
         let mut calendars = Vec::new();
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
@@ -121,6 +124,7 @@ impl CalendarCollection {
 
         Ok(CalendarCollection {
             calendars,
+            display_tz: timezones::db::america::PHOENIX,
             months,
             weeks,
             days,
@@ -241,7 +245,7 @@ impl CalendarCollection {
                         sunday + (*o as i64).days(),
                         week_day_map
                             .get(o)
-                            .map(|l| l.iter().map(|e| e.context()).collect())
+                            .map(|l| l.iter().map(|e| e.context(self.display_tz())).collect())
                             .unwrap_or(Vec::new()),
                     )
                 })
@@ -310,5 +314,10 @@ impl CalendarCollection {
             previous_file_name = Some(file_name);
         }
         Ok(())
+    }
+
+    #[must_use]
+    pub fn display_tz(&self) -> &Tz {
+        self.display_tz
     }
 }
