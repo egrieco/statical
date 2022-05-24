@@ -321,3 +321,21 @@ impl<'a> CalendarCollection<'a> {
         self.display_tz
     }
 }
+
+fn month_from_u8(value: u8) -> Result<time::Month> {
+    match value {
+        1 => Ok(time::Month::January),
+        2 => Ok(time::Month::February),
+        3 => Ok(time::Month::March),
+        4 => Ok(time::Month::April),
+        5 => Ok(time::Month::May),
+        6 => Ok(time::Month::June),
+        7 => Ok(time::Month::July),
+        8 => Ok(time::Month::August),
+        9 => Ok(time::Month::September),
+        10 => Ok(time::Month::October),
+        11 => Ok(time::Month::November),
+        12 => Ok(time::Month::December),
+        _ => bail!("can only convert numbers from 1-12 into months"),
+    }
+}
