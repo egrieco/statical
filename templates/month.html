@@ -16,17 +16,22 @@
       </div>
       Calendar
       <div class="month">
-        {% for week in weeks %}
-        <div class="week">
-          {% for day in week %}
-          <div class="day">
+        {% for week in weeks %} {% for day in week %}
+        <div class="day">
+          <p class="header">
+            <span class="wday">{{ day.wday }}</span>
+            <span class="date">{{ day.month }} {{ day.day }}</span>
+          </p>
+          <div class="events">
             {% for event in day.events %}
-            <p>{{ event.summary }} - {{ event.start }}</p>
+            <div class="event">
+              <p class="time">{{ event.start }} - {{ event.end }} ({{ event.duration }} hours)</p>
+              <p class="summary">{{ event.summary }}</p>
+            </div>
             {% endfor %}
           </div>
-          {% endfor %}
         </div>
-        {% endfor %}
+        {% endfor %} {% endfor %}
       </div>
       <pre>{{ __tera_context }}</pre>
       <div class="pagination">

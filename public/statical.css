@@ -55,3 +55,9 @@ body {
 .event p.summary {
   padding: 0.5em;
 }
+
+.calendar .month {
+  display: grid;
+  grid-auto-rows: minmax(6em, auto);
+  grid-template-columns: repeat(7, 1fr);
+}
