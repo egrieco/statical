@@ -2,6 +2,7 @@ use color_eyre::eyre::{self, bail, Result, WrapErr};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
@@ -177,21 +178,9 @@ impl<'a> CalendarCollection<'a> {
             let mut week_list = Vec::new();
 
             // create all weeks in this month
-            // get first day, then get its week
-            let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
-            let first_week = first_day.iso_week();
-            // get last day, then get its week
-            let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
-            let last_day = Date::from_calendar_date(*year, month_from_u8(*month)?, days_in_month)?;
-            let last_week = last_day.iso_week();
-
-            println!(
-                "From week {} to {}: {:?}",
-                first_week,
-                last_week,
-                first_week..last_week
-            );
-            for week_num in first_week..last_week {
+            let weeks_for_display = iso_weeks_for_month_display(year, month)?;
+            println!("From week {:?}", weeks_for_display);
+            for week_num in weeks_for_display {
                 match weeks.get(&week_num) {
                     Some(week_map) => {
                         println!("  Creating week {}, {} {}", week_num, month, year);
@@ -366,6 +355,16 @@ impl<'a> CalendarCollection<'a> {
     pub fn display_tz(&self) -> &Tz {
         self.display_tz
     }
+}
+
+/// Return the range of iso weeks this month covers
+fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Range<u8>> {
+    let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
+    let first_week = first_day.iso_week();
+    let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
+    let last_day = Date::from_calendar_date(*year, month_from_u8(*month)?, days_in_month)?;
+    let last_week = last_day.iso_week();
+    Ok(first_week..last_week)
 }
 
 /// Return the first Sunday that should appear in a calendar view, even if that date is in the previous month
