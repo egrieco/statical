@@ -10,7 +10,7 @@ use time::ext::NumericalDuration;
 use time::format_description::well_known::Rfc2822;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
-use time::{macros::format_description, Date};
+use time::{macros::format_description, Date, Month as MonthName};
 use time_tz::timezones::{self, find_by_name};
 use time_tz::Tz;
 
@@ -178,7 +178,7 @@ impl<'a> CalendarCollection<'a> {
 
             // create all weeks in this month
             // get first day, then get its week
-            let first_day = Date::from_calendar_date(*year, month_from_u8(*month)?, 1)?;
+            let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
             let first_week = first_day.iso_week();
             // get last day, then get its week
             let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
@@ -368,6 +368,27 @@ impl<'a> CalendarCollection<'a> {
     }
 }
 
+/// Return the first Sunday that should appear in a calendar view, even if that date is in the previous month
+fn first_sunday_of_view(year: Year, month: MonthName) -> Result<Date> {
+    let first_day_of_month = Date::from_calendar_date(year, month, 1)?;
+    let days_from_sunday = first_day_of_month.weekday().number_days_from_sunday();
+    let first_day_of_view = first_day_of_month - (days_from_sunday as i64).days();
+    Ok(first_day_of_view)
+}
+
+/// Return the first Sunday of the week, even if that week is in the previous month
+fn first_sunday_of_week(year: &i32, week: &u8) -> Result<Date, color_eyre::Report> {
+    let first_sunday_of_month = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+    let first_sunday_of_view = first_sunday_of_view(*year, first_sunday_of_month.month())?;
+    let sunday =
+        if (first_sunday_of_month.to_julian_day() - first_sunday_of_view.to_julian_day()) >= 7 {
+            first_sunday_of_month
+        } else {
+            first_sunday_of_view
+        };
+    Ok(sunday)
+}
+
 /// Generates context objects for the days of a week
 ///
 /// Implementing this as a trait so we can call it on a typedef rather than creating a new struct.
@@ -377,7 +398,7 @@ pub trait WeekContext {
 
 impl WeekContext for WeekDayMap {
     fn context(&self, year: &i32, week: &u8, tz: &Tz) -> Result<Vec<DayContext>> {
-        let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+        let sunday = first_sunday_of_week(year, week)?;
         let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
             .iter()
             .map(|o| {
@@ -395,7 +416,7 @@ impl WeekContext for WeekDayMap {
 
 /// Generate DayContext Vecs for empty weeks
 fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
-    let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+    let sunday = first_sunday_of_week(year, week)?;
     let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
         .iter()
         .map(|o| DayContext::new(sunday + (*o as i64).days(), Vec::new()))
