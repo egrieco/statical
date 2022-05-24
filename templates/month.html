@@ -14,9 +14,21 @@
         <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
         <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
       </div>
-      {% for event in events %}
-      <p>{{ event.summary }} - {{ event.start }}</p>
-      {% endfor %}
+      Calendar
+      <div class="month">
+        {% for week in weeks %}
+        <div class="week">
+          {% for day in week %}
+          <div class="day">
+            {% for event in day.events %}
+            <p>{{ event.summary }} - {{ event.start }}</p>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <pre>{{ __tera_context }}</pre>
       <div class="pagination">
         <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
         <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>

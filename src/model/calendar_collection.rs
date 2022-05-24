@@ -8,6 +8,7 @@ use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
 use time::format_description::well_known::Rfc2822;
+use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{macros::format_description, Date};
 use time_tz::timezones::{self, find_by_name};
@@ -27,7 +28,8 @@ type Week = (Year, WeekNum);
 type Day = Date;
 
 /// A BTreeMap of Vecs grouped by specific months
-type MonthMap = BTreeMap<Month, Vec<Rc<Event>>>;
+type MonthMap = BTreeMap<Month, WeekMapList>;
+type WeekMapList = BTreeMap<WeekNum, WeekMap>;
 /// A BTreeMap of Vecs grouped by specific weeks
 type WeekMap = BTreeMap<Week, Vec<Rc<Event>>>;
 /// A BTreeMap of Vecs grouped by specific days
@@ -99,6 +101,10 @@ impl<'a> CalendarCollection<'a> {
             for event in calendar.events() {
                 months
                     .entry((event.year(), event.start().month() as u8))
+                    .or_insert(WeekMapList::new())
+                    .entry(event.week())
+                    .or_insert(WeekMap::new())
+                    .entry((event.year(), event.week()))
                     .or_insert(Vec::new())
                     .push(event.clone());
 
@@ -166,17 +172,33 @@ impl<'a> CalendarCollection<'a> {
         let mut previous_file_name: Option<String> = None;
 
         let mut months_iter = self.months.iter().peekable();
-        while let Some(((year, month), events)) = months_iter.next() {
+        while let Some(((year, month), weeks)) = months_iter.next() {
             println!("month: {}", month);
-            for event in events {
-                println!(
-                    "  event: ({} {} {}) {} {}",
-                    event.start().weekday(),
-                    event.year(),
-                    event.week(),
-                    event.summary(),
-                    event.start(),
-                );
+            let mut week_list = Vec::new();
+            for (week, week_map) in weeks {
+                for ((y, w), events) in week_map {
+                    let mut week_day_map: WeekDayMap = BTreeMap::new();
+
+                    for event in events {
+                        println!(
+                            "  event: ({} {} {}) {} {}",
+                            event.start().weekday(),
+                            event.year(),
+                            event.week(),
+                            event.summary(),
+                            event.start(),
+                        );
+                        let day_of_week = event.start().weekday().number_days_from_sunday();
+                        week_day_map
+                            .entry(day_of_week)
+                            .or_insert(Vec::new())
+                            .push(event.clone());
+                    }
+
+                    // create week days
+                    let week_dates = week_day_map.context(year, week, self.display_tz())?;
+                    week_list.push(week_dates);
+                }
             }
             let file_name = format!("{}-{}.html", year, month);
             let next_file_name = months_iter
@@ -191,7 +213,7 @@ impl<'a> CalendarCollection<'a> {
             let mut context = Context::new();
             context.insert("year", &year);
             context.insert("month", &month);
-            context.insert("events", events);
+            context.insert("weeks", &week_list);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
