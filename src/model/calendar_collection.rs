@@ -175,31 +175,58 @@ impl<'a> CalendarCollection<'a> {
         while let Some(((year, month), weeks)) = months_iter.next() {
             println!("month: {}", month);
             let mut week_list = Vec::new();
-            for (week, week_map) in weeks {
-                for ((y, w), events) in week_map {
-                    let mut week_day_map: WeekDayMap = BTreeMap::new();
 
-                    for event in events {
-                        println!(
-                            "  event: ({} {} {}) {} {}",
-                            event.start().weekday(),
-                            event.year(),
-                            event.week(),
-                            event.summary(),
-                            event.start(),
-                        );
-                        let day_of_week = event.start().weekday().number_days_from_sunday();
-                        week_day_map
-                            .entry(day_of_week)
-                            .or_insert(Vec::new())
-                            .push(event.clone());
+            // create all weeks in this month
+            // get first day, then get its week
+            let first_day = Date::from_calendar_date(*year, month_from_u8(*month)?, 1)?;
+            let first_week = first_day.iso_week();
+            // get last day, then get its week
+            let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
+            let last_day = Date::from_calendar_date(*year, month_from_u8(*month)?, days_in_month)?;
+            let last_week = last_day.iso_week();
+
+            println!(
+                "From week {} to {}: {:?}",
+                first_week,
+                last_week,
+                first_week..last_week
+            );
+            for week_num in first_week..last_week {
+                match weeks.get(&week_num) {
+                    Some(week_map) => {
+                        println!("  Creating week {}, {} {}", week_num, month, year);
+                        for ((y, w), events) in week_map {
+                            let mut week_day_map: WeekDayMap = BTreeMap::new();
+
+                            for event in events {
+                                println!(
+                                    "    event: ({} {} {}) {} {}",
+                                    event.start().weekday(),
+                                    event.year(),
+                                    event.week(),
+                                    event.summary(),
+                                    event.start(),
+                                );
+                                let day_of_week = event.start().weekday().number_days_from_sunday();
+                                week_day_map
+                                    .entry(day_of_week)
+                                    .or_insert(Vec::new())
+                                    .push(event.clone());
+                            }
+
+                            // create week days
+                            let week_dates =
+                                week_day_map.context(year, &week_num, self.display_tz())?;
+                            week_list.push(week_dates);
+                        }
                     }
-
-                    // create week days
-                    let week_dates = week_day_map.context(year, week, self.display_tz())?;
-                    week_list.push(week_dates);
+                    None => {
+                        println!("  Inserting blank week {}, {} {}", week_num, month, year);
+                        week_list.push(blank_context(year, &week_num)?);
+                    }
                 }
             }
+
             let file_name = format!("{}-{}.html", year, month);
             let next_file_name = months_iter
                 .peek()
@@ -364,6 +391,16 @@ impl WeekContext for WeekDayMap {
             .collect();
         Ok(week_dates)
     }
+}
+
+/// Generate DayContext Vecs for empty weeks
+fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
+    let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+    let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
+        .iter()
+        .map(|o| DayContext::new(sunday + (*o as i64).days(), Vec::new()))
+        .collect();
+    Ok(week_dates)
 }
 
 fn month_from_u8(value: u8) -> Result<time::Month> {
