@@ -20,6 +20,7 @@ chrono = "0.4.19"
 chrono-tz = "0.6.1"
 clap = { version = "3.1.17", features = ["derive"] }
 color-eyre = "0.6.1"
+dedup_iter = "0.1.1"
 ical = "0.7.0"
 regex = "1.5.5"
 rrule = "0.7.3"

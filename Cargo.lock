@@ -392,6 +392,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dedup_iter"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "227af7a4f83b329e3c3efad6ffd99826a503149273c09b55aa4b6cabe4b9041c"
+
+[[package]]
 name = "deunicode"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1243,6 +1249,7 @@ dependencies = [
  "clap 3.1.17",
  "color-eyre",
  "criterion",
+ "dedup_iter",
  "ical",
  "indoc",
  "pretty_assertions",

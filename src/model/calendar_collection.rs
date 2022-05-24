@@ -1,4 +1,5 @@
 use color_eyre::eyre::{self, bail, Result, WrapErr};
+use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -241,8 +242,16 @@ impl<'a> CalendarCollection<'a> {
 
             let mut context = Context::new();
             context.insert("year", &year);
-            // TODO handle weeks where the month changes
-            // context.insert("month", &sunday.month());
+            // handling weeks where the month changes
+            context.insert(
+                "month",
+                &week_dates
+                    .iter()
+                    .map(|d| d.month.clone())
+                    .dedup()
+                    .collect::<Vec<String>>()
+                    .join(" - "),
+            );
             context.insert("week", &week);
             context.insert("week_dates", &week_dates);
             context.insert("previous_file_name", &previous_file_name);
