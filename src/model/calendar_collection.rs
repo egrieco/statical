@@ -237,24 +237,12 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             // create week days
-            let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
-            let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
-                .iter()
-                .map(|o| {
-                    DayContext::new(
-                        sunday + (*o as i64).days(),
-                        week_day_map
-                            .get(o)
-                            .map(|l| l.iter().map(|e| e.context(self.display_tz())).collect())
-                            .unwrap_or(Vec::new()),
-                    )
-                })
-                .collect();
+            let week_dates = week_day_map.context(year, week, self.display_tz())?;
 
             let mut context = Context::new();
             context.insert("year", &year);
             // TODO handle weeks where the month changes
-            context.insert("month", &sunday.month());
+            // context.insert("month", &sunday.month());
             context.insert("week", &week);
             context.insert("week_dates", &week_dates);
             context.insert("previous_file_name", &previous_file_name);
@@ -319,6 +307,31 @@ impl<'a> CalendarCollection<'a> {
     #[must_use]
     pub fn display_tz(&self) -> &Tz {
         self.display_tz
+    }
+}
+
+/// Generates context objects for the days of a week
+///
+/// Implementing this as a trait so we can call it on a typedef rather than creating a new struct.
+pub trait WeekContext {
+    fn context(&self, year: &i32, week: &u8, tz: &Tz) -> Result<Vec<DayContext>>;
+}
+
+impl WeekContext for WeekDayMap {
+    fn context(&self, year: &i32, week: &u8, tz: &Tz) -> Result<Vec<DayContext>> {
+        let sunday = Date::from_iso_week_date(*year, *week, time::Weekday::Sunday)?;
+        let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
+            .iter()
+            .map(|o| {
+                DayContext::new(
+                    sunday + (*o as i64).days(),
+                    self.get(o)
+                        .map(|l| l.iter().map(|e| e.context(tz)).collect())
+                        .unwrap_or(Vec::new()),
+                )
+            })
+            .collect();
+        Ok(week_dates)
     }
 }
 
