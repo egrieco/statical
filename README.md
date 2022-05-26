@@ -2,6 +2,12 @@
 
 A calendar aggregator and generator to make maintaining calendars on static websites easier.
 
+## Status
+
+This program is still in the [Pre-alpha](https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha) stage of development. While it is almost working for me, it does not have a complete configuration system nor much in the way of documentation.
+
+You are welcome to play with the code and attempt to use it, but most users should wait until the 1.0 version is released and the documentation is more complete.
+
 ## TODOs
 
 - [ ] Add toml config
