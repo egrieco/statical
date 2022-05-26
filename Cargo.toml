@@ -5,10 +5,11 @@ authors = ["Elio Grieco <grieco@egx.com>"]
 edition = "2021"
 description = "A calendar aggregator and generator to make maintaining calendars on static websites easier."
 readme = "README.md"
-# repository = "https://github.com/egrieco/statical"
-license = "MIT" # https://spdx.org/licenses/
-keywords = []   # free text
-categories = [] # https://crates.io/category_slugs
+repository = "https://github.com/egrieco/statical"
+license = "BSD"                                                                                              # https://spdx.org/licenses/
+keywords = ["static", "web", "calendar", "ics", "ical", "cli"]                                               # free text
+categories = ["Command line utilities"]                                                                      # https://crates.io/category_slugs
+exclude = [".vscode/*", ".gitignore"]
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bench]]
