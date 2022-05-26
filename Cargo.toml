@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/egrieco/statical"
 license = "BSD-3-Clause"                                                                                     # https://spdx.org/licenses/
 keywords = ["static", "web", "calendar", "ics", "ical"]                                                      # free text
-categories = ["Command line utilities"]                                                                      # https://crates.io/category_slugs
+categories = ["command-line-utilities"]                                                                      # https://crates.io/category_slugs
 exclude = [".vscode/*", ".gitignore"]
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 
