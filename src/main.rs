@@ -25,5 +25,9 @@ fn main() -> eyre::Result<()> {
         // TODO take the output path from the config
         .create_day_pages(&PathBuf::from("output/day"))?;
 
+    calendar_collection
+        // TODO take the output path from the config
+        .create_agenda_pages(&PathBuf::from("output/agenda"))?;
+
     Ok(())
 }

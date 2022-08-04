@@ -13,12 +13,14 @@ You are welcome to play with the code and attempt to use it, but most users shou
 - [ ] Add toml config
   - [ ] top level config object should be a site
   - [ ] paths for time intervals should be configurable
+  - [ ] agenda page size
+  - [ ] agenda start date
 - [X] ~~*Add [tera](https://lib.rs/crates/tera) templates*~~ [2022-05-17]
 - [ ] Add call to get first X day of the month
 - [X] ~~*Add call to get date of the first day of the week*~~ [2022-05-19]
 - [ ] Output html pages
   - [ ] event detail
-  - [ ] agenda (list of events)
+  - [X] agenda (list of events)
   - [ ] day
   - [X] ~~*week*~~ [2022-05-19]
   - [ ] month

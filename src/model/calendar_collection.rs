@@ -21,6 +21,8 @@ use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
 
+const AGENDA_EVENTS_PER_PAGE: usize = 5;
+
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
 /// Type alias representing a specific week in time
@@ -348,6 +350,135 @@ impl<'a> CalendarCollection<'a> {
             self.render_to("day.html", &context, File::create(template_out_file)?)?;
             previous_file_name = Some(file_name);
         }
+        Ok(())
+    }
+
+    pub fn create_agenda_pages(&self, output_dir: &Path) -> Result<()> {
+        if !output_dir.is_dir() {
+            bail!("Agenda pages path does not exist: {:?}", output_dir)
+        }
+
+        let start = OffsetDateTime::now_utc().date();
+
+        let past_events = self
+            .days
+            .range(..start)
+            .flat_map(|(day, events)| {
+                events.iter().map(move |event| {
+                    (
+                        DayContext::new(*day, vec![event.context(self.display_tz)]),
+                        event,
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        let mut past_events_iter = past_events
+            .rchunks(AGENDA_EVENTS_PER_PAGE)
+            .zip(1_isize..)
+            .peekable();
+        while let Some((events, page)) = past_events_iter.next() {
+            println!("page: {}", page);
+            for (_day, event) in events {
+                println!(
+                    "  event: ({} {} {}) {} {}",
+                    event.start().weekday(),
+                    event.year(),
+                    event.week(),
+                    event.summary(),
+                    event.start(),
+                );
+            }
+            let file_name = format!("{}.html", -page);
+            let previous_file_name = past_events_iter
+                .peek()
+                .map(|(_, previous_page)| format!("{}.html", -previous_page));
+            let next_file_name = format!("{}.html", 1 - page);
+
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from(&file_name));
+
+            let mut context = Context::new();
+            context.insert("page", &page);
+            context.insert("events", events);
+            context.insert("previous_file_name", &previous_file_name);
+            context.insert("next_file_name", &next_file_name);
+            println!("Writing template to file: {:?}", template_out_file);
+            self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+        }
+
+        let future_events = self
+            .days
+            .range(start..)
+            .flat_map(|(day, events)| {
+                events.iter().map(move |event| {
+                    (
+                        DayContext::new(*day, vec![event.context(self.display_tz)]),
+                        event,
+                    )
+                })
+            })
+            .collect::<Vec<_>>();
+        if future_events.is_empty() {
+            println!("page: 0");
+            let previous_file_name = if past_events.is_empty() {
+                None
+            } else {
+                Some("-1.html")
+            };
+
+            let mut template_out_file = PathBuf::new();
+            template_out_file.push(output_dir);
+            template_out_file.push(PathBuf::from("0.html"));
+
+            let mut context = Context::new();
+            context.insert("page", &0);
+            context.insert("events", &future_events);
+            context.insert("previous_file_name", &previous_file_name);
+            context.insert("next_file_name", &None::<&str>);
+            println!("Writing template to file: {:?}", template_out_file);
+            self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+        } else {
+            let mut future_events_iter = future_events
+                .rchunks(AGENDA_EVENTS_PER_PAGE)
+                .zip(0..)
+                .peekable();
+            while let Some((events, page)) = future_events_iter.next() {
+                println!("page: {}", page);
+                for (_day, event) in events {
+                    println!(
+                        "  event: ({} {} {}) {} {}",
+                        event.start().weekday(),
+                        event.year(),
+                        event.week(),
+                        event.summary(),
+                        event.start(),
+                    );
+                }
+                let file_name = format!("{}.html", page);
+                let previous_file_name = if page == 0 && past_events.is_empty() {
+                    None
+                } else {
+                    Some(format!("{}.html", page - 1))
+                };
+                let next_file_name = future_events_iter
+                    .peek()
+                    .map(|(_, next_page)| format!("{}.html", next_page));
+
+                let mut template_out_file = PathBuf::new();
+                template_out_file.push(output_dir);
+                template_out_file.push(PathBuf::from(&file_name));
+
+                let mut context = Context::new();
+                context.insert("page", &page);
+                context.insert("events", events);
+                context.insert("previous_file_name", &previous_file_name);
+                context.insert("next_file_name", &next_file_name);
+                println!("Writing template to file: {:?}", template_out_file);
+                self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+            }
+        }
+
         Ok(())
     }
 
