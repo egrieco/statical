@@ -21,8 +21,6 @@ use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
 
-const AGENDA_EVENTS_PER_PAGE: usize = 5;
-
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
 /// Type alias representing a specific week in time
@@ -47,10 +45,14 @@ pub struct CalendarCollection<'a> {
     weeks: WeekMap,
     days: DayMap,
     tera: Tera,
+    config: &'a crate::config::Config,
 }
 
 impl<'a> CalendarCollection<'a> {
-    pub fn new(args: Opt) -> eyre::Result<CalendarCollection<'a>> {
+    pub fn new(
+        args: Opt,
+        config: &'a crate::config::Config,
+    ) -> eyre::Result<CalendarCollection<'a>> {
         let mut calendars = Vec::new();
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
@@ -134,11 +136,13 @@ impl<'a> CalendarCollection<'a> {
 
         Ok(CalendarCollection {
             calendars,
-            display_tz: timezones::db::america::PHOENIX,
+            display_tz: time_tz::timezones::get_by_name(&config.display_timezone)
+                .expect("Unknown timezone"),
             months,
             weeks,
             days,
             tera: Tera::new("templates/**/*.html")?,
+            config,
         })
     }
 
@@ -361,7 +365,15 @@ impl<'a> CalendarCollection<'a> {
             bail!("Agenda pages path does not exist: {:?}", output_dir)
         }
 
-        let start = OffsetDateTime::now_utc().date();
+        let start = if self.config.agenda_start_date.is_empty() {
+            OffsetDateTime::now_utc().date()
+        } else {
+            Date::parse(
+                &self.config.agenda_start_date,
+                &time::format_description::parse("[year]-[month]-[day]").unwrap(),
+            )
+            .expect("Invalid agenda start date in config")
+        };
 
         let past_events = self
             .days
@@ -376,7 +388,7 @@ impl<'a> CalendarCollection<'a> {
             })
             .collect::<Vec<_>>();
         let mut past_events_iter = past_events
-            .rchunks(AGENDA_EVENTS_PER_PAGE)
+            .rchunks(self.config.agenda_events_per_page)
             .zip(1_isize..)
             .peekable();
         while let Some((events, page)) = past_events_iter.next() {
@@ -445,7 +457,7 @@ impl<'a> CalendarCollection<'a> {
             self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
         } else {
             let mut future_events_iter = future_events
-                .rchunks(AGENDA_EVENTS_PER_PAGE)
+                .rchunks(self.config.agenda_events_per_page)
                 .zip(0..)
                 .peekable();
             while let Some((events, page)) = future_events_iter.next() {

@@ -8,13 +8,15 @@ This program is still in the [Pre-alpha](https://en.wikipedia.org/wiki/Software_
 
 You are welcome to play with the code and attempt to use it, but most users should wait until the 1.0 version is released and the documentation is more complete.
 
+## Use
+
+Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates must be in `./templates/`. The config file `./statical.toml` will be created if needed.
+
 ## TODOs
 
-- [ ] Add toml config
+- [X] Add toml config
   - [ ] top level config object should be a site
   - [ ] paths for time intervals should be configurable
-  - [ ] agenda page size
-  - [ ] agenda start date
 - [X] ~~*Add [tera](https://lib.rs/crates/tera) templates*~~ [2022-05-17]
 - [ ] Add call to get first X day of the month
 - [X] ~~*Add call to get date of the first day of the week*~~ [2022-05-19]
