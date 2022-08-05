@@ -13,7 +13,7 @@ use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{macros::format_description, Date, Month as MonthName};
 use time_tz::timezones::{self, find_by_name};
-use time_tz::Tz;
+use time_tz::{TimeZone, Tz};
 
 use super::event::{Event, UnparsedProperties};
 use crate::model::calendar::Calendar;
@@ -229,6 +229,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("timezone", self.display_tz.name());
             context.insert("year", &year);
             context.insert("month", &month);
             context.insert("weeks", &week_list);
@@ -281,6 +282,7 @@ impl<'a> CalendarCollection<'a> {
             let week_dates = week_day_map.context(year, week, self.display_tz())?;
 
             let mut context = Context::new();
+            context.insert("timezone", self.display_tz.name());
             context.insert("year", &year);
             // handling weeks where the month changes
             context.insert(
@@ -340,6 +342,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("timezone", self.display_tz.name());
             context.insert("year", &day.year());
             context.insert("month", &day.month());
             context.insert("day", &day.day());
@@ -399,6 +402,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("timezone", self.display_tz.name());
             context.insert("page", &page);
             context.insert("events", events);
             context.insert("previous_file_name", &previous_file_name);
@@ -432,6 +436,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from("0.html"));
 
             let mut context = Context::new();
+            context.insert("timezone", self.display_tz.name());
             context.insert("page", &0);
             context.insert("events", &future_events);
             context.insert("previous_file_name", &previous_file_name);
@@ -470,6 +475,7 @@ impl<'a> CalendarCollection<'a> {
                 template_out_file.push(PathBuf::from(&file_name));
 
                 let mut context = Context::new();
+                context.insert("timezone", self.display_tz.name());
                 context.insert("page", &page);
                 context.insert("events", events);
                 context.insert("previous_file_name", &previous_file_name);

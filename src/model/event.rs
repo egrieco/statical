@@ -33,7 +33,9 @@ pub struct EventContext {
     summary: String,
     description: String,
     start: String,
+    start_timestamp: i64,
     end: String,
+    end_timestamp: i64,
     duration: String,
 }
 
@@ -74,6 +76,7 @@ impl Event {
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
                 .unwrap_or_else(|_| "NO START TIME".to_string()),
+            start_timestamp: self.start().to_timezone(tz).unix_timestamp(),
             end: self
                 .end()
                 .to_timezone(tz)
@@ -81,6 +84,7 @@ impl Event {
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
                 .unwrap_or_else(|_| "NO END TIME".to_string()),
+            end_timestamp: self.end().to_timezone(tz).unix_timestamp(),
             duration: self.duration.to_string(),
         }
     }
