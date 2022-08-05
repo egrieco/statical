@@ -26,6 +26,7 @@ pub struct Event {
     duration: Duration,
     rrule: Option<String>,
     location: Option<String>,
+    url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -147,6 +148,7 @@ impl Event {
         let mut end: Option<OffsetDateTime> = None;
         let mut rrule = None;
         let mut location = None;
+        let mut url = None;
 
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
@@ -158,6 +160,7 @@ impl Event {
                 "DTEND" => end = property_to_time(&property)?,
                 "RRULE" => rrule = property.value,
                 "LOCATION" => location = property.value,
+                "URL" => url = property.value,
                 _ => {
                     unparsed_properties.insert(property.name);
                     // TODO collect unparsed params as well
@@ -188,6 +191,7 @@ impl Event {
                 duration: end.unwrap() - start.unwrap(),
                 rrule,
                 location,
+                url,
             },
             unparsed_properties,
         ))
@@ -206,6 +210,7 @@ impl Event {
             // we're un-setting the rrule to prevent recursion issues here
             rrule: None,
             location: self.location.clone(),
+            url: self.url.clone(),
         }
     }
 }
