@@ -83,7 +83,7 @@ impl Calendar {
         for event in self.recurring_events() {
             // TODO might want to make this a map based on UID
             println!("Event with rrule found: {:#?}", event);
-            for recurrence_datetimes in event
+            if let Ok(recurrence_datetimes) = event
                 .rrule()
                 .unwrap()
                 // setting inclusive to true since we have moved recurring events into a separate vec
@@ -118,17 +118,15 @@ impl Calendar {
         let reader = IcalParser::new(buf);
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
-        for entry in reader {
-            if let Ok(calendar) = entry {
-                let mut new_calendar = Calendar::new(&calendar)?;
-                for event in calendar.events {
-                    let (new_event, event_unparsed_properties) = Event::new(event)?;
-                    unparsed_properties.extend(event_unparsed_properties.into_iter());
-                    let rc_event = Rc::new(new_event);
-                    new_calendar.push(rc_event);
-                }
-                calendars.push(new_calendar);
+        for calendar in reader.flatten() {
+            let mut new_calendar = Calendar::new(&calendar)?;
+            for event in calendar.events {
+                let (new_event, event_unparsed_properties) = Event::new(event)?;
+                unparsed_properties.extend(event_unparsed_properties.into_iter());
+                let rc_event = Rc::new(new_event);
+                new_calendar.push(rc_event);
             }
+            calendars.push(new_calendar);
         }
         Ok((calendars, unparsed_properties))
     }

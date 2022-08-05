@@ -17,7 +17,7 @@ impl DayContext {
         DayContext {
             date: date
                 .format(format_description!("[year]-[month]-[day]"))
-                .unwrap_or("bad date".to_string()),
+                .unwrap_or_else(|_| "bad date".to_string()),
             day: date.day(),
             month: date.month().to_string(),
             wday: date.weekday().to_string(),

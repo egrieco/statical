@@ -81,13 +81,13 @@ impl<'a> CalendarCollection<'a> {
             .iter()
             .map(|c| c.start())
             .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or(OffsetDateTime::now_utc());
+            .unwrap_or_else(OffsetDateTime::now_utc);
         let cal_end = calendars
             .iter()
             .map(|c| c.end())
             .reduce(|max_end, end| max_end.max(end))
             // TODO consider a better approach to finding the correct number of days
-            .unwrap_or(OffsetDateTime::now_utc() + 30.days());
+            .unwrap_or_else(|| OffsetDateTime::now_utc() + 30.days());
 
         // add events to maps
         let mut months = MonthMap::new();
@@ -536,7 +536,7 @@ impl WeekContext for WeekDayMap {
                     sunday + (*o as i64).days(),
                     self.get(o)
                         .map(|l| l.iter().map(|e| e.context(tz)).collect())
-                        .unwrap_or(Vec::new()),
+                        .unwrap_or_default(),
                 )
             })
             .collect();

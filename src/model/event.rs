@@ -73,14 +73,14 @@ impl Event {
                 .format(format_description!(
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
-                .unwrap_or("NO START TIME".to_string()),
+                .unwrap_or_else(|_| "NO START TIME".to_string()),
             end: self
                 .end()
                 .to_timezone(tz)
                 .format(format_description!(
                     "[hour repr:12 padding:none]:[minute][period case:lower]"
                 ))
-                .unwrap_or("NO END TIME".to_string()),
+                .unwrap_or_else(|_| "NO END TIME".to_string()),
             duration: self.duration.to_string(),
         }
     }
@@ -120,8 +120,7 @@ impl Event {
                     .format(format_description!(
                         "[year][month][day]T[hour][minute][second]Z"
                     ))
-                    .unwrap()
-                    .to_string(),
+                    .unwrap(),
                 rrule_str
             )
             .parse()
