@@ -1,11 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+/// A struct containing the configuration options.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
+    /// Flag to control rendering of the agenda pages.
     pub render_agenda: bool,
+    /// Flag to control rendering of the day pages.
     pub render_day: bool,
+    /// Flag to control rendering of the month pages.
     pub render_month: bool,
+    /// Flag to control rendering of the week pages.
     pub render_week: bool,
+    /// The path to the output directory where files will be written.
     pub output_dir: String,
     /// Name of the timezone used to format time
     pub display_timezone: String,
@@ -15,6 +21,7 @@ pub struct Config {
     pub agenda_start_date: String,
 }
 
+/// Sane default values for the config struct.
 impl Default for Config {
     fn default() -> Self {
         Self {
