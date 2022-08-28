@@ -1,4 +1,4 @@
-use color_eyre::eyre::{self, bail, Result, WrapErr};
+use color_eyre::eyre::{self, bail, eyre, Result, WrapErr};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
@@ -137,7 +137,7 @@ impl<'a> CalendarCollection<'a> {
         Ok(CalendarCollection {
             calendars,
             display_tz: time_tz::timezones::get_by_name(&config.display_timezone)
-                .expect("Unknown timezone"),
+                .ok_or_else(|| eyre!("unknown timezone"))?,
             months,
             weeks,
             days,
