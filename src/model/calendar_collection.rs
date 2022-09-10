@@ -183,6 +183,7 @@ impl<'a> CalendarCollection<'a> {
         }
 
         let mut previous_file_name: Option<String> = None;
+        let mut index_written = false;
 
         let mut months_iter = self.months.iter().peekable();
         while let Some(((year, month), weeks)) = months_iter.next() {
@@ -229,11 +230,10 @@ impl<'a> CalendarCollection<'a> {
             }
 
             let file_name = format!("{}-{}.html", year, month);
-            let next_file_name = months_iter
-                .peek()
-                .map(|((next_year, next_month), _events)| {
-                    format!("{}-{}.html", next_year, next_month)
-                });
+            let next_month = months_iter.peek();
+            let next_file_name = next_month.map(|((next_year, next_month), _events)| {
+                format!("{}-{}.html", next_year, next_month)
+            });
             let mut template_out_file = PathBuf::new();
             template_out_file.push(output_dir);
             template_out_file.push(PathBuf::from(&file_name));
@@ -246,9 +246,28 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("month.html", &context, File::create(template_out_file)?)?;
+            self.render_to("month.html", &context, File::create(&template_out_file)?)?;
+
+            // write the index page for the current month
+            if !index_written {
+                if let Some(next_month_num) =
+                    next_month.map(|((_next_year, next_month), _events)| next_month)
+                {
+                    // write the index file if the next month is after the current date
+                    if month_from_u8(*next_month_num)? as u8 > self.current_date_time.month() as u8
+                    {
+                        template_out_file.pop();
+                        template_out_file.push(PathBuf::from("index.html"));
+
+                        println!("Writing template to index file: {:?}", template_out_file);
+                        self.render_to("month.html", &context, File::create(template_out_file)?)?;
+                        index_written = true;
+                    }
+                }
+            }
             previous_file_name = Some(file_name);
         }
+
         Ok(())
     }
 
