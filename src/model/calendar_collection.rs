@@ -13,7 +13,7 @@ use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{macros::format_description, Date, Month as MonthName};
 use time_tz::timezones::{self, find_by_name};
-use time_tz::{TimeZone, Tz};
+use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
 
 use super::event::{Event, UnparsedProperties};
 use crate::model::calendar::Calendar;
@@ -41,6 +41,9 @@ type WeekDayMap = BTreeMap<u8, Vec<Rc<Event>>>;
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
     display_tz: &'a Tz,
+    /// The current date and time of the program run in UTC
+    current_date_time: OffsetDateTime,
+
     months: MonthMap,
     weeks: WeekMap,
     days: DayMap,
@@ -134,10 +137,13 @@ impl<'a> CalendarCollection<'a> {
             println!("  {}", property);
         }
 
+        let time_zone = time_tz::timezones::get_by_name(&config.display_timezone)
+            .ok_or_else(|| eyre!("unknown timezone"))?;
+
         Ok(CalendarCollection {
             calendars,
-            display_tz: time_tz::timezones::get_by_name(&config.display_timezone)
-                .ok_or_else(|| eyre!("unknown timezone"))?,
+            display_tz: time_zone,
+            current_date_time: OffsetDateTime::now_utc().to_timezone(time_zone),
             months,
             weeks,
             days,
