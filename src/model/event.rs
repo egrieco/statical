@@ -1,10 +1,9 @@
-use std::{collections::HashSet, fmt};
-
-use color_eyre::eyre::{self, bail, ContextCompat, Result, WrapErr};
+use color_eyre::eyre::{bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
 use rrule::RRule;
 use serde::Serialize;
+use std::{collections::HashSet, fmt};
 use time::{
     macros::{format_description, offset},
     Duration, OffsetDateTime, PrimitiveDateTime,

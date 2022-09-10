@@ -1,4 +1,4 @@
-use color_eyre::eyre::{self, bail, eyre, Result, WrapErr};
+use color_eyre::eyre::{self, bail, eyre, Result};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
@@ -8,11 +8,9 @@ use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
-use time::format_description::well_known::Rfc2822;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{macros::format_description, Date, Month as MonthName};
-use time_tz::timezones::{self, find_by_name};
 use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
 
 use super::event::{Event, UnparsedProperties};

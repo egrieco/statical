@@ -1,6 +1,6 @@
 use chrono::TimeZone;
 use chrono_tz::UTC;
-use color_eyre::eyre::{self, Result, WrapErr};
+use color_eyre::eyre::Result;
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use rrule::DateFilter;
