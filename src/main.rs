@@ -1,10 +1,7 @@
 use clap::StructOpt;
 use color_eyre::eyre::{self};
 use statical::{model::calendar_collection::CalendarCollection, options::Opt};
-use std::{
-    io::{Read, Write},
-    path::PathBuf,
-};
+use std::io::{Read, Write};
 
 mod options;
 
@@ -29,20 +26,19 @@ fn main() -> eyre::Result<()> {
     let calendar_collection = CalendarCollection::new(args, &config)?;
 
     if config.render_month {
-        calendar_collection.create_month_pages(&PathBuf::from(&config.output_dir).join("month"))?;
+        calendar_collection.create_month_pages()?;
     }
 
     if config.render_week {
-        calendar_collection.create_week_pages(&PathBuf::from(&config.output_dir).join("week"))?;
+        calendar_collection.create_week_pages()?;
     }
 
     if config.render_day {
-        calendar_collection.create_day_pages(&PathBuf::from(&config.output_dir).join("day"))?;
+        calendar_collection.create_day_pages()?;
     }
 
     if config.render_agenda {
-        calendar_collection
-            .create_agenda_pages(&PathBuf::from(&config.output_dir).join("agenda"))?;
+        calendar_collection.create_agenda_pages()?;
     }
 
     Ok(())

@@ -3,7 +3,7 @@ use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::io::Write;
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
@@ -175,7 +175,8 @@ impl<'a> CalendarCollection<'a> {
         Ok(self.tera.render_to(template_name, context, write)?)
     }
 
-    pub fn create_month_pages(&self, output_dir: &Path) -> Result<()> {
+    pub fn create_month_pages(&self) -> Result<()> {
+        let output_dir = &PathBuf::from(&self.config.output_dir).join("month");
         if !output_dir.is_dir() {
             bail!("Month pages path does not exist: {:?}", output_dir)
         }
@@ -286,7 +287,8 @@ impl<'a> CalendarCollection<'a> {
         Ok(())
     }
 
-    pub fn create_week_pages(&self, output_dir: &Path) -> Result<()> {
+    pub fn create_week_pages(&self) -> Result<()> {
+        let output_dir = &PathBuf::from(&self.config.output_dir).join("week");
         if !output_dir.is_dir() {
             bail!("Week pages path does not exist: {:?}", output_dir)
         }
@@ -390,7 +392,8 @@ impl<'a> CalendarCollection<'a> {
         Ok(())
     }
 
-    pub fn create_day_pages(&self, output_dir: &Path) -> Result<()> {
+    pub fn create_day_pages(&self) -> Result<()> {
+        let output_dir = &PathBuf::from(&self.config.output_dir).join("day");
         if !output_dir.is_dir() {
             bail!("Day pages path does not exist: {:?}", output_dir)
         }
@@ -476,7 +479,8 @@ impl<'a> CalendarCollection<'a> {
         Ok(())
     }
 
-    pub fn create_agenda_pages(&self, output_dir: &Path) -> Result<()> {
+    pub fn create_agenda_pages(&self) -> Result<()> {
+        let output_dir = &PathBuf::from(&self.config.output_dir).join("agenda");
         if !output_dir.is_dir() {
             bail!("Agenda pages path does not exist: {:?}", output_dir)
         }
