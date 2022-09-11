@@ -362,6 +362,7 @@ impl<'a> CalendarCollection<'a> {
         }
 
         let mut previous_file_name: Option<String> = None;
+        let mut index_written = false;
 
         let mut days_iter = self.days.iter().peekable();
         while let Some((day, events)) = days_iter.next() {
@@ -381,7 +382,8 @@ impl<'a> CalendarCollection<'a> {
                 day.format(format_description!("[year]-[month]-[day]"))?
             );
             // TODO should we raise the error on format() failing?
-            let next_file_name = days_iter.peek().map(|(next_day, _events)| {
+            let next_day_opt = days_iter.peek();
+            let next_file_name = next_day_opt.map(|(next_day, _events)| {
                 next_day
                     .format(format_description!("[year]-[month]-[day]"))
                     .map(|file_root| format!("{}.html", file_root))
@@ -401,9 +403,29 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("day.html", &context, File::create(template_out_file)?)?;
+            self.render_to("day.html", &context, File::create(&template_out_file)?)?;
+
+            // write the index page for the current week
+            // TODO might want to write the index if next_week is None and nothing has been written yet
+            if let Some(next_week) = next_day_opt {
+                if !index_written {
+                    let next_day = next_week.0;
+                    // write the index file if the next month is after the current date
+                    // TODO make sure that the conditional tests are correct, maybe add some tests
+                    if next_day > &self.current_date_time.date() {
+                        template_out_file.pop();
+                        template_out_file.push(PathBuf::from("index.html"));
+
+                        println!("Writing template to index file: {:?}", template_out_file);
+                        self.render_to("day.html", &context, File::create(template_out_file)?)?;
+                        index_written = true;
+                    }
+                }
+            }
+
             previous_file_name = Some(file_name);
         }
+
         Ok(())
     }
 
