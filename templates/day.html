@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../../public/statical.css" />
-    <title>Day View</title>
-  </head>
-  <body>
-    <div class="calendar">
-      <h1>Events for {{ year }}-{{ month }}-{{ day }}</h1>
-      <div class="pagination">
-        <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-        <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-      </div>
-      {% for event in events %}
-      <p>{{ event.summary }} - {{ event.start }}</p>
-      {% endfor %}
-      <div class="pagination">
-        <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-        <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-      </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ stylesheet_path }}" />
+  <title>Day View</title>
+</head>
+
+<body>
+  <div class="calendar">
+    <h1>Events for {{ year }}-{{ month }}-{{ day }}</h1>
+    <div class="pagination">
+      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
+      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
     </div>
-  </body>
+    {% for event in events %}
+    <p>{{ event.summary }} - {{ event.start }}</p>
+    {% endfor %}
+    <div class="pagination">
+      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
+      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
+    </div>
+  </div>
+</body>
+
 </html>

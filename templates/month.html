@@ -1,43 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="../../public/statical.css" />
-    <title>Month View</title>
-  </head>
-  <body>
-    <div class="calendar">
-      <h1>Events for {{ year }}-{{ month }}</h1>
-      <div class="pagination">
-        <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-        <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-      </div>
-      Calendar
-      <div class="month">
-        {% for week in weeks %} {% for day in week %}
-        <div class="day">
-          <p class="header">
-            <span class="wday">{{ day.wday }}</span>
-            <span class="date">{{ day.month }} {{ day.day }}</span>
-          </p>
-          <div class="events">
-            {% for event in day.events %}
-            <div class="event">
-              <p class="time">{{ event.start }} - {{ event.end }} ({{ event.duration }} hours)</p>
-              <p class="summary">{{ event.summary }}</p>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endfor %} {% endfor %}
-      </div>
-      <pre>{{ __tera_context }}</pre>
-      <div class="pagination">
-        <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-        <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-      </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ stylesheet_path }}" />
+  <title>Month View</title>
+</head>
+
+<body>
+  <div class="calendar">
+    <h1>Events for {{ year }}-{{ month }}</h1>
+    <div class="pagination">
+      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
+      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
     </div>
-  </body>
+    Calendar
+    <div class="month">
+      {% for week in weeks %} {% for day in week %}
+      <div class="day">
+        <p class="header">
+          <span class="wday">{{ day.wday }}</span>
+          <span class="date">{{ day.month }} {{ day.day }}</span>
+        </p>
+        <div class="events">
+          {% for event in day.events %}
+          <div class="event">
+            <p class="time">{{ event.start }} - {{ event.end }} ({{ event.duration }} hours)</p>
+            <p class="summary">{{ event.summary }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %} {% endfor %}
+    </div>
+    <pre>{{ __tera_context }}</pre>
+    <div class="pagination">
+      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
+      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
+    </div>
+  </div>
+</body>
+
 </html>

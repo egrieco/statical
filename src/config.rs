@@ -21,6 +21,8 @@ pub struct Config {
     pub agenda_start_date: String,
     /// The view (month, week, or day) to use for the main index page
     pub default_calendar_view: String,
+    /// The path to add into the stylesheet link tag
+    pub stylesheet_path: String,
 }
 
 /// Sane default values for the config struct.
@@ -36,6 +38,7 @@ impl Default for Config {
             agenda_events_per_page: 5,
             agenda_start_date: String::new(),
             default_calendar_view: "month".into(),
+            stylesheet_path: "../../public/statical.css".into(),
         }
     }
 }

@@ -237,6 +237,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("stylesheet_path", &self.config.stylesheet_path);
             context.insert("timezone", self.display_tz.name());
             context.insert("year", &year);
             context.insert("month", &month);
@@ -327,6 +328,7 @@ impl<'a> CalendarCollection<'a> {
             let week_dates = week_day_map.context(year, week, self.display_tz())?;
 
             let mut context = Context::new();
+            context.insert("stylesheet_path", &self.config.stylesheet_path);
             context.insert("timezone", self.display_tz.name());
             context.insert("year", &year);
             // handling weeks where the month changes
@@ -427,6 +429,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("stylesheet_path", &self.config.stylesheet_path);
             context.insert("timezone", self.display_tz.name());
             context.insert("year", &day.year());
             context.insert("month", &day.month());
@@ -527,6 +530,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from(&file_name));
 
             let mut context = Context::new();
+            context.insert("stylesheet_path", &self.config.stylesheet_path);
             context.insert("timezone", self.display_tz.name());
             context.insert("page", &page);
             context.insert("events", events);
@@ -561,6 +565,7 @@ impl<'a> CalendarCollection<'a> {
             template_out_file.push(PathBuf::from("0.html"));
 
             let mut context = Context::new();
+            context.insert("stylesheet_path", &self.config.stylesheet_path);
             context.insert("timezone", self.display_tz.name());
             context.insert("page", &0);
             context.insert("events", &future_events);
@@ -600,6 +605,7 @@ impl<'a> CalendarCollection<'a> {
                 template_out_file.push(PathBuf::from(&file_name));
 
                 let mut context = Context::new();
+                context.insert("stylesheet_path", &self.config.stylesheet_path);
                 context.insert("timezone", self.display_tz.name());
                 context.insert("page", &page);
                 context.insert("events", events);
