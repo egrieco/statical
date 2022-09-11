@@ -258,8 +258,24 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("month.html", &context, File::create(template_out_file)?)?;
+                        self.render_to("month.html", &context, File::create(&template_out_file)?)?;
                         index_written = true;
+
+                        // write the main index as the month view
+                        if self.config.default_calendar_view == "month" {
+                            template_out_file.pop();
+                            template_out_file.pop();
+                            template_out_file.push(PathBuf::from("index.html"));
+                            println!(
+                                "Writing template to main index file: {:?}",
+                                template_out_file
+                            );
+                            self.render_to(
+                                "month.html",
+                                &context,
+                                File::create(template_out_file)?,
+                            )?;
+                        }
                     }
                 }
             }
@@ -344,8 +360,24 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("week.html", &context, File::create(template_out_file)?)?;
+                        self.render_to("week.html", &context, File::create(&template_out_file)?)?;
                         index_written = true;
+
+                        // write the main index as the week view
+                        if self.config.default_calendar_view == "week" {
+                            template_out_file.pop();
+                            template_out_file.pop();
+                            template_out_file.push(PathBuf::from("index.html"));
+                            println!(
+                                "Writing template to main index file: {:?}",
+                                template_out_file
+                            );
+                            self.render_to(
+                                "week.html",
+                                &context,
+                                File::create(template_out_file)?,
+                            )?;
+                        }
                     }
                 }
             }
@@ -417,8 +449,20 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("day.html", &context, File::create(template_out_file)?)?;
+                        self.render_to("day.html", &context, File::create(&template_out_file)?)?;
                         index_written = true;
+
+                        // write the main index as the day view
+                        if self.config.default_calendar_view == "day" {
+                            template_out_file.pop();
+                            template_out_file.pop();
+                            template_out_file.push(PathBuf::from("index.html"));
+                            println!(
+                                "Writing template to main index file: {:?}",
+                                template_out_file
+                            );
+                            self.render_to("day.html", &context, File::create(template_out_file)?)?;
+                        }
                     }
                 }
             }

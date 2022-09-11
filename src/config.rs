@@ -19,6 +19,8 @@ pub struct Config {
     pub agenda_events_per_page: usize,
     /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
     pub agenda_start_date: String,
+    /// The view (month, week, or day) to use for the main index page
+    pub default_calendar_view: String,
 }
 
 /// Sane default values for the config struct.
@@ -33,6 +35,7 @@ impl Default for Config {
             display_timezone: "GMT".into(),
             agenda_events_per_page: 5,
             agenda_start_date: String::new(),
+            default_calendar_view: "month".into(),
         }
     }
 }
