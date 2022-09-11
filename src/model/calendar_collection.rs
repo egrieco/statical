@@ -275,6 +275,7 @@ impl<'a> CalendarCollection<'a> {
         }
 
         let mut previous_file_name: Option<String> = None;
+        let mut index_written = false;
 
         let mut weeks_iter = self.weeks.iter().peekable();
         while let Some(((year, week), events)) = weeks_iter.next() {
@@ -298,7 +299,8 @@ impl<'a> CalendarCollection<'a> {
                     .push(event.clone());
             }
             let file_name = format!("{}-{}.html", year, week);
-            let next_file_name = weeks_iter.peek().map(|((next_year, next_week), _events)| {
+            let next_week_opt = weeks_iter.peek();
+            let next_file_name = next_week_opt.map(|((next_year, next_week), _events)| {
                 format!("{}-{}.html", next_year, next_week)
             });
             let mut template_out_file = PathBuf::new();
@@ -326,9 +328,31 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("week.html", &context, File::create(template_out_file)?)?;
+            self.render_to("week.html", &context, File::create(&template_out_file)?)?;
+
+            // write the index page for the current week
+            // TODO might want to write the index if next_week is None and nothing has been written yet
+            if let Some(next_week) = next_week_opt {
+                if !index_written {
+                    let (next_year, next_week) = next_week.0;
+                    // write the index file if the next month is after the current date
+                    // TODO make sure that the conditional tests are correct, maybe add some tests
+                    if next_year >= &self.current_date_time.year()
+                        && next_week >= &self.current_date_time.iso_week()
+                    {
+                        template_out_file.pop();
+                        template_out_file.push(PathBuf::from("index.html"));
+
+                        println!("Writing template to index file: {:?}", template_out_file);
+                        self.render_to("week.html", &context, File::create(template_out_file)?)?;
+                        index_written = true;
+                    }
+                }
+            }
+
             previous_file_name = Some(file_name);
         }
+
         Ok(())
     }
 
