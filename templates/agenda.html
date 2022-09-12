@@ -12,6 +12,14 @@
 <body>
   <div class="calendar">
     <h1>Events</h1>
+    <div class="view">
+      <ul>
+        <li><a href="/month">Month</a></li>
+        <li><a href="/week">Week</a></li>
+        <li><a href="/day">Day</a></li>
+        <li><a href="/agenda">Agenda</a></li>
+      </ul>
+    </div>
     <div class="pagination">
       <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
       <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
@@ -20,7 +28,6 @@
     <p>{{ event[0].events[0].start_timestamp | date(format="%Y-%m-%d %H:%M", timezone=timezone) }} - {{ event[1].summary
       }}</p>
     {% endfor %}
-    <pre>{{ __tera_context }}</pre>
     <div class="pagination">
       <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
       <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
