@@ -183,9 +183,33 @@ impl<'a> CalendarCollection<'a> {
     ) -> Result<PathBuf, color_eyre::Report> {
         let output_dir = base_output_dir.join(subdir_name);
         if !output_dir.exists() {
-            fs::create_dir(&output_dir).context(format!("could not create {} dir", subdir_name))?;
+            fs::create_dir(&output_dir).context(format!(
+                "could not create {} dir in {:?}",
+                subdir_name, base_output_dir
+            ))?;
         }
         Ok(output_dir)
+    }
+
+    pub fn setup_output_dir(&self) -> Result<()> {
+        let output_dir = &PathBuf::from(&self.config.output_dir);
+
+        // make the output dir if it doesn't exist
+        fs::create_dir_all(output_dir)
+            .context(format!("could not create output dir: {:?}", output_dir))?;
+
+        let styles_dir = Self::create_subdir(output_dir, "styles")?;
+
+        if self.config.copy_stylesheet_to_output {
+            let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
+            let source_stylesheet = &&self.config.copy_stylesheet_from;
+            fs::copy(source_stylesheet, &stylesheet_destination).context(format!(
+                "could not copy stylesheet {:?} to destination: {:?}",
+                source_stylesheet, stylesheet_destination
+            ))?;
+        }
+
+        Ok(())
     }
 
     pub fn create_month_pages(&self) -> Result<()> {

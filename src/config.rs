@@ -23,6 +23,10 @@ pub struct Config {
     pub default_calendar_view: String,
     /// The path to add into the stylesheet link tag
     pub stylesheet_path: String,
+    /// Whether to copy the referenced stylesheet into the output dir
+    pub copy_stylesheet_to_output: bool,
+    /// The stylesheet to copy to the output dir
+    pub copy_stylesheet_from: String,
 }
 
 /// Sane default values for the config struct.
@@ -38,7 +42,9 @@ impl Default for Config {
             agenda_events_per_page: 5,
             agenda_start_date: String::new(),
             default_calendar_view: "month".into(),
-            stylesheet_path: "../../public/statical.css".into(),
+            stylesheet_path: "/styles/style.css".into(),
+            copy_stylesheet_to_output: false,
+            copy_stylesheet_from: "public/statical.css".into(),
         }
     }
 }

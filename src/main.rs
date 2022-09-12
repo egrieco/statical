@@ -25,6 +25,8 @@ fn main() -> eyre::Result<()> {
 
     let calendar_collection = CalendarCollection::new(args, &config)?;
 
+    calendar_collection.setup_output_dir()?;
+
     if config.render_month {
         calendar_collection.create_month_pages()?;
     }
