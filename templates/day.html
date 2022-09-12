@@ -12,14 +12,7 @@
 <body>
   <div class="calendar">
     <h1>Events for {{ year }}-{{ month }}-{{ day }}</h1>
-    <div class="view">
-      <ul>
-        <li><a href="/month">Month</a></li>
-        <li><a href="/week">Week</a></li>
-        <li><a href="/day">Day</a></li>
-        <li><a href="/agenda">Agenda</a></li>
-      </ul>
-    </div>
+    {% include "views.html" %}
     {% include "pagination.html" %}
     {% for event in events %}
     <p>{{ event.summary }} - {{ event.start }}</p>
