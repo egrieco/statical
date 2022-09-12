@@ -20,10 +20,7 @@
         <li><a href="/agenda">Agenda</a></li>
       </ul>
     </div>
-    <div class="pagination">
-      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-    </div>
+    {% include "pagination.html" %}
     Calendar
     <div class="month">
       {% for week in weeks %} {% for day in week %}
@@ -43,10 +40,7 @@
       </div>
       {% endfor %} {% endfor %}
     </div>
-    <div class="pagination">
-      <div class="previous"><a href="{{ previous_file_name }}">&lt; Previous</a></div>
-      <div class="next"><a href="{{ next_file_name }}">Next &gt;</a></div>
-    </div>
+    {% include "pagination.html" %}
   </div>
 </body>
 
