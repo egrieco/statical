@@ -1,9 +1,10 @@
-use color_eyre::eyre::{self, bail, eyre, Result};
+use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
+use std::fs;
 use std::io::Write;
 use std::ops::Range;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
@@ -175,11 +176,20 @@ impl<'a> CalendarCollection<'a> {
         Ok(self.tera.render_to(template_name, context, write)?)
     }
 
-    pub fn create_month_pages(&self) -> Result<()> {
-        let output_dir = &PathBuf::from(&self.config.output_dir).join("month");
-        if !output_dir.is_dir() {
-            bail!("Month pages path does not exist: {:?}", output_dir)
+    /// Takes a base dir and subdir, creates the subdirectory if it does not exist
+    fn create_subdir(
+        base_output_dir: &Path,
+        subdir_name: &str,
+    ) -> Result<PathBuf, color_eyre::Report> {
+        let output_dir = base_output_dir.join(subdir_name);
+        if !output_dir.exists() {
+            fs::create_dir(&output_dir).context(format!("could not create {} dir", subdir_name))?;
         }
+        Ok(output_dir)
+    }
+
+    pub fn create_month_pages(&self) -> Result<()> {
+        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "month")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -233,9 +243,7 @@ impl<'a> CalendarCollection<'a> {
             let next_file_name = next_month.map(|((next_year, next_month), _events)| {
                 format!("{}-{}.html", next_year, next_month)
             });
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(&file_name));
+            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &self.config.stylesheet_path);
@@ -288,10 +296,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_week_pages(&self) -> Result<()> {
-        let output_dir = &PathBuf::from(&self.config.output_dir).join("week");
-        if !output_dir.is_dir() {
-            bail!("Week pages path does not exist: {:?}", output_dir)
-        }
+        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "week")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -322,9 +327,7 @@ impl<'a> CalendarCollection<'a> {
             let next_file_name = next_week_opt.map(|((next_year, next_week), _events)| {
                 format!("{}-{}.html", next_year, next_week)
             });
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(&file_name));
+            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
 
             // create week days
             let week_dates = week_day_map.context(year, week, self.display_tz())?;
@@ -393,10 +396,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_day_pages(&self) -> Result<()> {
-        let output_dir = &PathBuf::from(&self.config.output_dir).join("day");
-        if !output_dir.is_dir() {
-            bail!("Day pages path does not exist: {:?}", output_dir)
-        }
+        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "day")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -427,9 +427,7 @@ impl<'a> CalendarCollection<'a> {
                     .ok()
             });
 
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(&file_name));
+            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &self.config.stylesheet_path);
@@ -480,10 +478,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_agenda_pages(&self) -> Result<()> {
-        let output_dir = &PathBuf::from(&self.config.output_dir).join("agenda");
-        if !output_dir.is_dir() {
-            bail!("Agenda pages path does not exist: {:?}", output_dir)
-        }
+        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "agenda")?;
 
         let start = if self.config.agenda_start_date.is_empty() {
             OffsetDateTime::now_utc().date()
@@ -529,9 +524,7 @@ impl<'a> CalendarCollection<'a> {
                 .map(|(_, previous_page)| format!("{}.html", -previous_page));
             let next_file_name = format!("{}.html", 1 - page);
 
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from(&file_name));
+            let template_out_file = output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &self.config.stylesheet_path);
@@ -564,9 +557,7 @@ impl<'a> CalendarCollection<'a> {
                 Some("-1.html")
             };
 
-            let mut template_out_file = PathBuf::new();
-            template_out_file.push(output_dir);
-            template_out_file.push(PathBuf::from("0.html"));
+            let template_out_file = &output_dir.join(PathBuf::from("0.html"));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &self.config.stylesheet_path);
@@ -604,9 +595,7 @@ impl<'a> CalendarCollection<'a> {
                     .peek()
                     .map(|(_, next_page)| format!("{}.html", next_page));
 
-                let mut template_out_file = PathBuf::new();
-                template_out_file.push(output_dir);
-                template_out_file.push(PathBuf::from(&file_name));
+                let template_out_file = output_dir.join(PathBuf::from(&file_name));
 
                 let mut context = Context::new();
                 context.insert("stylesheet_path", &self.config.stylesheet_path);
