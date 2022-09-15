@@ -55,6 +55,10 @@ impl<'a> CalendarCollection<'a> {
         args: Opt,
         config: &'a crate::config::Config,
     ) -> eyre::Result<CalendarCollection<'a>> {
+        // fail as fast as possible without wasting time on the expensive operations below
+        let time_zone = time_tz::timezones::get_by_name(&config.display_timezone)
+            .ok_or_else(|| eyre!("unknown timezone"))?;
+
         let mut calendars = Vec::new();
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
@@ -135,9 +139,6 @@ impl<'a> CalendarCollection<'a> {
         for property in unparsed_properties {
             println!("  {}", property);
         }
-
-        let time_zone = time_tz::timezones::get_by_name(&config.display_timezone)
-            .ok_or_else(|| eyre!("unknown timezone"))?;
 
         Ok(CalendarCollection {
             calendars,
