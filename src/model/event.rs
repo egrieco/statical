@@ -3,7 +3,7 @@ use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
 use rrule::RRule;
 use serde::Serialize;
-use std::{collections::HashSet, fmt};
+use std::{collections::HashSet, fmt, rc::Rc};
 use time::{
     macros::{format_description, offset},
     Duration, OffsetDateTime, PrimitiveDateTime,
@@ -16,6 +16,11 @@ pub type Year = i32;
 pub type WeekNum = u8;
 
 pub type UnparsedProperties = HashSet<String>;
+
+/// A list of events
+///
+/// These are reference counted since they may appear in more than one list
+pub type EventList = Vec<Rc<Event>>;
 
 #[derive(Debug, Serialize)]
 pub struct Event {

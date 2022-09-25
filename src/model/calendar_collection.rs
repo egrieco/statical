@@ -5,7 +5,6 @@ use std::fs;
 use std::io::Write;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
@@ -14,7 +13,7 @@ use time::OffsetDateTime;
 use time::{macros::format_description, Date, Month as MonthName};
 use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
 
-use super::event::{Event, UnparsedProperties};
+use super::event::{EventList, UnparsedProperties};
 use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
@@ -31,11 +30,11 @@ type Day = Date;
 type MonthMap = BTreeMap<Month, WeekMapList>;
 type WeekMapList = BTreeMap<WeekNum, WeekMap>;
 /// A BTreeMap of Vecs grouped by specific weeks
-type WeekMap = BTreeMap<Week, Vec<Rc<Event>>>;
+type WeekMap = BTreeMap<Week, EventList>;
 /// A BTreeMap of Vecs grouped by specific days
-type DayMap = BTreeMap<Day, Vec<Rc<Event>>>;
+type DayMap = BTreeMap<Day, EventList>;
 
-type WeekDayMap = BTreeMap<u8, Vec<Rc<Event>>>;
+type WeekDayMap = BTreeMap<u8, EventList>;
 
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,

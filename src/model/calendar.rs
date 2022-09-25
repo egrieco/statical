@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 
 use crate::model::event::Event;
 
-use super::event::UnparsedProperties;
+use super::event::{EventList, UnparsedProperties};
 
 #[derive(Debug)]
 pub struct Calendar {
@@ -21,8 +21,8 @@ pub struct Calendar {
     description: Option<String>,
     start: OffsetDateTime,
     end: OffsetDateTime,
-    events: Vec<Rc<Event>>,
-    recurring_events: Vec<Rc<Event>>,
+    events: EventList,
+    recurring_events: EventList,
 }
 
 impl Calendar {
@@ -78,7 +78,7 @@ impl Calendar {
         let repeat_start = UTC.timestamp(cal_start.unix_timestamp(), 0);
         let repeat_end = UTC.timestamp(cal_end.unix_timestamp(), 0);
 
-        let mut new_events: Vec<Rc<Event>> = Vec::new();
+        let mut new_events: EventList = Vec::new();
 
         for event in self.recurring_events() {
             // TODO might want to make this a map based on UID
