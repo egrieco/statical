@@ -7,6 +7,7 @@
 pub mod config;
 pub mod model;
 pub mod options;
+pub mod util;
 
 #[cfg(test)]
 mod tests {

@@ -4,13 +4,14 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::io::Write;
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
+use time::macros::format_description;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
-use time::{macros::format_description, Date, Month as MonthName};
+use time::{Date, Month as MonthName};
 use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
 
 use super::event::{EventList, UnparsedProperties};
@@ -18,6 +19,7 @@ use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
+use crate::util;
 
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
@@ -176,21 +178,6 @@ impl<'a> CalendarCollection<'a> {
         Ok(self.tera.render_to(template_name, context, write)?)
     }
 
-    /// Takes a base dir and subdir, creates the subdirectory if it does not exist
-    fn create_subdir(
-        base_output_dir: &Path,
-        subdir_name: &str,
-    ) -> Result<PathBuf, color_eyre::Report> {
-        let output_dir = base_output_dir.join(subdir_name);
-        if !output_dir.exists() {
-            fs::create_dir(&output_dir).context(format!(
-                "could not create {} dir in {:?}",
-                subdir_name, base_output_dir
-            ))?;
-        }
-        Ok(output_dir)
-    }
-
     pub fn setup_output_dir(&self) -> Result<()> {
         let output_dir = &PathBuf::from(&self.config.output_dir);
 
@@ -198,7 +185,7 @@ impl<'a> CalendarCollection<'a> {
         fs::create_dir_all(output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
 
-        let styles_dir = Self::create_subdir(output_dir, "styles")?;
+        let styles_dir = util::create_subdir(output_dir, "styles")?;
 
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
@@ -213,7 +200,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_month_pages(&self) -> Result<()> {
-        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "month")?;
+        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "month")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -320,7 +307,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_week_pages(&self) -> Result<()> {
-        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "week")?;
+        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "week")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -420,7 +407,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_day_pages(&self) -> Result<()> {
-        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "day")?;
+        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "day")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
@@ -502,7 +489,7 @@ impl<'a> CalendarCollection<'a> {
     }
 
     pub fn create_agenda_pages(&self) -> Result<()> {
-        let output_dir = Self::create_subdir(&PathBuf::from(&self.config.output_dir), "agenda")?;
+        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "agenda")?;
 
         let start = if self.config.agenda_start_date.is_empty() {
             OffsetDateTime::now_utc().date()
