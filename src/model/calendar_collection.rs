@@ -230,7 +230,7 @@ impl<'a> CalendarCollection<'a> {
                 match weeks.get(&week_num) {
                     Some(week_map) => {
                         println!("  Creating week {}, {} {}", week_num, month, year);
-                        for ((y, w), events) in week_map {
+                        for ((_y, _w), events) in week_map {
                             let mut week_day_map: WeekDayMap = BTreeMap::new();
 
                             for event in events {
