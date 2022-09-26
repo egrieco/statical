@@ -25,6 +25,12 @@ pub struct DayView {
     day_map: BTreeMap<Day, EventList>,
 }
 
+impl Default for DayView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DayView {
     pub fn new() -> Self {
         let day_map = BTreeMap::new();

@@ -28,6 +28,12 @@ pub struct MonthView {
     month_map: MonthMap,
 }
 
+impl Default for MonthView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MonthView {
     pub fn new() -> Self {
         let month_map = BTreeMap::new();

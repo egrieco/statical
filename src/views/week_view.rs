@@ -27,6 +27,12 @@ pub struct WeekView {
     week_map: WeekMap,
 }
 
+impl Default for WeekView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WeekView {
     pub fn new() -> Self {
         let week_map = BTreeMap::new();
