@@ -25,7 +25,7 @@ fn main() -> eyre::Result<()> {
 
     let calendar_collection = CalendarCollection::new(args, config.parse()?)?;
 
-    calendar_collection.setup_output_dir()?;
+    calendar_collection.create_html_pages()?;
 
     if config.render_month {
         calendar_collection.create_month_pages()?;
@@ -33,10 +33,6 @@ fn main() -> eyre::Result<()> {
 
     if config.render_week {
         calendar_collection.create_week_pages()?;
-    }
-
-    if config.render_day {
-        calendar_collection.create_day_pages()?;
     }
 
     if config.render_agenda {

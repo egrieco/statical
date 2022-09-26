@@ -7,7 +7,6 @@ use std::path::PathBuf;
 use std::{fs::File, io::BufReader};
 use tera::{Context, Tera};
 use time::ext::NumericalDuration;
-use time::macros::format_description;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{Date, Month as MonthName};
@@ -20,24 +19,22 @@ use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
 use crate::util::{self, render_to};
+use crate::views::day_view::DayView;
 
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
 /// Type alias representing a specific week in time
 type Week = (Year, WeekNum);
-/// Type alias representing a specific day in time
-type Day = Date;
 
 /// A BTreeMap of Vecs grouped by specific months
 type MonthMap = BTreeMap<Month, WeekMapList>;
 type WeekMapList = BTreeMap<WeekNum, WeekMap>;
 /// A BTreeMap of Vecs grouped by specific weeks
 type WeekMap = BTreeMap<Week, EventList>;
-/// A BTreeMap of Vecs grouped by specific days
-type DayMap = BTreeMap<Day, EventList>;
 
 type WeekDayMap = BTreeMap<u8, EventList>;
 
+#[derive(Debug)]
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
     display_tz: &'a Tz,
@@ -46,7 +43,7 @@ pub struct CalendarCollection<'a> {
 
     months: MonthMap,
     weeks: WeekMap,
-    days: DayMap,
+    days: DayView,
     tera: Tera,
     config: ParsedConfig<'a>,
 }
@@ -94,7 +91,7 @@ impl<'a> CalendarCollection<'a> {
         // add events to maps
         let mut months = MonthMap::new();
         let mut weeks = WeekMap::new();
-        let mut days = DayMap::new();
+        let mut days = DayView::new();
 
         // expand recurring events
         for calendar in calendars.iter_mut() {
@@ -118,9 +115,7 @@ impl<'a> CalendarCollection<'a> {
                     .or_insert(Vec::new())
                     .push(event.clone());
 
-                days.entry(event.start().date())
-                    .or_insert(Vec::new())
-                    .push(event.clone());
+                days.add_event(event);
             }
         }
 
@@ -175,6 +170,28 @@ impl<'a> CalendarCollection<'a> {
                 source_stylesheet, stylesheet_destination
             ))?;
         }
+
+        Ok(())
+    }
+
+    pub fn create_html_pages(&self) -> Result<()> {
+        self.setup_output_dir()?;
+
+        // if self.config.render_month {
+        //     self.create_month_pages()?;
+        // }
+
+        // if self.config.render_week {
+        //     self.create_week_pages()?;
+        // }
+
+        if self.config.render_day {
+            self.days.create_html_pages(&self.config, &self.tera)?;
+        }
+
+        // if self.config.render_agenda {
+        //     self.create_agenda_pages()?;
+        // }
 
         Ok(())
     }
@@ -394,103 +411,6 @@ impl<'a> CalendarCollection<'a> {
                             render_to(
                                 &self.tera,
                                 "week.html",
-                                &context,
-                                File::create(template_out_file)?,
-                            )?;
-                        }
-                    }
-                }
-            }
-
-            previous_file_name = Some(file_name);
-        }
-
-        Ok(())
-    }
-
-    pub fn create_day_pages(&self) -> Result<()> {
-        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "day")?;
-
-        let mut previous_file_name: Option<String> = None;
-        let mut index_written = false;
-
-        let mut days_iter = self.days.iter().peekable();
-        while let Some((day, events)) = days_iter.next() {
-            println!("day: {}", day);
-            for event in events {
-                println!(
-                    "  event: ({} {} {}) {} {}",
-                    event.start().weekday(),
-                    event.year(),
-                    event.week(),
-                    event.summary(),
-                    event.start(),
-                );
-            }
-            let file_name = format!(
-                "{}.html",
-                day.format(format_description!("[year]-[month]-[day]"))?
-            );
-            // TODO should we raise the error on format() failing?
-            let next_day_opt = days_iter.peek();
-            let next_file_name = next_day_opt.map(|(next_day, _events)| {
-                next_day
-                    .format(format_description!("[year]-[month]-[day]"))
-                    .map(|file_root| format!("{}.html", file_root))
-                    .ok()
-            });
-
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
-
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &self.config.stylesheet_path);
-            context.insert("timezone", self.display_tz.name());
-            context.insert("year", &day.year());
-            context.insert("month", &day.month());
-            context.insert("day", &day.day());
-            context.insert("events", events);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
-                &self.tera,
-                "day.html",
-                &context,
-                File::create(&template_out_file)?,
-            )?;
-
-            // write the index page for the current week
-            // TODO might want to write the index if next_week is None and nothing has been written yet
-            if let Some(next_week) = next_day_opt {
-                if !index_written {
-                    let next_day = next_week.0;
-                    // write the index file if the next month is after the current date
-                    // TODO make sure that the conditional tests are correct, maybe add some tests
-                    if next_day > &self.current_date_time.date() {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
-                            &self.tera,
-                            "day.html",
-                            &context,
-                            File::create(&template_out_file)?,
-                        )?;
-                        index_written = true;
-
-                        // write the main index as the day view
-                        if self.config.default_calendar_view == CalendarView::Day {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
-                                &self.tera,
-                                "day.html",
                                 &context,
                                 File::create(template_out_file)?,
                             )?;

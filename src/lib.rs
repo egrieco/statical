@@ -8,6 +8,7 @@ pub mod config;
 pub mod model;
 pub mod options;
 pub mod util;
+pub mod views;
 
 #[cfg(test)]
 mod tests {

@@ -88,7 +88,7 @@ impl Config {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum CalendarView {
     Month,
     Week,
@@ -107,6 +107,7 @@ fn parse_calendar_view(view: &str) -> Result<CalendarView> {
     }
 }
 
+#[derive(Debug)]
 pub struct ParsedConfig<'a> {
     /// Flag to control rendering of the agenda pages.
     pub render_agenda: bool,
