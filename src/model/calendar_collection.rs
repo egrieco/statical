@@ -26,7 +26,6 @@ use crate::views::week_view::{WeekDayMap, WeekView};
 #[derive(Debug)]
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
-    display_tz: &'a Tz,
 
     months: MonthView,
     weeks: WeekView,
@@ -110,7 +109,6 @@ impl<'a> CalendarCollection<'a> {
 
         Ok(CalendarCollection {
             calendars,
-            display_tz: config.display_timezone,
             months,
             weeks,
             days,
@@ -173,11 +171,6 @@ impl<'a> CalendarCollection<'a> {
         }
 
         Ok(())
-    }
-
-    #[must_use]
-    pub fn display_tz(&self) -> &Tz {
-        self.display_tz
     }
 }
 
