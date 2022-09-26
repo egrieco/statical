@@ -1,11 +1,5 @@
 use color_eyre::eyre::Result;
-use std::{
-    collections::{btree_map, BTreeMap},
-    fs::File,
-    ops::RangeBounds,
-    path::PathBuf,
-    rc::Rc,
-};
+use std::{collections::BTreeMap, fs::File, path::PathBuf, rc::Rc};
 use tera::{Context, Tera};
 use time::{macros::format_description, Date};
 use time_tz::TimeZone;
@@ -139,12 +133,5 @@ impl DayView {
         }
 
         Ok(())
-    }
-
-    pub(crate) fn range<R>(&self, range: R) -> btree_map::Range<Day, EventList>
-    where
-        R: RangeBounds<Day>,
-    {
-        self.day_map.range(range)
     }
 }
