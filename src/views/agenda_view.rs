@@ -34,20 +34,36 @@ impl AgendaView {
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
         let output_dir = util::create_subdir(&config.output_dir, "agenda")?;
 
+        let mut previous_file_name: Option<String> = None;
+        let mut index_written = false;
+
         // partition events into past and future events
-        let (past_events, future_events): (Vec<_>, Vec<_>) = self
+        let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list
             .iter()
             .partition(|e| e.start().date() < config.agenda_start_date);
 
         // process past events
-        let mut past_events_iter = past_events
+        past_events.sort_by_key(|e| e.start());
+        let mut past_events: Vec<_> = past_events
             .rchunks(config.agenda_events_per_page)
-            .zip(1_isize..)
-            .peekable();
-        while let Some((events, page)) = past_events_iter.next() {
-            println!("page: {}", page);
-            for event in events {
+            .zip((1_isize..).map(|i| -i))
+            .collect();
+        past_events.reverse();
+
+        // process future events
+        future_events.sort_by_key(|e| e.start());
+        let future_events_iter = future_events.chunks(config.agenda_events_per_page).zip(0..);
+
+        // combine all events into one list
+        past_events.extend(future_events_iter);
+
+        // create a peekable iterator
+        let mut agenda_events = past_events.iter().peekable();
+
+        while let Some((events, page)) = agenda_events.next() {
+            println!("page {}", page);
+            for event in events.iter() {
                 println!(
                     "  event: ({} {} {}) {} {}",
                     event.start().weekday(),
@@ -57,11 +73,22 @@ impl AgendaView {
                     event.start(),
                 );
             }
-            let file_name = format!("{}.html", -page);
-            let previous_file_name = past_events_iter
+
+            let events: Vec<_> = events
+                .into_iter()
+                .map(|e| e.context(config.display_timezone))
+                .collect();
+
+            let file_name = format!("{}.html", page);
+
+            let next_file_name = agenda_events
                 .peek()
-                .map(|(_, previous_page)| format!("{}.html", -previous_page));
-            let next_file_name = format!("{}.html", 1 - page);
+                .map(|(_, next_page)| format!("{}.html", next_page));
+
+            println!(
+                "  {:?} {:?} {:?}",
+                previous_file_name, file_name, next_file_name
+            );
 
             let template_out_file = output_dir.join(PathBuf::from(&file_name));
 
@@ -69,7 +96,7 @@ impl AgendaView {
             context.insert("stylesheet_path", &config.stylesheet_path);
             context.insert("timezone", config.display_timezone.name());
             context.insert("page", &page);
-            context.insert("events", events);
+            context.insert("events", &events);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
@@ -79,77 +106,10 @@ impl AgendaView {
                 &context,
                 File::create(template_out_file)?,
             )?;
-        }
 
-        // process future events
-        if future_events.is_empty() {
-            println!("page: 0");
-            let previous_file_name = if past_events.is_empty() {
-                None
-            } else {
-                Some("-1.html")
-            };
+            // TODO add index file writing here
 
-            let template_out_file = &output_dir.join(PathBuf::from("0.html"));
-
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &config.stylesheet_path);
-            context.insert("timezone", config.display_timezone.name());
-            context.insert("page", &0);
-            context.insert("events", &future_events);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &None::<&str>);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
-                tera,
-                "agenda.html",
-                &context,
-                File::create(template_out_file)?,
-            )?;
-        } else {
-            let mut future_events_iter = future_events
-                .rchunks(config.agenda_events_per_page)
-                .zip(0..)
-                .peekable();
-            while let Some((events, page)) = future_events_iter.next() {
-                println!("page: {}", page);
-                for event in events {
-                    println!(
-                        "  event: ({} {} {}) {} {}",
-                        event.start().weekday(),
-                        event.year(),
-                        event.week(),
-                        event.summary(),
-                        event.start(),
-                    );
-                }
-                let file_name = format!("{}.html", page);
-                let previous_file_name = if page == 0 && past_events.is_empty() {
-                    None
-                } else {
-                    Some(format!("{}.html", page - 1))
-                };
-                let next_file_name = future_events_iter
-                    .peek()
-                    .map(|(_, next_page)| format!("{}.html", next_page));
-
-                let template_out_file = output_dir.join(PathBuf::from(&file_name));
-
-                let mut context = Context::new();
-                context.insert("stylesheet_path", &config.stylesheet_path);
-                context.insert("timezone", config.display_timezone.name());
-                context.insert("page", &page);
-                context.insert("events", events);
-                context.insert("previous_file_name", &previous_file_name);
-                context.insert("next_file_name", &next_file_name);
-                println!("Writing template to file: {:?}", template_out_file);
-                render_to(
-                    tera,
-                    "agenda.html",
-                    &context,
-                    File::create(template_out_file)?,
-                )?;
-            }
+            previous_file_name = Some(file_name);
         }
 
         Ok(())

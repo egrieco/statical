@@ -15,7 +15,7 @@
     {% include "views.html" %}
     {% include "pagination.html" %}
     {% for event in events %}
-    <p>{{ event[0].events[0].start_timestamp | date(format="%Y-%m-%d %H:%M", timezone=timezone) }} - {{ event[1].summary
+    <p>{{ event.start_timestamp | date(format="%Y-%m-%d %H:%M", timezone=timezone) }} - {{ event.summary
       }}</p>
     {% endfor %}
     {% include "pagination.html" %}
