@@ -1,7 +1,8 @@
 use clap::StructOpt;
 use color_eyre::eyre::{self};
-use statical::{model::calendar_collection::CalendarCollection, options::Opt};
 use std::io::{Read, Write};
+
+use statical::{model::calendar_collection::CalendarCollection, options::Opt};
 
 mod options;
 
@@ -25,6 +26,8 @@ fn main() -> eyre::Result<()> {
 
     let calendar_collection = CalendarCollection::new(args, config.parse()?)?;
     calendar_collection.create_html_pages()?;
+
+    calendar_collection.print_unparsed_properties();
 
     Ok(())
 }

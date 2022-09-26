@@ -34,12 +34,13 @@ pub struct CalendarCollection<'a> {
 
     tera: Tera,
     config: ParsedConfig<'a>,
+    unparsed_properties: UnparsedProperties,
 }
 
 impl<'a> CalendarCollection<'a> {
     pub fn new(args: Opt, config: ParsedConfig<'a>) -> eyre::Result<CalendarCollection<'a>> {
         let mut calendars = Vec::new();
-        let mut unparsed_properties: UnparsedProperties = HashSet::new();
+        let mut unparsed_properties = HashSet::new();
 
         if let Some(files) = args.file {
             for file in files {
@@ -97,16 +98,6 @@ impl<'a> CalendarCollection<'a> {
             }
         }
 
-        // print unparsed properties
-        // TODO should probably put this behind a flag
-        println!(
-            "The following {} properties were present but have not been parsed:",
-            unparsed_properties.len()
-        );
-        for property in unparsed_properties {
-            println!("  {}", property);
-        }
-
         Ok(CalendarCollection {
             calendars,
             months,
@@ -115,7 +106,18 @@ impl<'a> CalendarCollection<'a> {
             agenda,
             tera: Tera::new("templates/**/*.html")?,
             config,
+            unparsed_properties,
         })
+    }
+
+    pub fn print_unparsed_properties(&self) {
+        println!(
+            "The following {} properties were present but have not been parsed:",
+            self.unparsed_properties.len()
+        );
+        for property in &self.unparsed_properties {
+            println!("  {}", property);
+        }
     }
 
     /// Get a reference to the calendar collection's calendars.
