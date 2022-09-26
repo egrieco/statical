@@ -31,10 +31,6 @@ fn main() -> eyre::Result<()> {
         calendar_collection.create_month_pages()?;
     }
 
-    if config.render_week {
-        calendar_collection.create_week_pages()?;
-    }
-
     if config.render_agenda {
         calendar_collection.create_agenda_pages()?;
     }

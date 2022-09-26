@@ -1,52 +1,57 @@
 use color_eyre::eyre::Result;
-use std::{
-    collections::{btree_map, BTreeMap},
-    fs::File,
-    ops::RangeBounds,
-    path::PathBuf,
-    rc::Rc,
-};
+use dedup_iter::DedupAdapter;
+use std::{collections::BTreeMap, fs::File, path::PathBuf, rc::Rc};
 use tera::{Context, Tera};
-use time::{macros::format_description, Date};
 use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
-    model::event::{Event, EventList},
+    model::{
+        calendar_collection::WeekContext,
+        event::{Event, EventList, WeekNum, Year},
+    },
     util::{self, render_to},
 };
 
-/// Type alias representing a specific day in time
-type Day = Date;
+/// Type alias representing a specific week in time
+type Week = (Year, WeekNum);
+
+/// A BTreeMap of Vecs grouped by specific weeks
+pub type WeekMap = BTreeMap<Week, EventList>;
+
+/// A BTreeMap of Vecs grouped by specific weekday
+pub type WeekDayMap = BTreeMap<u8, EventList>;
 
 #[derive(Debug)]
-pub struct DayView {
-    /// A BTreeMap of Vecs grouped by specific days
-    day_map: BTreeMap<Day, EventList>,
+pub struct WeekView {
+    week_map: WeekMap,
 }
 
-impl DayView {
+impl WeekView {
     pub fn new() -> Self {
-        let day_map = BTreeMap::new();
-        DayView { day_map }
+        let week_map = BTreeMap::new();
+        WeekView { week_map }
     }
 
     pub fn add_event(&mut self, event: &Rc<Event>) {
-        self.day_map
-            .entry(event.start().date())
+        self.week_map
+            .entry((event.year(), event.week()))
             .or_insert(Vec::new())
             .push(event.clone());
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let output_dir = util::create_subdir(&config.output_dir, "day")?;
+        let output_dir = util::create_subdir(&config.output_dir, "week")?;
 
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
-        let mut days_iter = self.day_map.iter().peekable();
-        while let Some((day, events)) = days_iter.next() {
-            println!("day: {}", day);
+        let mut weeks_iter = self.week_map.iter().peekable();
+        while let Some(((year, week), events)) = weeks_iter.next() {
+            println!("week: {}", week);
+
+            let mut week_day_map: WeekDayMap = BTreeMap::new();
+
             for event in events {
                 println!(
                     "  event: ({} {} {}) {} {}",
@@ -56,61 +61,72 @@ impl DayView {
                     event.summary(),
                     event.start(),
                 );
+                let day_of_week = event.start().weekday().number_days_from_sunday();
+                week_day_map
+                    .entry(day_of_week)
+                    .or_insert(Vec::new())
+                    .push(event.clone());
             }
-            let file_name = format!(
-                "{}.html",
-                day.format(format_description!("[year]-[month]-[day]"))?
-            );
-            // TODO should we raise the error on format() failing?
-            let next_day_opt = days_iter.peek();
-            let next_file_name = next_day_opt.map(|(next_day, _events)| {
-                next_day
-                    .format(format_description!("[year]-[month]-[day]"))
-                    .map(|file_root| format!("{}.html", file_root))
-                    .ok()
+            let file_name = format!("{}-{}.html", year, week);
+            let next_week_opt = weeks_iter.peek();
+            let next_file_name = next_week_opt.map(|((next_year, next_week), _events)| {
+                format!("{}-{}.html", next_year, next_week)
             });
-
             let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
+
+            // create week days
+            let week_dates = week_day_map.context(year, week, config.display_timezone)?;
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
-            context.insert("timezone", config.display_timezone.name());
-            context.insert("year", &day.year());
-            context.insert("month", &day.month());
-            context.insert("day", &day.day());
-            context.insert("events", events);
+            context.insert("timezone", &config.display_timezone.name());
+            context.insert("year", &year);
+            // handling weeks where the month changes
+            context.insert(
+                "month",
+                &week_dates
+                    .iter()
+                    .map(|d| d.month.clone())
+                    .dedup()
+                    .collect::<Vec<String>>()
+                    .join(" - "),
+            );
+            context.insert("week", &week);
+            context.insert("week_dates", &week_dates);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
             render_to(
                 tera,
-                "day.html",
+                "week.html",
                 &context,
                 File::create(&template_out_file)?,
             )?;
 
             // write the index page for the current week
             // TODO might want to write the index if next_week is None and nothing has been written yet
-            if let Some(next_week) = next_day_opt {
+            if let Some(next_week) = next_week_opt {
                 if !index_written {
-                    let next_day = next_week.0;
+                    let (next_year, next_week) = next_week.0;
                     // write the index file if the next month is after the current date
                     // TODO make sure that the conditional tests are correct, maybe add some tests
-                    if next_day > &config.agenda_start_date {
+                    if next_year >= &config.agenda_start_date.year()
+                        && next_week >= &config.agenda_start_date.iso_week()
+                    {
                         template_out_file.pop();
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
                         render_to(
                             tera,
-                            "day.html",
+                            "week.html",
                             &context,
                             File::create(&template_out_file)?,
                         )?;
                         index_written = true;
 
-                        // write the main index as the day view
-                        if config.default_calendar_view == CalendarView::Day {
+                        // write the main index as the week view
+                        if config.default_calendar_view == CalendarView::Week {
                             template_out_file.pop();
                             template_out_file.pop();
                             template_out_file.push(PathBuf::from("index.html"));
@@ -120,7 +136,7 @@ impl DayView {
                             );
                             render_to(
                                 tera,
-                                "day.html",
+                                "week.html",
                                 &context,
                                 File::create(template_out_file)?,
                             )?;
@@ -133,12 +149,5 @@ impl DayView {
         }
 
         Ok(())
-    }
-
-    pub(crate) fn range<R>(&self, range: R) -> btree_map::Range<Day, EventList>
-    where
-        R: RangeBounds<Day>,
-    {
-        self.day_map.range(range)
     }
 }
