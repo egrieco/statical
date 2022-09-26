@@ -1,5 +1,5 @@
 use color_eyre::eyre::{self, bail, Context as EyreContext, Result};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -9,33 +9,25 @@ use time::ext::NumericalDuration;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{Date, Month as MonthName};
-use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
+use time_tz::{TimeZone, Tz};
 
 use super::event::UnparsedProperties;
-use crate::config::{CalendarView, ParsedConfig};
+use crate::config::ParsedConfig;
 use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
-use crate::model::event::{WeekNum, Year};
+use crate::model::event::Year;
 use crate::options::Opt;
 use crate::util::{self, render_to};
 use crate::views::day_view::DayView;
-use crate::views::week_view::{WeekDayMap, WeekMap, WeekView};
-
-/// Type alias representing a specific month in time
-type Month = (Year, u8);
-
-/// A BTreeMap of Vecs grouped by specific months
-type MonthMap = BTreeMap<Month, WeekMapList>;
-type WeekMapList = BTreeMap<WeekNum, WeekMap>;
+use crate::views::month_view::MonthView;
+use crate::views::week_view::{WeekDayMap, WeekView};
 
 #[derive(Debug)]
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
     display_tz: &'a Tz,
-    /// The current date and time of the program run in UTC
-    current_date_time: OffsetDateTime,
 
-    months: MonthMap,
+    months: MonthView,
     weeks: WeekView,
     days: DayView,
     tera: Tera,
@@ -83,7 +75,7 @@ impl<'a> CalendarCollection<'a> {
             .unwrap_or_else(|| OffsetDateTime::now_utc() + 30.days());
 
         // add events to maps
-        let mut months = MonthMap::new();
+        let mut months = MonthView::new();
         let mut weeks = WeekView::new();
         let mut days = DayView::new();
 
@@ -95,17 +87,8 @@ impl<'a> CalendarCollection<'a> {
         // add events to interval maps
         for calendar in &calendars {
             for event in calendar.events() {
-                months
-                    .entry((event.year(), event.start().month() as u8))
-                    .or_insert(WeekMapList::new())
-                    .entry(event.week())
-                    .or_insert(WeekMap::new())
-                    .entry((event.year(), event.week()))
-                    .or_insert(Vec::new())
-                    .push(event.clone());
-
+                months.add_event(event);
                 weeks.add_event(event);
-
                 days.add_event(event);
             }
         }
@@ -123,7 +106,6 @@ impl<'a> CalendarCollection<'a> {
         Ok(CalendarCollection {
             calendars,
             display_tz: config.display_timezone,
-            current_date_time: OffsetDateTime::now_utc().to_timezone(config.display_timezone),
             months,
             weeks,
             days,
@@ -168,9 +150,9 @@ impl<'a> CalendarCollection<'a> {
     pub fn create_html_pages(&self) -> Result<()> {
         self.setup_output_dir()?;
 
-        // if self.config.render_month {
-        //     self.create_month_pages()?;
-        // }
+        if self.config.render_month {
+            self.months.create_html_pages(&self.config, &self.tera)?;
+        }
 
         if self.config.render_week {
             self.weeks.create_html_pages(&self.config, &self.tera)?;
@@ -183,124 +165,6 @@ impl<'a> CalendarCollection<'a> {
         // if self.config.render_agenda {
         //     self.create_agenda_pages()?;
         // }
-
-        Ok(())
-    }
-
-    pub fn create_month_pages(&self) -> Result<()> {
-        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "month")?;
-
-        let mut previous_file_name: Option<String> = None;
-        let mut index_written = false;
-
-        let mut months_iter = self.months.iter().peekable();
-        while let Some(((year, month), weeks)) = months_iter.next() {
-            println!("month: {}", month);
-            let mut week_list = Vec::new();
-
-            // create all weeks in this month
-            let weeks_for_display = iso_weeks_for_month_display(year, month)?;
-            println!("From week {:?}", weeks_for_display);
-            for week_num in weeks_for_display {
-                match weeks.get(&week_num) {
-                    Some(week_map) => {
-                        println!("  Creating week {}, {} {}", week_num, month, year);
-                        for ((_y, _w), events) in week_map {
-                            let mut week_day_map: WeekDayMap = BTreeMap::new();
-
-                            for event in events {
-                                println!(
-                                    "    event: ({} {} {}) {} {}",
-                                    event.start().weekday(),
-                                    event.year(),
-                                    event.week(),
-                                    event.summary(),
-                                    event.start(),
-                                );
-                                let day_of_week = event.start().weekday().number_days_from_sunday();
-                                week_day_map
-                                    .entry(day_of_week)
-                                    .or_insert(Vec::new())
-                                    .push(event.clone());
-                            }
-
-                            // create week days
-                            let week_dates =
-                                week_day_map.context(year, &week_num, self.display_tz())?;
-                            week_list.push(week_dates);
-                        }
-                    }
-                    None => {
-                        println!("  Inserting blank week {}, {} {}", week_num, month, year);
-                        week_list.push(blank_context(year, &week_num)?);
-                    }
-                }
-            }
-
-            let file_name = format!("{}-{}.html", year, month);
-            let next_month = months_iter.peek();
-            let next_file_name = next_month.map(|((next_year, next_month), _events)| {
-                format!("{}-{}.html", next_year, next_month)
-            });
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
-
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &self.config.stylesheet_path);
-            context.insert("timezone", self.display_tz.name());
-            context.insert("year", &year);
-            context.insert("month", &month);
-            context.insert("weeks", &week_list);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
-                &self.tera,
-                "month.html",
-                &context,
-                File::create(&template_out_file)?,
-            )?;
-
-            // write the index page for the current month
-            if !index_written {
-                if let Some(next_month_num) =
-                    next_month.map(|((_next_year, next_month), _events)| next_month)
-                {
-                    // write the index file if the next month is after the current date
-                    if month_from_u8(*next_month_num)? as u8 > self.current_date_time.month() as u8
-                    {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
-                            &self.tera,
-                            "month.html",
-                            &context,
-                            File::create(&template_out_file)?,
-                        )?;
-                        index_written = true;
-
-                        // write the main index as the month view
-                        if self.config.default_calendar_view == CalendarView::Month {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
-                                &self.tera,
-                                "month.html",
-                                &context,
-                                File::create(template_out_file)?,
-                            )?;
-                        }
-                    }
-                }
-            }
-            previous_file_name = Some(file_name);
-        }
 
         Ok(())
     }
@@ -452,7 +316,7 @@ impl<'a> CalendarCollection<'a> {
 }
 
 /// Return the range of iso weeks this month covers
-fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Range<u8>> {
+pub(crate) fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Range<u8>> {
     let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
     let first_week = first_day.iso_week();
     let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
@@ -508,7 +372,7 @@ impl WeekContext for WeekDayMap {
 }
 
 /// Generate DayContext Vecs for empty weeks
-fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
+pub(crate) fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
     let sunday = first_sunday_of_week(year, week)?;
     let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
         .iter()
@@ -517,7 +381,7 @@ fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
     Ok(week_dates)
 }
 
-fn month_from_u8(value: u8) -> Result<time::Month> {
+pub(crate) fn month_from_u8(value: u8) -> Result<time::Month> {
     match value {
         1 => Ok(time::Month::January),
         2 => Ok(time::Month::February),
