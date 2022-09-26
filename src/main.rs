@@ -24,12 +24,7 @@ fn main() -> eyre::Result<()> {
     };
 
     let calendar_collection = CalendarCollection::new(args, config.parse()?)?;
-
     calendar_collection.create_html_pages()?;
-
-    if config.render_agenda {
-        calendar_collection.create_agenda_pages()?;
-    }
 
     Ok(())
 }

@@ -4,12 +4,12 @@ use std::fs;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::{fs::File, io::BufReader};
-use tera::{Context, Tera};
+use tera::Tera;
 use time::ext::NumericalDuration;
 use time::util::days_in_year_month;
 use time::OffsetDateTime;
 use time::{Date, Month as MonthName};
-use time_tz::{TimeZone, Tz};
+use time_tz::Tz;
 
 use super::event::UnparsedProperties;
 use crate::config::ParsedConfig;
@@ -17,7 +17,8 @@ use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::Year;
 use crate::options::Opt;
-use crate::util::{self, render_to};
+use crate::util;
+use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
 use crate::views::week_view::{WeekDayMap, WeekView};
@@ -30,6 +31,8 @@ pub struct CalendarCollection<'a> {
     months: MonthView,
     weeks: WeekView,
     days: DayView,
+    agenda: AgendaView,
+
     tera: Tera,
     config: ParsedConfig<'a>,
 }
@@ -78,6 +81,7 @@ impl<'a> CalendarCollection<'a> {
         let mut months = MonthView::new();
         let mut weeks = WeekView::new();
         let mut days = DayView::new();
+        let mut agenda = AgendaView::new();
 
         // expand recurring events
         for calendar in calendars.iter_mut() {
@@ -90,6 +94,7 @@ impl<'a> CalendarCollection<'a> {
                 months.add_event(event);
                 weeks.add_event(event);
                 days.add_event(event);
+                agenda.add_event(event);
             }
         }
 
@@ -109,6 +114,7 @@ impl<'a> CalendarCollection<'a> {
             months,
             weeks,
             days,
+            agenda,
             tera: Tera::new("templates/**/*.html")?,
             config,
         })
@@ -162,148 +168,8 @@ impl<'a> CalendarCollection<'a> {
             self.days.create_html_pages(&self.config, &self.tera)?;
         }
 
-        // if self.config.render_agenda {
-        //     self.create_agenda_pages()?;
-        // }
-
-        Ok(())
-    }
-
-    pub fn create_agenda_pages(&self) -> Result<()> {
-        let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "agenda")?;
-
-        let past_events = self
-            .days
-            .range(..self.config.agenda_start_date)
-            .flat_map(|(day, events)| {
-                events.iter().map(move |event| {
-                    (
-                        DayContext::new(*day, vec![event.context(self.display_tz)]),
-                        event,
-                    )
-                })
-            })
-            .collect::<Vec<_>>();
-        let mut past_events_iter = past_events
-            .rchunks(self.config.agenda_events_per_page)
-            .zip(1_isize..)
-            .peekable();
-        while let Some((events, page)) = past_events_iter.next() {
-            println!("page: {}", page);
-            for (_day, event) in events {
-                println!(
-                    "  event: ({} {} {}) {} {}",
-                    event.start().weekday(),
-                    event.year(),
-                    event.week(),
-                    event.summary(),
-                    event.start(),
-                );
-            }
-            let file_name = format!("{}.html", -page);
-            let previous_file_name = past_events_iter
-                .peek()
-                .map(|(_, previous_page)| format!("{}.html", -previous_page));
-            let next_file_name = format!("{}.html", 1 - page);
-
-            let template_out_file = output_dir.join(PathBuf::from(&file_name));
-
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &self.config.stylesheet_path);
-            context.insert("timezone", self.display_tz.name());
-            context.insert("page", &page);
-            context.insert("events", events);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
-                &self.tera,
-                "agenda.html",
-                &context,
-                File::create(template_out_file)?,
-            )?;
-        }
-
-        let future_events = self
-            .days
-            .range(self.config.agenda_start_date..)
-            .flat_map(|(day, events)| {
-                events.iter().map(move |event| {
-                    (
-                        DayContext::new(*day, vec![event.context(self.display_tz)]),
-                        event,
-                    )
-                })
-            })
-            .collect::<Vec<_>>();
-        if future_events.is_empty() {
-            println!("page: 0");
-            let previous_file_name = if past_events.is_empty() {
-                None
-            } else {
-                Some("-1.html")
-            };
-
-            let template_out_file = &output_dir.join(PathBuf::from("0.html"));
-
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &self.config.stylesheet_path);
-            context.insert("timezone", self.display_tz.name());
-            context.insert("page", &0);
-            context.insert("events", &future_events);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &None::<&str>);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
-                &self.tera,
-                "agenda.html",
-                &context,
-                File::create(template_out_file)?,
-            )?;
-        } else {
-            let mut future_events_iter = future_events
-                .rchunks(self.config.agenda_events_per_page)
-                .zip(0..)
-                .peekable();
-            while let Some((events, page)) = future_events_iter.next() {
-                println!("page: {}", page);
-                for (_day, event) in events {
-                    println!(
-                        "  event: ({} {} {}) {} {}",
-                        event.start().weekday(),
-                        event.year(),
-                        event.week(),
-                        event.summary(),
-                        event.start(),
-                    );
-                }
-                let file_name = format!("{}.html", page);
-                let previous_file_name = if page == 0 && past_events.is_empty() {
-                    None
-                } else {
-                    Some(format!("{}.html", page - 1))
-                };
-                let next_file_name = future_events_iter
-                    .peek()
-                    .map(|(_, next_page)| format!("{}.html", next_page));
-
-                let template_out_file = output_dir.join(PathBuf::from(&file_name));
-
-                let mut context = Context::new();
-                context.insert("stylesheet_path", &self.config.stylesheet_path);
-                context.insert("timezone", self.display_tz.name());
-                context.insert("page", &page);
-                context.insert("events", events);
-                context.insert("previous_file_name", &previous_file_name);
-                context.insert("next_file_name", &next_file_name);
-                println!("Writing template to file: {:?}", template_out_file);
-                render_to(
-                    &self.tera,
-                    "agenda.html",
-                    &context,
-                    File::create(template_out_file)?,
-                )?;
-            }
+        if self.config.render_agenda {
+            self.agenda.create_html_pages(&self.config, &self.tera)?;
         }
 
         Ok(())
