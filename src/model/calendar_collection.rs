@@ -2,7 +2,6 @@ use color_eyre::eyre::{self, bail, Context as EyreContext, Result};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
-use std::io::Write;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::{fs::File, io::BufReader};
@@ -20,7 +19,7 @@ use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
 use crate::options::Opt;
-use crate::util;
+use crate::util::{self, render_to};
 
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
@@ -159,19 +158,6 @@ impl<'a> CalendarCollection<'a> {
         &self.tera
     }
 
-    pub fn render(&self, template_name: &str, context: &tera::Context) -> eyre::Result<String> {
-        Ok(self.tera.render(template_name, context)?)
-    }
-
-    pub fn render_to(
-        &self,
-        template_name: &str,
-        context: &tera::Context,
-        write: impl Write,
-    ) -> eyre::Result<()> {
-        Ok(self.tera.render_to(template_name, context, write)?)
-    }
-
     pub fn setup_output_dir(&self) -> Result<()> {
         let output_dir = &PathBuf::from(&self.config.output_dir);
 
@@ -259,7 +245,12 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("month.html", &context, File::create(&template_out_file)?)?;
+            render_to(
+                &self.tera,
+                "month.html",
+                &context,
+                File::create(&template_out_file)?,
+            )?;
 
             // write the index page for the current month
             if !index_written {
@@ -273,7 +264,12 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("month.html", &context, File::create(&template_out_file)?)?;
+                        render_to(
+                            &self.tera,
+                            "month.html",
+                            &context,
+                            File::create(&template_out_file)?,
+                        )?;
                         index_written = true;
 
                         // write the main index as the month view
@@ -285,7 +281,8 @@ impl<'a> CalendarCollection<'a> {
                                 "Writing template to main index file: {:?}",
                                 template_out_file
                             );
-                            self.render_to(
+                            render_to(
+                                &self.tera,
                                 "month.html",
                                 &context,
                                 File::create(template_out_file)?,
@@ -356,7 +353,12 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("week.html", &context, File::create(&template_out_file)?)?;
+            render_to(
+                &self.tera,
+                "week.html",
+                &context,
+                File::create(&template_out_file)?,
+            )?;
 
             // write the index page for the current week
             // TODO might want to write the index if next_week is None and nothing has been written yet
@@ -372,7 +374,12 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("week.html", &context, File::create(&template_out_file)?)?;
+                        render_to(
+                            &self.tera,
+                            "week.html",
+                            &context,
+                            File::create(&template_out_file)?,
+                        )?;
                         index_written = true;
 
                         // write the main index as the week view
@@ -384,7 +391,8 @@ impl<'a> CalendarCollection<'a> {
                                 "Writing template to main index file: {:?}",
                                 template_out_file
                             );
-                            self.render_to(
+                            render_to(
+                                &self.tera,
                                 "week.html",
                                 &context,
                                 File::create(template_out_file)?,
@@ -444,7 +452,12 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("day.html", &context, File::create(&template_out_file)?)?;
+            render_to(
+                &self.tera,
+                "day.html",
+                &context,
+                File::create(&template_out_file)?,
+            )?;
 
             // write the index page for the current week
             // TODO might want to write the index if next_week is None and nothing has been written yet
@@ -458,7 +471,12 @@ impl<'a> CalendarCollection<'a> {
                         template_out_file.push(PathBuf::from("index.html"));
 
                         println!("Writing template to index file: {:?}", template_out_file);
-                        self.render_to("day.html", &context, File::create(&template_out_file)?)?;
+                        render_to(
+                            &self.tera,
+                            "day.html",
+                            &context,
+                            File::create(&template_out_file)?,
+                        )?;
                         index_written = true;
 
                         // write the main index as the day view
@@ -470,7 +488,12 @@ impl<'a> CalendarCollection<'a> {
                                 "Writing template to main index file: {:?}",
                                 template_out_file
                             );
-                            self.render_to("day.html", &context, File::create(template_out_file)?)?;
+                            render_to(
+                                &self.tera,
+                                "day.html",
+                                &context,
+                                File::create(template_out_file)?,
+                            )?;
                         }
                     }
                 }
@@ -529,7 +552,12 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+            render_to(
+                &self.tera,
+                "agenda.html",
+                &context,
+                File::create(template_out_file)?,
+            )?;
         }
 
         let future_events = self
@@ -562,7 +590,12 @@ impl<'a> CalendarCollection<'a> {
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &None::<&str>);
             println!("Writing template to file: {:?}", template_out_file);
-            self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+            render_to(
+                &self.tera,
+                "agenda.html",
+                &context,
+                File::create(template_out_file)?,
+            )?;
         } else {
             let mut future_events_iter = future_events
                 .rchunks(self.config.agenda_events_per_page)
@@ -600,7 +633,12 @@ impl<'a> CalendarCollection<'a> {
                 context.insert("previous_file_name", &previous_file_name);
                 context.insert("next_file_name", &next_file_name);
                 println!("Writing template to file: {:?}", template_out_file);
-                self.render_to("agenda.html", &context, File::create(template_out_file)?)?;
+                render_to(
+                    &self.tera,
+                    "agenda.html",
+                    &context,
+                    File::create(template_out_file)?,
+                )?;
             }
         }
 

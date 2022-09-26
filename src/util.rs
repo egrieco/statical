@@ -1,9 +1,10 @@
+use color_eyre::eyre::{self, Context};
+use std::io::Write;
 use std::{
     fs,
     path::{Path, PathBuf},
 };
-
-use color_eyre::eyre::Context;
+use tera::Tera;
 
 /// Takes a base dir and subdir, creates the subdirectory if it does not exist
 pub fn create_subdir(
@@ -18,4 +19,17 @@ pub fn create_subdir(
         ))?;
     }
     Ok(output_dir)
+}
+
+pub fn render(tera: &Tera, template_name: &str, context: &tera::Context) -> eyre::Result<String> {
+    Ok(tera.render(template_name, context)?)
+}
+
+pub fn render_to(
+    tera: &Tera,
+    template_name: &str,
+    context: &tera::Context,
+    write: impl Write,
+) -> eyre::Result<()> {
+    Ok(tera.render_to(template_name, context, write)?)
 }
