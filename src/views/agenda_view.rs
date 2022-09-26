@@ -4,7 +4,7 @@ use tera::{Context, Tera};
 use time_tz::TimeZone;
 
 use crate::{
-    config::ParsedConfig,
+    config::{CalendarView, ParsedConfig},
     model::event::Event,
     util::{self, render_to},
 };
@@ -75,22 +75,21 @@ impl AgendaView {
             }
 
             let events: Vec<_> = events
-                .into_iter()
+                .iter()
                 .map(|e| e.context(config.display_timezone))
                 .collect();
 
             let file_name = format!("{}.html", page);
 
-            let next_file_name = agenda_events
-                .peek()
-                .map(|(_, next_page)| format!("{}.html", next_page));
+            let next_page_opt = agenda_events.peek();
+            let next_file_name = next_page_opt.map(|(_, next_page)| format!("{}.html", next_page));
 
             println!(
                 "  {:?} {:?} {:?}",
                 previous_file_name, file_name, next_file_name
             );
 
-            let template_out_file = output_dir.join(PathBuf::from(&file_name));
+            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
@@ -104,10 +103,49 @@ impl AgendaView {
                 tera,
                 "agenda.html",
                 &context,
-                File::create(template_out_file)?,
+                File::create(&template_out_file)?,
             )?;
 
-            // TODO add index file writing here
+            // write the index page for the current week
+            // TODO might want to write the index if next_week is None and nothing has been written yet
+            if let Some(next_page) = next_page_opt {
+                if !index_written {
+                    let (_events, page) = next_page;
+                    // write the index file if the next month is after the current date
+                    // TODO make sure that the conditional tests are correct, maybe add some tests
+                    // TODO handle the case when there is no page 1 (when there are less than agenda_events_per_page past current)
+                    if page == &1_isize {
+                        template_out_file.pop();
+                        template_out_file.push(PathBuf::from("index.html"));
+
+                        println!("Writing template to index file: {:?}", template_out_file);
+                        render_to(
+                            tera,
+                            "agenda.html",
+                            &context,
+                            File::create(&template_out_file)?,
+                        )?;
+                        index_written = true;
+
+                        // write the main index as the week view
+                        if config.default_calendar_view == CalendarView::Agenda {
+                            template_out_file.pop();
+                            template_out_file.pop();
+                            template_out_file.push(PathBuf::from("index.html"));
+                            println!(
+                                "Writing template to main index file: {:?}",
+                                template_out_file
+                            );
+                            render_to(
+                                tera,
+                                "agenda.html",
+                                &context,
+                                File::create(template_out_file)?,
+                            )?;
+                        }
+                    }
+                }
+            }
 
             previous_file_name = Some(file_name);
         }
