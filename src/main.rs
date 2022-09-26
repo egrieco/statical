@@ -14,7 +14,7 @@ fn main() -> eyre::Result<()> {
         config_file.read_to_string(&mut config_raw)?;
         toml_edit::easy::from_str(&config_raw)?
     } else {
-        let config = Default::default();
+        let config: statical::config::Config = Default::default();
         if let Ok(mut config_file) = std::fs::File::create(&args.config) {
             if let Ok(config_raw) = toml_edit::easy::to_string_pretty(&config) {
                 config_file.write_all(config_raw.as_bytes()).ok();
@@ -23,7 +23,7 @@ fn main() -> eyre::Result<()> {
         config
     };
 
-    let calendar_collection = CalendarCollection::new(args, &config)?;
+    let calendar_collection = CalendarCollection::new(args, config.parse()?)?;
 
     calendar_collection.setup_output_dir()?;
 

@@ -1,4 +1,4 @@
-use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
+use color_eyre::eyre::{self, bail, Context as EyreContext, Result};
 use dedup_iter::DedupAdapter;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -15,6 +15,7 @@ use time::{Date, Month as MonthName};
 use time_tz::{OffsetDateTimeExt, TimeZone, Tz};
 
 use super::event::{EventList, UnparsedProperties};
+use crate::config::{CalendarView, ParsedConfig};
 use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::{WeekNum, Year};
@@ -48,18 +49,11 @@ pub struct CalendarCollection<'a> {
     weeks: WeekMap,
     days: DayMap,
     tera: Tera,
-    config: &'a crate::config::Config,
+    config: ParsedConfig<'a>,
 }
 
 impl<'a> CalendarCollection<'a> {
-    pub fn new(
-        args: Opt,
-        config: &'a crate::config::Config,
-    ) -> eyre::Result<CalendarCollection<'a>> {
-        // fail as fast as possible without wasting time on the expensive operations below
-        let time_zone = time_tz::timezones::get_by_name(&config.display_timezone)
-            .ok_or_else(|| eyre!("unknown timezone"))?;
-
+    pub fn new(args: Opt, config: ParsedConfig<'a>) -> eyre::Result<CalendarCollection<'a>> {
         let mut calendars = Vec::new();
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
@@ -143,8 +137,8 @@ impl<'a> CalendarCollection<'a> {
 
         Ok(CalendarCollection {
             calendars,
-            display_tz: time_zone,
-            current_date_time: OffsetDateTime::now_utc().to_timezone(time_zone),
+            display_tz: config.display_timezone,
+            current_date_time: OffsetDateTime::now_utc().to_timezone(config.display_timezone),
             months,
             weeks,
             days,
@@ -283,7 +277,7 @@ impl<'a> CalendarCollection<'a> {
                         index_written = true;
 
                         // write the main index as the month view
-                        if self.config.default_calendar_view == "month" {
+                        if self.config.default_calendar_view == CalendarView::Month {
                             template_out_file.pop();
                             template_out_file.pop();
                             template_out_file.push(PathBuf::from("index.html"));
@@ -382,7 +376,7 @@ impl<'a> CalendarCollection<'a> {
                         index_written = true;
 
                         // write the main index as the week view
-                        if self.config.default_calendar_view == "week" {
+                        if self.config.default_calendar_view == CalendarView::Week {
                             template_out_file.pop();
                             template_out_file.pop();
                             template_out_file.push(PathBuf::from("index.html"));
@@ -468,7 +462,7 @@ impl<'a> CalendarCollection<'a> {
                         index_written = true;
 
                         // write the main index as the day view
-                        if self.config.default_calendar_view == "day" {
+                        if self.config.default_calendar_view == CalendarView::Day {
                             template_out_file.pop();
                             template_out_file.pop();
                             template_out_file.push(PathBuf::from("index.html"));
@@ -491,19 +485,9 @@ impl<'a> CalendarCollection<'a> {
     pub fn create_agenda_pages(&self) -> Result<()> {
         let output_dir = util::create_subdir(&PathBuf::from(&self.config.output_dir), "agenda")?;
 
-        let start = if self.config.agenda_start_date.is_empty() {
-            OffsetDateTime::now_utc().date()
-        } else {
-            Date::parse(
-                &self.config.agenda_start_date,
-                &time::format_description::parse("[year]-[month]-[day]").unwrap(),
-            )
-            .expect("Invalid agenda start date in config")
-        };
-
         let past_events = self
             .days
-            .range(..start)
+            .range(..self.config.agenda_start_date)
             .flat_map(|(day, events)| {
                 events.iter().map(move |event| {
                     (
@@ -550,7 +534,7 @@ impl<'a> CalendarCollection<'a> {
 
         let future_events = self
             .days
-            .range(start..)
+            .range(self.config.agenda_start_date..)
             .flat_map(|(day, events)| {
                 events.iter().map(move |event| {
                     (

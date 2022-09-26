@@ -88,6 +88,7 @@ impl Config {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum CalendarView {
     Month,
     Week,
