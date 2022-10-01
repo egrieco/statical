@@ -12,7 +12,7 @@ use crate::{
         },
         event::{Event, WeekNum, Year},
     },
-    util::{self, render_to},
+    util::render_to,
     views::week_view::WeekDayMap,
 };
 
@@ -25,19 +25,18 @@ type WeekMapList = BTreeMap<WeekNum, WeekMap>;
 
 #[derive(Debug)]
 pub struct MonthView {
+    /// The output directory for month view files
+    output_dir: PathBuf,
     month_map: MonthMap,
 }
 
-impl Default for MonthView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl MonthView {
-    pub fn new() -> Self {
+    pub fn new(output_dir: PathBuf) -> Self {
         let month_map = BTreeMap::new();
-        MonthView { month_map }
+        MonthView {
+            output_dir,
+            month_map,
+        }
     }
 
     pub fn add_event(&mut self, event: &Rc<Event>) {
@@ -52,8 +51,6 @@ impl MonthView {
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let output_dir = util::create_subdir(&config.output_dir, "month")?;
-
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
@@ -106,7 +103,7 @@ impl MonthView {
             let next_file_name = next_month.map(|((next_year, next_month), _events)| {
                 format!("{}-{}.html", next_year, next_month)
             });
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
+            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);

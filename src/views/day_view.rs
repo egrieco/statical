@@ -7,7 +7,7 @@ use time_tz::TimeZone;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::event::{Event, EventList},
-    util::{self, render_to},
+    util::render_to,
 };
 
 /// Type alias representing a specific day in time
@@ -15,20 +15,19 @@ type Day = Date;
 
 #[derive(Debug)]
 pub struct DayView {
+    /// The output directory for day view files
+    output_dir: PathBuf,
     /// A BTreeMap of Vecs grouped by specific days
     day_map: BTreeMap<Day, EventList>,
 }
 
-impl Default for DayView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl DayView {
-    pub fn new() -> Self {
+    pub fn new(output_dir: PathBuf) -> Self {
         let day_map = BTreeMap::new();
-        DayView { day_map }
+        DayView {
+            output_dir,
+            day_map,
+        }
     }
 
     pub fn add_event(&mut self, event: &Rc<Event>) {
@@ -39,8 +38,6 @@ impl DayView {
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let output_dir = util::create_subdir(&config.output_dir, "day")?;
-
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
@@ -70,7 +67,7 @@ impl DayView {
                     .ok()
             });
 
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
+            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);

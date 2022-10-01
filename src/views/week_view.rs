@@ -10,7 +10,7 @@ use crate::{
         calendar_collection::WeekContext,
         event::{Event, EventList, WeekNum, Year},
     },
-    util::{self, render_to},
+    util::render_to,
 };
 
 /// Type alias representing a specific week in time
@@ -24,19 +24,18 @@ pub type WeekDayMap = BTreeMap<u8, EventList>;
 
 #[derive(Debug)]
 pub struct WeekView {
+    /// The output directory for week view files
+    output_dir: PathBuf,
     week_map: WeekMap,
 }
 
-impl Default for WeekView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl WeekView {
-    pub fn new() -> Self {
+    pub fn new(output_dir: PathBuf) -> Self {
         let week_map = BTreeMap::new();
-        WeekView { week_map }
+        WeekView {
+            output_dir,
+            week_map,
+        }
     }
 
     pub fn add_event(&mut self, event: &Rc<Event>) {
@@ -47,8 +46,6 @@ impl WeekView {
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let output_dir = util::create_subdir(&config.output_dir, "week")?;
-
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
@@ -78,7 +75,7 @@ impl WeekView {
             let next_file_name = next_week_opt.map(|((next_year, next_week), _events)| {
                 format!("{}-{}.html", next_year, next_week)
             });
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
+            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             // create week days
             let week_dates = week_day_map.context(year, week, config.display_timezone)?;

@@ -17,7 +17,7 @@ use crate::model::calendar::Calendar;
 use crate::model::day::DayContext;
 use crate::model::event::Year;
 use crate::options::Opt;
-use crate::util;
+use crate::util::{self, create_subdir};
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
@@ -78,10 +78,10 @@ impl<'a> CalendarCollection<'a> {
             .unwrap_or_else(|| OffsetDateTime::now_utc() + 30.days());
 
         // add events to maps
-        let mut months = MonthView::new();
-        let mut weeks = WeekView::new();
-        let mut days = DayView::new();
-        let mut agenda = AgendaView::new();
+        let mut months = MonthView::new(create_subdir(&config.output_dir, "month")?);
+        let mut weeks = WeekView::new(create_subdir(&config.output_dir, "week")?);
+        let mut days = DayView::new(create_subdir(&config.output_dir, "day")?);
+        let mut agenda = AgendaView::new(create_subdir(&config.output_dir, "agenda")?);
 
         // expand recurring events
         for calendar in calendars.iter_mut() {

@@ -6,24 +6,23 @@ use time_tz::TimeZone;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::event::Event,
-    util::{self, render_to},
+    util::render_to,
 };
 
 #[derive(Debug)]
 pub(crate) struct AgendaView {
+    /// The output directory for agenda view files
+    output_dir: PathBuf,
     event_list: Vec<Rc<Event>>,
 }
 
-impl Default for AgendaView {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl AgendaView {
-    pub fn new() -> Self {
+    pub fn new(output_dir: PathBuf) -> Self {
         let event_list = Vec::new();
-        AgendaView { event_list }
+        AgendaView {
+            output_dir,
+            event_list,
+        }
     }
 
     pub fn add_event(&mut self, event: &Rc<Event>) {
@@ -32,8 +31,6 @@ impl AgendaView {
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let output_dir = util::create_subdir(&config.output_dir, "agenda")?;
-
         let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
@@ -89,7 +86,7 @@ impl AgendaView {
                 previous_file_name, file_name, next_file_name
             );
 
-            let mut template_out_file = output_dir.join(PathBuf::from(&file_name));
+            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
