@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, fs::File, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf};
 use tera::{Context, Tera};
 use time::{macros::format_description, Date};
 use time_tz::TimeZone;
@@ -7,7 +7,7 @@ use time_tz::TimeZone;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{calendar::Calendar, event::EventList},
-    util::render_to,
+    util::write_template,
 };
 
 /// Type alias representing a specific day in time
@@ -71,8 +71,6 @@ impl DayView {
                     .ok()
             });
 
-            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
-
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
             context.insert("timezone", config.display_timezone.name());
@@ -82,12 +80,12 @@ impl DayView {
             context.insert("events", events);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
+
+            write_template(
                 tera,
                 "day.html",
                 &context,
-                File::create(&template_out_file)?,
+                &self.output_dir.join(PathBuf::from(&file_name)),
             )?;
 
             // write the index page for the current week
@@ -98,32 +96,21 @@ impl DayView {
                     // write the index file if the next month is after the current date
                     // TODO make sure that the conditional tests are correct, maybe add some tests
                     if next_day > &config.agenda_start_date {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
+                        write_template(
                             tera,
                             "day.html",
                             &context,
-                            File::create(&template_out_file)?,
+                            &self.output_dir.join(PathBuf::from("index.html")),
                         )?;
                         index_written = true;
 
                         // write the main index as the day view
                         if config.default_calendar_view == CalendarView::Day {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
+                            write_template(
                                 tera,
                                 "day.html",
                                 &context,
-                                File::create(template_out_file)?,
+                                &config.output_dir.join(PathBuf::from("index.html")),
                             )?;
                         }
                     }

@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, fs::File, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf};
 use tera::{Context, Tera};
 use time_tz::TimeZone;
 
@@ -13,7 +13,7 @@ use crate::{
         },
         event::{WeekNum, Year},
     },
-    util::render_to,
+    util::write_template,
     views::week_view::WeekDayMap,
 };
 
@@ -108,7 +108,6 @@ impl MonthView {
             let next_file_name = next_month.map(|((next_year, next_month), _events)| {
                 format!("{}-{}.html", next_year, next_month)
             });
-            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
@@ -118,12 +117,12 @@ impl MonthView {
             context.insert("weeks", &week_list);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
+
+            write_template(
                 tera,
                 "month.html",
                 &context,
-                File::create(&template_out_file)?,
+                &self.output_dir.join(PathBuf::from(&file_name)),
             )?;
 
             // write the index page for the current month
@@ -135,32 +134,21 @@ impl MonthView {
                     if month_from_u8(*next_month_num)? as u8
                         > config.agenda_start_date.month() as u8
                     {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
+                        write_template(
                             tera,
                             "month.html",
                             &context,
-                            File::create(&template_out_file)?,
+                            &self.output_dir.join(PathBuf::from("index.html")),
                         )?;
                         index_written = true;
 
                         // write the main index as the month view
                         if config.default_calendar_view == CalendarView::Month {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
+                            write_template(
                                 tera,
                                 "month.html",
                                 &context,
-                                File::create(template_out_file)?,
+                                &config.output_dir.join(PathBuf::from("index.html")),
                             )?;
                         }
                     }

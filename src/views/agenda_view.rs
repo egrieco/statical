@@ -1,12 +1,12 @@
 use color_eyre::eyre::Result;
-use std::{fs::File, path::PathBuf, rc::Rc};
+use std::{path::PathBuf, rc::Rc};
 use tera::{Context, Tera};
 use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{calendar::Calendar, event::Event},
-    util::render_to,
+    util::write_template,
 };
 
 #[derive(Debug)]
@@ -89,8 +89,6 @@ impl AgendaView {
                 previous_file_name, file_name, next_file_name
             );
 
-            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
-
             let mut context = Context::new();
             context.insert("stylesheet_path", &config.stylesheet_path);
             context.insert("timezone", config.display_timezone.name());
@@ -98,12 +96,12 @@ impl AgendaView {
             context.insert("events", &events);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
+
+            write_template(
                 tera,
                 "agenda.html",
                 &context,
-                File::create(&template_out_file)?,
+                &self.output_dir.join(PathBuf::from(&file_name)),
             )?;
 
             // write the index page for the current week
@@ -115,32 +113,21 @@ impl AgendaView {
                     // TODO make sure that the conditional tests are correct, maybe add some tests
                     // TODO handle the case when there is no page 1 (when there are less than agenda_events_per_page past current)
                     if page == &1_isize {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
+                        write_template(
                             tera,
                             "agenda.html",
                             &context,
-                            File::create(&template_out_file)?,
+                            &self.output_dir.join(PathBuf::from("index.html")),
                         )?;
                         index_written = true;
 
                         // write the main index as the week view
                         if config.default_calendar_view == CalendarView::Agenda {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
+                            write_template(
                                 tera,
                                 "agenda.html",
                                 &context,
-                                File::create(template_out_file)?,
+                                &config.output_dir.join(PathBuf::from("index.html")),
                             )?;
                         }
                     }

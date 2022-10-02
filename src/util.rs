@@ -1,4 +1,5 @@
 use color_eyre::eyre::{self, Context};
+use std::fs::File;
 use std::io::Write;
 use std::{
     fs,
@@ -32,4 +33,16 @@ pub fn render_to(
     write: impl Write,
 ) -> eyre::Result<()> {
     Ok(tera.render_to(template_name, context, write)?)
+}
+
+pub fn write_template(
+    tera: &Tera,
+    template_name: &str,
+    context: &tera::Context,
+    file_path: &Path,
+) -> eyre::Result<()> {
+    // TODO replace this with a debug or log message
+    eprintln!("Writing template to file: {:?}", file_path);
+    let output_file = File::create(&file_path)?;
+    render_to(tera, template_name, context, output_file)
 }

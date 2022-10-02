@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 use dedup_iter::DedupAdapter;
-use std::{collections::BTreeMap, fs::File, path::PathBuf};
+use std::{collections::BTreeMap, path::PathBuf};
 use tera::{Context, Tera};
 use time_tz::TimeZone;
 
@@ -11,7 +11,7 @@ use crate::{
         calendar_collection::WeekContext,
         event::{EventList, WeekNum, Year},
     },
-    util::render_to,
+    util::write_template,
 };
 
 /// Type alias representing a specific week in time
@@ -80,7 +80,6 @@ impl WeekView {
             let next_file_name = next_week_opt.map(|((next_year, next_week), _events)| {
                 format!("{}-{}.html", next_year, next_week)
             });
-            let mut template_out_file = self.output_dir.join(PathBuf::from(&file_name));
 
             // create week days
             let week_dates = week_day_map.context(year, week, config.display_timezone)?;
@@ -103,12 +102,12 @@ impl WeekView {
             context.insert("week_dates", &week_dates);
             context.insert("previous_file_name", &previous_file_name);
             context.insert("next_file_name", &next_file_name);
-            println!("Writing template to file: {:?}", template_out_file);
-            render_to(
+
+            write_template(
                 tera,
                 "week.html",
                 &context,
-                File::create(&template_out_file)?,
+                &self.output_dir.join(PathBuf::from(&file_name)),
             )?;
 
             // write the index page for the current week
@@ -121,32 +120,21 @@ impl WeekView {
                     if next_year >= &config.agenda_start_date.year()
                         && next_week >= &config.agenda_start_date.iso_week()
                     {
-                        template_out_file.pop();
-                        template_out_file.push(PathBuf::from("index.html"));
-
-                        println!("Writing template to index file: {:?}", template_out_file);
-                        render_to(
+                        write_template(
                             tera,
                             "week.html",
                             &context,
-                            File::create(&template_out_file)?,
+                            &self.output_dir.join(PathBuf::from("index.html")),
                         )?;
                         index_written = true;
 
                         // write the main index as the week view
                         if config.default_calendar_view == CalendarView::Week {
-                            template_out_file.pop();
-                            template_out_file.pop();
-                            template_out_file.push(PathBuf::from("index.html"));
-                            println!(
-                                "Writing template to main index file: {:?}",
-                                template_out_file
-                            );
-                            render_to(
+                            write_template(
                                 tera,
                                 "week.html",
                                 &context,
-                                File::create(template_out_file)?,
+                                &config.output_dir.join(PathBuf::from("index.html")),
                             )?;
                         }
                     }
