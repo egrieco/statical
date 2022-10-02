@@ -27,10 +27,11 @@ use crate::views::week_view::{WeekDayMap, WeekView};
 pub struct CalendarCollection<'a> {
     calendars: Vec<Calendar>,
 
-    months: MonthView,
-    weeks: WeekView,
-    days: DayView,
-    agenda: AgendaView,
+    // these are represented as options since the user can choose to render them or not
+    months: Option<MonthView>,
+    weeks: Option<WeekView>,
+    days: Option<DayView>,
+    agenda: Option<AgendaView>,
 
     tera: Tera,
     config: ParsedConfig<'a>,
@@ -77,25 +78,46 @@ impl<'a> CalendarCollection<'a> {
             // TODO consider a better approach to finding the correct number of days
             .unwrap_or_else(|| OffsetDateTime::now_utc() + 30.days());
 
-        // add events to maps
-        let mut months = MonthView::new(create_subdir(&config.output_dir, "month")?);
-        let mut weeks = WeekView::new(create_subdir(&config.output_dir, "week")?);
-        let mut days = DayView::new(create_subdir(&config.output_dir, "day")?);
-        let mut agenda = AgendaView::new(create_subdir(&config.output_dir, "agenda")?);
+        // add events to views
+        let months = if config.render_month {
+            Some(MonthView::new(
+                create_subdir(&config.output_dir, "month")?,
+                &calendars,
+            ))
+        } else {
+            None
+        };
+
+        let weeks = if config.render_week {
+            Some(WeekView::new(
+                create_subdir(&config.output_dir, "week")?,
+                &calendars,
+            ))
+        } else {
+            None
+        };
+
+        let days = if config.render_day {
+            Some(DayView::new(
+                create_subdir(&config.output_dir, "day")?,
+                &calendars,
+            ))
+        } else {
+            None
+        };
+
+        let agenda = if config.render_agenda {
+            Some(AgendaView::new(
+                create_subdir(&config.output_dir, "agenda")?,
+                &calendars,
+            ))
+        } else {
+            None
+        };
 
         // expand recurring events
         for calendar in calendars.iter_mut() {
             calendar.expand_recurrences(cal_start, cal_end);
-        }
-
-        // add events to interval maps
-        for calendar in &calendars {
-            for event in calendar.events() {
-                months.add_event(event);
-                weeks.add_event(event);
-                days.add_event(event);
-                agenda.add_event(event);
-            }
         }
 
         Ok(CalendarCollection {
@@ -156,20 +178,32 @@ impl<'a> CalendarCollection<'a> {
     pub fn create_html_pages(&self) -> Result<()> {
         self.setup_output_dir()?;
 
-        if self.config.render_month {
-            self.months.create_html_pages(&self.config, &self.tera)?;
+        if self.months.is_some() {
+            self.months
+                .as_ref()
+                .unwrap()
+                .create_html_pages(&self.config, &self.tera)?;
         }
 
-        if self.config.render_week {
-            self.weeks.create_html_pages(&self.config, &self.tera)?;
+        if self.weeks.is_some() {
+            self.weeks
+                .as_ref()
+                .unwrap()
+                .create_html_pages(&self.config, &self.tera)?;
         }
 
-        if self.config.render_day {
-            self.days.create_html_pages(&self.config, &self.tera)?;
+        if self.days.is_some() {
+            self.days
+                .as_ref()
+                .unwrap()
+                .create_html_pages(&self.config, &self.tera)?;
         }
 
-        if self.config.render_agenda {
-            self.agenda.create_html_pages(&self.config, &self.tera)?;
+        if self.agenda.is_some() {
+            self.agenda
+                .as_ref()
+                .unwrap()
+                .create_html_pages(&self.config, &self.tera)?;
         }
 
         Ok(())

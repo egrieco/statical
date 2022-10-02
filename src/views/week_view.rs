@@ -1,14 +1,15 @@
 use color_eyre::eyre::Result;
 use dedup_iter::DedupAdapter;
-use std::{collections::BTreeMap, fs::File, path::PathBuf, rc::Rc};
+use std::{collections::BTreeMap, fs::File, path::PathBuf};
 use tera::{Context, Tera};
 use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
+        calendar::Calendar,
         calendar_collection::WeekContext,
-        event::{Event, EventList, WeekNum, Year},
+        event::{EventList, WeekNum, Year},
     },
     util::render_to,
 };
@@ -30,19 +31,23 @@ pub struct WeekView {
 }
 
 impl WeekView {
-    pub fn new(output_dir: PathBuf) -> Self {
-        let week_map = BTreeMap::new();
+    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
+        let mut week_map = BTreeMap::new();
+
+        // add events to the week_map
+        for calendar in calendars {
+            for event in calendar.events() {
+                week_map
+                    .entry((event.year(), event.week()))
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+            }
+        }
+
         WeekView {
             output_dir,
             week_map,
         }
-    }
-
-    pub fn add_event(&mut self, event: &Rc<Event>) {
-        self.week_map
-            .entry((event.year(), event.week()))
-            .or_insert(Vec::new())
-            .push(event.clone());
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {

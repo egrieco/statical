@@ -1,12 +1,12 @@
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, fs::File, path::PathBuf, rc::Rc};
+use std::{collections::BTreeMap, fs::File, path::PathBuf};
 use tera::{Context, Tera};
 use time::{macros::format_description, Date};
 use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
-    model::event::{Event, EventList},
+    model::{calendar::Calendar, event::EventList},
     util::render_to,
 };
 
@@ -22,19 +22,23 @@ pub struct DayView {
 }
 
 impl DayView {
-    pub fn new(output_dir: PathBuf) -> Self {
-        let day_map = BTreeMap::new();
+    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
+        let mut day_map = BTreeMap::new();
+
+        // add events to the day_map
+        for calendar in calendars {
+            for event in calendar.events() {
+                day_map
+                    .entry(event.start().date())
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+            }
+        }
+
         DayView {
             output_dir,
             day_map,
         }
-    }
-
-    pub fn add_event(&mut self, event: &Rc<Event>) {
-        self.day_map
-            .entry(event.start().date())
-            .or_insert(Vec::new())
-            .push(event.clone());
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {

@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, fs::File, path::PathBuf, rc::Rc};
+use std::{collections::BTreeMap, fs::File, path::PathBuf};
 use tera::{Context, Tera};
 use time_tz::TimeZone;
 
@@ -7,10 +7,11 @@ use super::week_view::WeekMap;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
+        calendar::Calendar,
         calendar_collection::{
             blank_context, iso_weeks_for_month_display, month_from_u8, WeekContext,
         },
-        event::{Event, WeekNum, Year},
+        event::{WeekNum, Year},
     },
     util::render_to,
     views::week_view::WeekDayMap,
@@ -31,23 +32,27 @@ pub struct MonthView {
 }
 
 impl MonthView {
-    pub fn new(output_dir: PathBuf) -> Self {
-        let month_map = BTreeMap::new();
+    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
+        let mut month_map = BTreeMap::new();
+
+        // add events to the month_map
+        for calendar in calendars {
+            for event in calendar.events() {
+                month_map
+                    .entry((event.year(), event.start().month() as u8))
+                    .or_insert(WeekMapList::new())
+                    .entry(event.week())
+                    .or_insert(WeekMap::new())
+                    .entry((event.year(), event.week()))
+                    .or_insert(Vec::new())
+                    .push(event.clone());
+            }
+        }
+
         MonthView {
             output_dir,
             month_map,
         }
-    }
-
-    pub fn add_event(&mut self, event: &Rc<Event>) {
-        self.month_map
-            .entry((event.year(), event.start().month() as u8))
-            .or_insert(WeekMapList::new())
-            .entry(event.week())
-            .or_insert(WeekMap::new())
-            .entry((event.year(), event.week()))
-            .or_insert(Vec::new())
-            .push(event.clone());
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {

@@ -5,7 +5,7 @@ use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
-    model::event::Event,
+    model::{calendar::Calendar, event::Event},
     util::render_to,
 };
 
@@ -17,17 +17,20 @@ pub(crate) struct AgendaView {
 }
 
 impl AgendaView {
-    pub fn new(output_dir: PathBuf) -> Self {
-        let event_list = Vec::new();
+    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
+        let mut event_list = Vec::new();
+
+        // add events to the event_list
+        for calendar in calendars {
+            for event in calendar.events() {
+                event_list.push(event.clone())
+            }
+        }
+
         AgendaView {
             output_dir,
             event_list,
         }
-    }
-
-    pub fn add_event(&mut self, event: &Rc<Event>) {
-        // TODO could sort events into past and future here
-        self.event_list.push(event.clone())
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
