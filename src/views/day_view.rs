@@ -1,5 +1,9 @@
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    iter,
+    path::{Path, PathBuf},
+};
 use tera::{Context, Tera};
 use time::{macros::format_description, Date};
 use time_tz::TimeZone;
@@ -12,6 +16,11 @@ use crate::{
 
 /// Type alias representing a specific day in time
 type Day = Date;
+
+/// A triple with the previous, current, and next days present
+///
+/// Note that the previous and next days may be None
+pub type DaySlice<'a> = &'a [Option<(&'a Day, &'a EventList)>];
 
 #[derive(Debug)]
 pub struct DayView {
@@ -42,82 +51,121 @@ impl DayView {
     }
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let mut previous_file_name: Option<String> = None;
         let mut index_written = false;
 
-        let mut days_iter = self.day_map.iter().peekable();
-        while let Some((day, events)) = days_iter.next() {
-            println!("day: {}", day);
-            for event in events {
-                println!(
-                    "  event: ({} {} {}) {} {}",
-                    event.start().weekday(),
-                    event.year(),
-                    event.week(),
-                    event.summary(),
-                    event.start(),
-                );
-            }
-            let file_name = format!(
-                "{}.html",
-                day.format(format_description!("[year]-[month]-[day]"))?
-            );
-            // TODO should we raise the error on format() failing?
-            let next_day_opt = days_iter.peek();
-            let next_file_name = next_day_opt.map(|(next_day, _events)| {
-                next_day
-                    .format(format_description!("[year]-[month]-[day]"))
-                    .map(|file_root| format!("{}.html", file_root))
-                    .ok()
-            });
+        // chain a None to the list of weeks and a None at the end
+        // this will allow us to traverse the list as windows with the first and last
+        // having None as appropriate
+        let chained_iter = iter::once(None)
+            .chain(self.day_map.iter().map(Some))
+            .chain(iter::once(None).into_iter());
+        let day_windows = &chained_iter.collect::<Vec<Option<(&Day, &EventList)>>>();
 
-            let mut context = Context::new();
-            context.insert("stylesheet_path", &config.stylesheet_path);
-            context.insert("timezone", config.display_timezone.name());
-            context.insert("year", &day.year());
-            context.insert("month", &day.month());
-            context.insert("day", &day.day());
-            context.insert("events", events);
-            context.insert("previous_file_name", &previous_file_name);
-            context.insert("next_file_name", &next_file_name);
+        // iterate through all windows
+        for window in day_windows.windows(3) {
+            let next_day_opt = window[2];
 
-            write_template(
-                tera,
-                "day.html",
-                &context,
-                &self.output_dir.join(PathBuf::from(&file_name)),
-            )?;
+            let mut index_paths = vec![];
 
-            // write the index page for the current week
-            // TODO might want to write the index if next_week is None and nothing has been written yet
-            if let Some(next_week) = next_day_opt {
-                if !index_written {
-                    let next_day = next_week.0;
-                    // write the index file if the next month is after the current date
-                    // TODO make sure that the conditional tests are correct, maybe add some tests
+            // write the index page for the current day
+            if !index_written {
+                if let Some(next_day) = next_day_opt {
+                    let next_day = next_day.0;
+                    // write the index file if the next day is after the current date
                     if next_day > &config.agenda_start_date {
-                        write_template(
-                            tera,
-                            "day.html",
-                            &context,
-                            &self.output_dir.join(PathBuf::from("index.html")),
-                        )?;
                         index_written = true;
+                        index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the day view
                         if config.default_calendar_view == CalendarView::Day {
-                            write_template(
-                                tera,
-                                "day.html",
-                                &context,
-                                &config.output_dir.join(PathBuf::from("index.html")),
-                            )?;
+                            index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                         }
+                    }
+                } else {
+                    // write the index if next_day is None and nothing has been written yet
+                    index_written = true;
+                    index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+
+                    // write the main index as the day view
+                    if config.default_calendar_view == CalendarView::Day {
+                        index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                     }
                 }
             }
 
-            previous_file_name = Some(file_name);
+            self.write_view(
+                config,
+                tera,
+                &window,
+                &self.output_dir,
+                index_paths.as_slice(),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    fn write_view(
+        &self,
+        config: &ParsedConfig,
+        tera: &Tera,
+        day_slice: &DaySlice,
+        output_dir: &Path,
+        index_paths: &[PathBuf],
+    ) -> Result<()> {
+        let previous_day = day_slice[0];
+        let current_day = day_slice[1].expect("Current week is None. This should never happen.");
+        let next_day = day_slice[2];
+
+        let (day, events) = current_day;
+        println!("day: {}", day);
+        for event in events {
+            println!(
+                "  event: ({} {} {}) {} {}",
+                event.start().weekday(),
+                event.year(),
+                event.week(),
+                event.summary(),
+                event.start(),
+            );
+        }
+        let file_name = format!(
+            "{}.html",
+            day.format(format_description!("[year]-[month]-[day]"))?
+        );
+        // TODO should we raise the error on format() failing?
+        let previous_file_name = previous_day.map(|(previous_day, _events)| {
+            previous_day
+                .format(format_description!("[year]-[month]-[day]"))
+                .map(|file_root| format!("{}.html", file_root))
+                .ok()
+        });
+        let next_file_name = next_day.map(|(next_day, _events)| {
+            next_day
+                .format(format_description!("[year]-[month]-[day]"))
+                .map(|file_root| format!("{}.html", file_root))
+                .ok()
+        });
+
+        let mut context = Context::new();
+        context.insert("stylesheet_path", &config.stylesheet_path);
+        context.insert("timezone", config.display_timezone.name());
+        context.insert("year", &day.year());
+        context.insert("month", &day.month());
+        context.insert("day", &day.day());
+        context.insert("events", events);
+        context.insert("previous_file_name", &previous_file_name);
+        context.insert("next_file_name", &next_file_name);
+
+        // create the main file path
+        let binding = output_dir.join(PathBuf::from(&file_name));
+        let mut file_paths = vec![&binding];
+        // then add any additional index paths
+        file_paths.extend(index_paths);
+
+        // write the template to all specified paths
+        for file_path in file_paths {
+            write_template(tera, "day.html", &context, file_path)?;
         }
 
         Ok(())
