@@ -19,7 +19,7 @@ use crate::{
 };
 
 /// Type alias representing a specific week in time
-type Week = (Year, WeekNum);
+pub(crate) type Week = (Year, WeekNum);
 
 /// A BTreeMap of Vecs grouped by specific weeks
 pub type WeekMap = BTreeMap<Week, EventList>;
@@ -41,14 +41,14 @@ pub struct WeekView {
 
 impl WeekView {
     pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut week_map = BTreeMap::new();
+        let mut week_map: BTreeMap<Week, EventList> = BTreeMap::new();
 
         // add events to the week_map
         for calendar in calendars {
             for event in calendar.events() {
                 week_map
                     .entry((event.year(), event.week()))
-                    .or_insert(Vec::new())
+                    .or_default()
                     .push(event.clone());
             }
         }
@@ -164,7 +164,7 @@ impl WeekView {
             let day_of_week = event.start().weekday().number_days_from_sunday();
             week_day_map
                 .entry(day_of_week)
-                .or_insert(Vec::new())
+                .or_default()
                 .push(event.clone());
         }
 

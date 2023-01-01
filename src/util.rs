@@ -43,6 +43,6 @@ pub fn write_template(
 ) -> eyre::Result<()> {
     // TODO replace this with a debug or log message
     eprintln!("Writing template to file: {:?}", file_path);
-    let output_file = File::create(&file_path)?;
+    let output_file = File::create(file_path)?;
     render_to(tera, template_name, context, output_file)
 }

@@ -32,14 +32,14 @@ pub struct DayView {
 
 impl DayView {
     pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut day_map = BTreeMap::new();
+        let mut day_map: BTreeMap<Date, EventList> = BTreeMap::new();
 
         // add events to the day_map
         for calendar in calendars {
             for event in calendar.events() {
                 day_map
                     .entry(event.start().date())
-                    .or_insert(Vec::new())
+                    .or_default()
                     .push(event.clone());
             }
         }

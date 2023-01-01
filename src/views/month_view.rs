@@ -18,6 +18,7 @@ use crate::{
     util::write_template,
     views::week_view::WeekDayMap,
 };
+use crate::{model::event::EventList, views::week_view::Week};
 
 /// Type alias representing a specific month in time
 type Month = (Year, u8);
@@ -40,18 +41,19 @@ pub struct MonthView {
 
 impl MonthView {
     pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut month_map = BTreeMap::new();
+        let mut month_map: BTreeMap<Week, BTreeMap<u8, BTreeMap<Week, EventList>>> =
+            BTreeMap::new();
 
         // add events to the month_map
         for calendar in calendars {
             for event in calendar.events() {
                 month_map
                     .entry((event.year(), event.start().month() as u8))
-                    .or_insert(WeekMapList::new())
+                    .or_default()
                     .entry(event.week())
-                    .or_insert(WeekMap::new())
+                    .or_default()
                     .entry((event.year(), event.week()))
-                    .or_insert(Vec::new())
+                    .or_default()
                     .push(event.clone());
             }
         }
@@ -170,7 +172,7 @@ impl MonthView {
                             let day_of_week = event.start().weekday().number_days_from_sunday();
                             week_day_map
                                 .entry(day_of_week)
-                                .or_insert(Vec::new())
+                                .or_default()
                                 .push(event.clone());
                         }
 
