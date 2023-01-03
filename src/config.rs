@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use time::{Date, OffsetDateTime};
 use time_tz::Tz;
 
+use crate::model::calendar_source::CalendarSource;
+
 /// A struct containing the configuration options.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -31,6 +33,8 @@ pub struct Config {
     pub copy_stylesheet_to_output: bool,
     /// The stylesheet to copy to the output dir
     pub copy_stylesheet_from: String,
+    /// The list of calendars to import (can be files and urls)
+    pub calendar_sources: Vec<String>,
 }
 
 /// Sane default values for the config struct.
@@ -49,6 +53,7 @@ impl Default for Config {
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,
             copy_stylesheet_from: "public/statical.css".into(),
+            calendar_sources: Vec::new(),
         }
     }
 }
@@ -70,20 +75,26 @@ impl Config {
         };
         let stylesheet_path = PathBuf::from(&self.stylesheet_path);
         let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
+        let calendars = self
+            .calendar_sources
+            .iter()
+            .map(|cal_str| CalendarSource::new(cal_str));
+        // TODO need to show calendar source errors to user
 
         Ok(ParsedConfig {
-            output_dir,
-            display_timezone,
-            agenda_start_date,
-            stylesheet_path,
-            copy_stylesheet_from,
-            default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,
             render_agenda: self.render_agenda,
             render_day: self.render_day,
             render_month: self.render_month,
             render_week: self.render_week,
+            output_dir,
+            display_timezone,
             agenda_events_per_page: self.agenda_events_per_page,
+            agenda_start_date,
+            default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,
+            stylesheet_path,
             copy_stylesheet_to_output: self.copy_stylesheet_to_output,
+            copy_stylesheet_from,
+            calendar_sources: calendars.filter_map(|c| c.ok()).collect(),
         })
     }
 }
@@ -133,4 +144,6 @@ pub struct ParsedConfig<'a> {
     pub copy_stylesheet_to_output: bool,
     /// The stylesheet to copy to the output dir
     pub copy_stylesheet_from: PathBuf,
+    /// The list of calendars to import (can be files and urls)
+    pub(crate) calendar_sources: Vec<CalendarSource>,
 }

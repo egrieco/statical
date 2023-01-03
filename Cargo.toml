@@ -32,6 +32,7 @@ time = { version = "0.3.12", features = ["parsing", "serde-well-known"] }
 time-tz = { version = "1.0.2", features = ["db"] }
 toml_edit = { version = "0.14.4", features = ["easy"] }
 ureq = "2.5.0"
+url = "2.3.1"
 # serde = { version = "1", features = ["derive"] }
 # config = { version = "0", features = ["hjson"] }  # also supports ini, yaml
 # termcolor = "1"
