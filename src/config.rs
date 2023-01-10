@@ -75,10 +75,7 @@ impl Config {
         };
         let stylesheet_path = PathBuf::from(&self.stylesheet_path);
         let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
-        let calendars = self
-            .calendar_sources
-            .iter()
-            .map(|cal_str| CalendarSource::new(cal_str));
+        let calendars = CalendarSource::from_strings(self.calendar_sources.clone());
         // TODO need to show calendar source errors to user
 
         Ok(ParsedConfig {
@@ -94,7 +91,7 @@ impl Config {
             stylesheet_path,
             copy_stylesheet_to_output: self.copy_stylesheet_to_output,
             copy_stylesheet_from,
-            calendar_sources: calendars.filter_map(|c| c.ok()).collect(),
+            calendar_sources: calendars.into_iter().filter_map(|c| c.ok()).collect(),
         })
     }
 }

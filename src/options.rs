@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::path::PathBuf;
 
 /// Command line options
 #[derive(Parser, Debug)]
@@ -9,11 +8,7 @@ pub struct Opt {
     #[clap(short, long, default_value_t = String::from("statical.toml"))]
     pub config: String,
 
-    /// The calendar files to read
+    /// The calendar sources to read (can be URLs or file paths)
     #[clap(short, long)]
-    pub file: Option<Vec<PathBuf>>,
-
-    /// The calendar urls to read
-    #[clap(short, long)]
-    pub url: Option<Vec<String>>,
+    pub source: Option<Vec<String>>,
 }

@@ -20,4 +20,11 @@ impl CalendarSource {
             bail!("could not create CalendarSource from: {}", source);
         }
     }
+
+    pub(crate) fn from_strings(sources: Vec<String>) -> Vec<Result<CalendarSource>> {
+        sources
+            .iter()
+            .map(|cal_str| CalendarSource::new(cal_str))
+            .collect()
+    }
 }

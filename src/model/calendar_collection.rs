@@ -11,9 +11,11 @@ use time::OffsetDateTime;
 use time::{Date, Month as MonthName};
 use time_tz::Tz;
 
+use super::calendar_source::CalendarSource;
 use super::event::UnparsedProperties;
 use crate::config::ParsedConfig;
 use crate::model::calendar::Calendar;
+use crate::model::calendar_source::CalendarSource::*;
 use crate::model::day::DayContext;
 use crate::model::event::Year;
 use crate::options::Opt;
@@ -43,25 +45,34 @@ impl<'a> CalendarCollection<'a> {
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
 
-        if let Some(files) = args.file {
-            for file in files {
-                if file.exists() {
+        // add sources from config file
+        let calendar_sources = &config.calendar_sources;
+
+        // read calendar sources from cli options
+        let cli_sources: Vec<CalendarSource> = if let Some(arg_sources) = args.source {
+            let cli_arg_sources = CalendarSource::from_strings(arg_sources);
+            cli_arg_sources.into_iter().filter_map(|c| c.ok()).collect()
+        } else {
+            Vec::new()
+        };
+
+        // parse calendars from all sources
+        for source in calendar_sources.iter().chain(cli_sources.iter()) {
+            match source {
+                CalendarFile(file) => {
                     let buf = BufReader::new(File::open(file)?);
                     let (parsed_calendars, calendar_unparsed_properties) =
                         &mut Calendar::parse_calendars(buf)?;
                     unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
                     calendars.append(parsed_calendars);
                 }
-            }
-        };
-
-        if let Some(urls) = args.url {
-            for url in urls {
-                let ics_string = ureq::get(&url).call()?.into_string()?;
-                let (parsed_calendars, calendar_unparsed_properties) =
-                    &mut Calendar::parse_calendars(ics_string.as_bytes())?;
-                unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
-                calendars.append(parsed_calendars);
+                CalendarUrl(url) => {
+                    let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
+                    let (parsed_calendars, calendar_unparsed_properties) =
+                        &mut Calendar::parse_calendars(ics_string.as_bytes())?;
+                    unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+                    calendars.append(parsed_calendars);
+                }
             }
         }
 
