@@ -138,13 +138,13 @@ impl DayView {
             previous_day
                 .format(format_description!("[year]-[month]-[day]"))
                 .map(|file_root| format!("{}.html", file_root))
-                .ok()
+                .unwrap_or_default()
         });
         let next_file_name = next_day.map(|(next_day, _events)| {
             next_day
                 .format(format_description!("[year]-[month]-[day]"))
                 .map(|file_root| format!("{}.html", file_root))
-                .ok()
+                .unwrap_or_default()
         });
 
         let mut context = Context::new();
