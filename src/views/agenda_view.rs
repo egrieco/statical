@@ -187,8 +187,6 @@ impl AgendaView {
         context.insert("timezone", config.display_timezone.name());
         context.insert("page", &page);
         context.insert("events", &events);
-        context.insert("previous_file_name", &previous_file_name);
-        context.insert("next_file_name", &next_file_name);
 
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
@@ -198,6 +196,26 @@ impl AgendaView {
 
         // write the template to all specified paths
         for file_path in file_paths {
+            // if the path matches the root path, prepend the default view to the next and previous links
+            if file_path.parent() == Some(&config.output_dir) {
+                context.insert(
+                    "previous_file_name",
+                    &previous_file_name
+                        .as_ref()
+                        .map(|path| ["agenda", path].join("/")),
+                );
+                context.insert(
+                    "next_file_name",
+                    &next_file_name
+                        .as_ref()
+                        .map(|path| ["agenda", path].join("/")),
+                );
+            } else {
+                context.insert("previous_file_name", &previous_file_name);
+                context.insert("next_file_name", &next_file_name);
+            }
+
+            // write the actual template
             write_template(tera, "agenda.html", &context, file_path)?;
         }
 

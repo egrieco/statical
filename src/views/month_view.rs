@@ -203,8 +203,6 @@ impl MonthView {
         context.insert("year", &year);
         context.insert("month", &month);
         context.insert("weeks", &week_list);
-        context.insert("previous_file_name", &previous_file_name);
-        context.insert("next_file_name", &next_file_name);
 
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
@@ -214,6 +212,26 @@ impl MonthView {
 
         // write the template to all specified paths
         for file_path in file_paths {
+            // if the path matches the root path, prepend the default view to the next and previous links
+            if file_path.parent() == Some(&config.output_dir) {
+                context.insert(
+                    "previous_file_name",
+                    &previous_file_name
+                        .as_ref()
+                        .map(|path| ["month", path].join("/")),
+                );
+                context.insert(
+                    "next_file_name",
+                    &next_file_name
+                        .as_ref()
+                        .map(|path| ["month", path].join("/")),
+                );
+            } else {
+                context.insert("previous_file_name", &previous_file_name);
+                context.insert("next_file_name", &next_file_name);
+            }
+
+            // write the actual template
             write_template(tera, "month.html", &context, file_path)?;
         }
 
