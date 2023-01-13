@@ -104,6 +104,7 @@ pub enum CalendarView {
     Agenda,
 }
 
+// consider replacing with EnumString in strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
 fn parse_calendar_view(view: &str) -> Result<CalendarView> {
     // TODO normalize case and strip whitespace
     match view {
