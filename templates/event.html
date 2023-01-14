@@ -1,0 +1,7 @@
+<div class="event">
+  <a href="{{ event.url }}">
+    <p class="time">{{ event.start }} - {{ event.end }} <span class="duration">({{ event.duration }} hours)</span></p>
+    <p class="summary">{{ event.summary }}</p>
+    <p>{{ event.description | linebreaksbr | safe }}</p>
+  </a>
+</div>

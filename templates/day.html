@@ -15,7 +15,7 @@
     {% include "views.html" %}
     {% include "pagination.html" %}
     {% for event in events %}
-    <p>{{ event.summary }} - {{ event.start }}</p>
+      {% include "event.html" %}
     {% endfor %}
     {% include "pagination.html" %}
   </div>
