@@ -42,6 +42,7 @@ pub struct EventContext {
     end: String,
     end_timestamp: i64,
     duration: String,
+    url: String,
 }
 
 impl fmt::Display for Event {
@@ -91,6 +92,7 @@ impl Event {
                 .unwrap_or_else(|_| "NO END TIME".to_string()),
             end_timestamp: self.end().to_timezone(tz).unix_timestamp(),
             duration: self.duration.to_string(),
+            url: self.url().to_owned(),
         }
     }
 
@@ -104,6 +106,10 @@ impl Event {
 
     pub fn end(&self) -> OffsetDateTime {
         self.start + self.duration
+    }
+
+    pub fn url(&self) -> &str {
+        self.url.as_deref().unwrap_or_default()
     }
 
     pub fn year(&self) -> Year {
