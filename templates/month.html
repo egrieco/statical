@@ -18,9 +18,11 @@
     <div class="month">
       {% for week in weeks %} {% for day in week %}
       <div class="day">
-        <p class="header">
-          <span class="wday">{{ day.wday }}</span>
-          <span class="date">{{ day.month }} {{ day.day }}</span>
+        <p class="date">
+          {% if day.day == 1 %}
+          {{ day.month }}
+          {% endif %}
+          {{ day.day }}
         </p>
         <div class="events">
           {% for event in day.events %}

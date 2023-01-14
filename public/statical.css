@@ -9,10 +9,7 @@ body {
 }
 
 .day {
-  margin: 0.25em;
   background-color: aliceblue;
-  flex-grow: 1;
-  /* padding: 0 0.75em; */
 }
 
 .header {
@@ -24,8 +21,10 @@ body {
   column-gap: 1em;
 }
 
-.header .date {
+.day .date {
   white-space: nowrap;
+  text-align: right;
+  margin: 0.5em;
 }
 
 ul {
@@ -53,18 +52,36 @@ ul li {
   margin: 0.5em;
 }
 
-.event p {
-  margin: 0;
+.event :any-link {
+  color: unset;
+  text-decoration: none;
 }
 
-.event p.time {
+.event p {
+  margin: 1em 0;
+}
+
+.event p:first-child {
+  margin-top: 0;
+}
+
+.event p:last-child {
+  margin-bottom: 0;
+}
+
+.event p.header {
   background-color: grey;
   border-top-left-radius: 1em;
   border-top-right-radius: 1em;
-  padding: 0.5em;
+  white-space: nowrap;
+  margin-bottom: 0;
 }
 
-.event p.summary {
+.event .summary {
+  font-weight: bold;
+}
+
+.event .body {
   padding: 0.5em;
 }
 
@@ -72,4 +89,5 @@ ul li {
   display: grid;
   grid-auto-rows: minmax(6em, auto);
   grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
 }
