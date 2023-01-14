@@ -10,7 +10,10 @@ use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
-    model::{calendar::Calendar, event::EventList},
+    model::{
+        calendar::Calendar,
+        event::{EventContext, EventList},
+    },
     util::write_template,
 };
 
@@ -153,7 +156,14 @@ impl DayView {
         context.insert("year", &day.year());
         context.insert("month", &day.month());
         context.insert("day", &day.day());
-        context.insert("events", events);
+        // TODO switch these to contexts
+        context.insert(
+            "events",
+            &events
+                .iter()
+                .map(|e| e.context(config.display_timezone))
+                .collect::<Vec<EventContext>>(),
+        );
 
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
