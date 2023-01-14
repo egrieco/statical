@@ -13,9 +13,16 @@
   <div class="calendar">
     <h1>Events for {{ year }}-{{ month }}-{{ day }}</h1>
     {% include "pagination_with_views.html" %}
-    {% for event in events %}
-      {% include "event.html" %}
-    {% endfor %}
+    <div class="day">
+      <p class="header">
+        <span class="date">{{ month_name }} {{ day }}, {{ year }}</span>
+      </p>
+      <div class="events">
+        {% for event in events %}
+          {% include "event.html" %}
+        {% endfor %}
+      </div>
+    </div>
     {% include "pagination.html" %}
   </div>
 </body>
