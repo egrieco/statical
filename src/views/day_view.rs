@@ -1,4 +1,5 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
+use num_traits::cast::FromPrimitive;
 use std::{
     collections::BTreeMap,
     iter,
@@ -155,6 +156,12 @@ impl DayView {
         context.insert("timezone", config.display_timezone.name());
         context.insert("year", &day.year());
         context.insert("month", &day.month());
+        context.insert(
+            "month_name",
+            &chrono::Month::from_u8(day.month().into())
+                .ok_or(eyre!("unknown month"))?
+                .name(),
+        );
         context.insert("day", &day.day());
         // TODO switch these to contexts
         context.insert(

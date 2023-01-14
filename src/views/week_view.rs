@@ -185,8 +185,9 @@ impl WeekView {
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", &config.display_timezone.name());
         context.insert("year", &year);
+        // TODO add month numbers
         context.insert(
-            "month",
+            "month_name",
             &week_dates
                 .iter()
                 .map(|d| d.month.clone())
