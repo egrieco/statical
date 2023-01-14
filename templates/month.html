@@ -14,8 +14,12 @@
     <h1>{{ month_name }} {{ year }}</h1>
     {% include "pagination_with_views.html" %}
     <div class="month">
-      {% for week in weeks %} {% for day in week %}
+      {% for week in weeks %}
+      {% set first_week = loop.first %}
+      {% for day in week %}
       <div class="day">
+        {% if first_week %}
+        <p class="header">{{ day.wday }}</p> {% endif %}
         <p class="date">
           {% if day.day == 1 %}
           {{ day.month }}

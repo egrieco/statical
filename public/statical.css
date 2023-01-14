@@ -18,19 +18,25 @@ h1 {
   padding: 0.1em;
 }
 
-.header {
+.calendar .header {
   background: lightgray;
   padding: 0.5em;
   margin: 0;
+  column-gap: 1em;
+}
+
+.calendar .month .header {
+  text-align: center;
+}
+
+.calendar .week .header {
   display: flex;
   justify-content: space-between;
-  column-gap: 1em;
 }
 
 .day .date {
   white-space: nowrap;
   text-align: right;
-  margin: 0.5em;
 }
 
 ul {
