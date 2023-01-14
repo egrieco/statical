@@ -12,8 +12,7 @@
 <body>
   <div class="calendar">
     <h1>Events for week {{ week }} of {{ month }} {{ year }}</h1>
-    {% include "views.html" %}
-    {% include "pagination.html" %}
+    {% include "pagination_with_views.html" %}
     <div class="week">
       {% for day in week_dates %}
       <div class="day">

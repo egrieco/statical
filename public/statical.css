@@ -2,10 +2,15 @@ body {
   height: 100%;
 }
 
-.week {
-  display: flex;
-  height: 100%;
-  width: 100%;
+h1 {
+  text-align: center;
+}
+
+.calendar .week {
+  display: grid;
+  grid-auto-rows: 2;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
 }
 
 .day {
@@ -42,7 +47,17 @@ ul li {
 .pagination {
   display: flex;
   justify-content: space-between;
-  padding: 0 0.5em;
+  padding: 0.25em 0;
+}
+
+.view ul {
+  margin: 0;
+  padding: 0;
+}
+
+.pagination .view ul li {
+  display: inline;
+  margin: 0 1em;
 }
 
 .event {
