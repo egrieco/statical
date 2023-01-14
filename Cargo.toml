@@ -23,6 +23,7 @@ clap = { version = "3.2.16", features = ["derive"] }
 color-eyre = "0.6.2"
 dedup_iter = "0.1.1"
 ical = "0.7.0"
+num-traits = "0.2.15"
 regex = "1.6.0"
 rrule = "0.7.3"
 serde = { version = "1.0.142", features = ["derive", "rc"] }

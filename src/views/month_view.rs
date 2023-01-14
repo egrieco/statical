@@ -1,4 +1,5 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
+use num_traits::cast::FromPrimitive;
 use std::{
     collections::BTreeMap,
     iter,
@@ -202,6 +203,12 @@ impl MonthView {
         context.insert("timezone", &config.display_timezone.name());
         context.insert("year", &year);
         context.insert("month", &month);
+        context.insert(
+            "month_name",
+            &chrono::Month::from_u8(*month)
+                .ok_or(eyre!("unknown month"))?
+                .name(),
+        );
         context.insert("weeks", &week_list);
 
         // create the main file path

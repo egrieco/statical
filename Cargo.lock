@@ -1265,6 +1265,7 @@ dependencies = [
  "dedup_iter",
  "ical",
  "indoc",
+ "num-traits",
  "pretty_assertions",
  "regex",
  "rrule",
