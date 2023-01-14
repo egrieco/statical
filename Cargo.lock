@@ -1273,6 +1273,7 @@ dependencies = [
  "time 0.3.12",
  "time-tz",
  "toml_edit",
+ "unescaper",
  "ureq",
  "url",
 ]
@@ -1513,6 +1514,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09b01702b0fd0b3fadcf98e098780badda8742d4f4a7676615cad90e8ac73622"
 dependencies = [
  "version_check",
+]
+
+[[package]]
+name = "unescaper"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "995483205de764db1185c9461a000fff73fa4b9ee2bbe4c8b4027a94692700fe"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]

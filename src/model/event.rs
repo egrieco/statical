@@ -9,6 +9,7 @@ use time::{
     Duration, OffsetDateTime, PrimitiveDateTime,
 };
 use time_tz::{timezones::get_by_name, OffsetDateTimeExt, PrimitiveDateTimeExt, Tz};
+use unescaper::unescape;
 
 const MISSING_SUMMARY: &str = "None";
 
@@ -165,7 +166,14 @@ impl Event {
         for property in event.properties {
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
-                "DESCRIPTION" => description = property.value,
+                "DESCRIPTION" => {
+                    description = property
+                        .value
+                        // we have to strip out escaped commas so they don't trip up unescape
+                        .map(|v| v.replace(r"\,", r","))
+                        .map(|v| unescape(&v))
+                        .transpose()?
+                }
                 "DTSTART" => start = property_to_time(&property)?,
                 "DTEND" => end = property_to_time(&property)?,
                 "RRULE" => rrule = property.value,
