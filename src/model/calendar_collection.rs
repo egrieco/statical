@@ -128,7 +128,7 @@ impl<'a> CalendarCollection<'a> {
 
         // expand recurring events
         for calendar in calendars.iter_mut() {
-            calendar.expand_recurrences(cal_start, cal_end);
+            calendar.expand_recurrences(cal_start, cal_end)?;
         }
 
         Ok(CalendarCollection {

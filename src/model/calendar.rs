@@ -1,6 +1,6 @@
 use chrono::TimeZone;
 use chrono_tz::UTC;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use rrule::DateFilter;
@@ -73,10 +73,14 @@ impl Calendar {
         }
     }
 
-    pub fn expand_recurrences(&mut self, cal_start: OffsetDateTime, cal_end: OffsetDateTime) {
+    pub fn expand_recurrences(
+        &mut self,
+        cal_start: OffsetDateTime,
+        cal_end: OffsetDateTime,
+    ) -> Result<()> {
         // we need to convert from the time-rs library to chrono for RRule's sake
-        let repeat_start = UTC.timestamp(cal_start.unix_timestamp(), 0);
-        let repeat_end = UTC.timestamp(cal_end.unix_timestamp(), 0);
+        let repeat_start = UTC.timestamp_opt(cal_start.unix_timestamp(), 0);
+        let repeat_end = UTC.timestamp_opt(cal_end.unix_timestamp(), 0);
 
         let mut new_events: EventList = Vec::new();
 
@@ -87,7 +91,15 @@ impl Calendar {
                 .rrule()
                 .unwrap()
                 // setting inclusive to true since we have moved recurring events into a separate vec
-                .all_between(repeat_start, repeat_end, true)
+                .all_between(
+                    repeat_start
+                        .single()
+                        .ok_or(eyre!("could not get local start time"))?,
+                    repeat_end
+                        .single()
+                        .ok_or(eyre!("could not get local end time"))?,
+                    true,
+                )
             {
                 // add event to groups
                 println!("{:#?}", recurrence_datetimes);
@@ -105,6 +117,8 @@ impl Calendar {
         // add new events to events in calendar
         // this extra step was necessary due to mutability rules in Rust and iterators
         self.events.extend(new_events);
+
+        Ok(())
     }
 
     /// Parse calendar data from ICS
