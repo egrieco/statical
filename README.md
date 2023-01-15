@@ -66,3 +66,7 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
   - [ ] add JS to toggle display of events by calendar
   - [ ] add JS to toggle display of events by category
 - [ ] add an option to generate example templates or provide them in the docs/repo
+
+## Related Projects
+
+- [zerocal](https://endler.dev/2022/zerocal/): A Serverless Calendar App in Rust Running on shuttle.rs by Matthias Endler
