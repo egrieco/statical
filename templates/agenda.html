@@ -14,14 +14,14 @@
     <h1>Events</h1>
     {% include "pagination_with_views.html" %}
     <div class="day">
-      <p class="header">
-        Events
-      </p>
-      <div class="events">
-        {% for event in events %}
-          {% include "event.html" %}
-        {% endfor %}
-      </div>
+      {% for group, events in event_groups %}
+        <p class="header">{{ group }}</p>
+        <div class="events">
+          {% for event in events %}
+            {% include "event.html" %}
+          {% endfor %}
+        </div>
+      {% endfor %}
     </div>
     {% include "pagination.html" %}
   </div>

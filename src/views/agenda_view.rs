@@ -1,15 +1,20 @@
 use color_eyre::eyre::Result;
 use std::{
+    collections::BTreeMap,
     isize, iter,
     path::{Path, PathBuf},
     rc::Rc,
 };
 use tera::{Context, Tera};
+use time::macros::format_description;
 use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
-    model::{calendar::Calendar, event::Event},
+    model::{
+        calendar::Calendar,
+        event::{Event, EventContext},
+    },
     util::write_template,
 };
 
@@ -20,6 +25,8 @@ type EventSlice<'a> = &'a [&'a Rc<Event>];
 ///
 /// Note that the previous and next weeks may be None
 pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
+
+type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
 #[derive(Debug)]
 pub(crate) struct AgendaView {
@@ -168,7 +175,7 @@ impl AgendaView {
             );
         }
 
-        let events: Vec<_> = events
+        let event_contexts: Vec<_> = events
             .iter()
             .map(|e| e.context(config.display_timezone))
             .collect();
@@ -186,7 +193,20 @@ impl AgendaView {
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", config.display_timezone.name());
         context.insert("page", &page);
-        context.insert("events", &events);
+        context.insert("events", &event_contexts);
+
+        // group events by whatever format is specified
+        // TODO add agenda group format to the config file
+        let mut event_groups = EventDayGroups::new();
+        for event in events.iter() {
+            event_groups
+                .entry(event.start().format(format_description!(
+                    "[weekday repr:short], [day] [month repr:short] [year]"
+                ))?)
+                .or_default()
+                .push(event.context(config.display_timezone))
+        }
+        context.insert("event_groups", &event_groups);
 
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
