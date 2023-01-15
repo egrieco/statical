@@ -4,9 +4,11 @@ A calendar aggregator and generator to make maintaining calendars on static webs
 
 ## Status
 
-This program is still in the [Pre-alpha](https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha) stage of development. While it is almost working for me, it does not have a complete configuration system nor much in the way of documentation.
+This program is now almost usable for basic calendar generation functionality. It is thus now in the late [Alpha](https://en.wikipedia.org/wiki/Software_release_life_cycle#Pre-alpha) stage of development. One contributor is apparently already using it regularly. The default templates are starting to look decent and are just about usable without edits.
 
-You are welcome to play with the code and attempt to use it, but most users should wait until the 1.0 version is released and the documentation is more complete.
+The documentation needs to be completed as well as adding example config files and a setup guide. The code is now useful for users willing to tinker and dig, but most users should wait until the 1.0 version is released and the documentation is more complete.
+
+A new version will be pushed to [crates.io](https://crates.io/crates/statical) shortly.
 
 ## Use
 
