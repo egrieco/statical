@@ -1,4 +1,4 @@
-use clap::StructOpt;
+use clap::Parser;
 use color_eyre::eyre::{self};
 use std::io::{Read, Write};
 
