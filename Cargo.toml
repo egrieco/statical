@@ -31,7 +31,7 @@ serde = { version = "1.0.152", features = ["derive", "rc"] }
 tera = { version = "1.17.1", features = ["date-locale"] }
 time = { version = "0.3.17", features = ["parsing", "serde-well-known"] }
 time-tz = { version = "1.0.2", features = ["db"] }
-toml_edit = { version = "0.14.4", features = ["easy"] }
+toml_edit = { version = "0.18.0", features = ["easy"] }
 unescaper = "0.1.1"
 ureq = "2.6.2"
 url = "2.3.1"
