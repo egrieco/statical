@@ -1,6 +1,7 @@
 use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use color_eyre::eyre::{bail, ContextCompat, Result, WrapErr};
+use const_format::concatcp;
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
 use rrule::RRuleSet;
@@ -31,7 +32,7 @@ const CONTEXT_END_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
 // const RRULE_DTSTART_PARSING_FORMAT = format_description!(
 //     "[year][month][day]T[hour][minute][second]Z"
 // );
-const RRULE_DTSTART_PARSING_FORMAT: &str = format!("{}Z", PROPERTY_DATETIME_FORMAT).as_str();
+const RRULE_DTSTART_PARSING_FORMAT: &str = concatcp!(PROPERTY_DATETIME_FORMAT, "Z");
 
 pub type Year = i32;
 pub type WeekNum = u8;
@@ -43,7 +44,7 @@ pub type UnparsedProperties = HashSet<String>;
 /// These are reference counted since they may appear in more than one list
 pub type EventList = Vec<Rc<Event>>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Event {
     summary: Option<String>,
     description: Option<String>,

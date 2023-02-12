@@ -88,7 +88,7 @@ impl Config {
             render_month: self.render_month,
             render_week: self.render_week,
             output_dir,
-            display_timezone: &display_timezone,
+            display_timezone: display_timezone,
             agenda_events_per_page: self.agenda_events_per_page,
             agenda_start_date,
             default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,
@@ -121,7 +121,7 @@ fn parse_calendar_view(view: &str) -> Result<CalendarView> {
 }
 
 #[derive(Debug)]
-pub struct ParsedConfig<'a> {
+pub struct ParsedConfig {
     /// Flag to control rendering of the agenda pages.
     pub render_agenda: bool,
     /// Flag to control rendering of the day pages.
@@ -133,7 +133,7 @@ pub struct ParsedConfig<'a> {
     /// The path to the output directory where files will be written.
     pub output_dir: PathBuf,
     /// Name of the timezone used to format time
-    pub display_timezone: &'a Tz,
+    pub display_timezone: Tz,
     /// Number of events per page in agenda
     pub agenda_events_per_page: usize,
     /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)

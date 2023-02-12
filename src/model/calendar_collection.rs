@@ -27,7 +27,7 @@ use crate::views::week_view::{WeekDayMap, WeekView};
 type InternalDate = NaiveDate;
 
 #[derive(Debug)]
-pub struct CalendarCollection<'a> {
+pub struct CalendarCollection {
     calendars: Vec<Calendar>,
 
     // these are represented as options since the user can choose to render them or not
@@ -37,12 +37,12 @@ pub struct CalendarCollection<'a> {
     agenda: Option<AgendaView>,
 
     tera: Tera,
-    config: ParsedConfig<'a>,
+    config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
 }
 
-impl<'a> CalendarCollection<'a> {
-    pub fn new(args: Opt, config: ParsedConfig<'a>) -> eyre::Result<CalendarCollection<'a>> {
+impl CalendarCollection {
+    pub fn new(args: Opt, config: ParsedConfig) -> eyre::Result<CalendarCollection> {
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
 

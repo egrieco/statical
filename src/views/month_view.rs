@@ -179,7 +179,7 @@ impl MonthView {
 
                         // create week days
                         let week_dates =
-                            week_day_map.context(year, &week_num, config.display_timezone)?;
+                            week_day_map.context(year, &week_num, &config.display_timezone)?;
                         week_list.push(week_dates);
                     }
                 }

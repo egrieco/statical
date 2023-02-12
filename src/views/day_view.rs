@@ -158,7 +158,7 @@ impl DayView {
             "events",
             &events
                 .iter()
-                .map(|e| e.context(config.display_timezone))
+                .map(|e| e.context(&config.display_timezone))
                 .collect::<Vec<EventContext>>(),
         );
 

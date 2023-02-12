@@ -178,7 +178,7 @@ impl WeekView {
             .map(|((next_year, next_week), _events)| format!("{}-{}.html", next_year, next_week));
 
         // get the events grouped by day
-        let week_dates = week_day_map.context(year, week, config.display_timezone)?;
+        let week_dates = week_day_map.context(year, week, &config.display_timezone)?;
 
         // setup the tera context
         let mut context = Context::new();
