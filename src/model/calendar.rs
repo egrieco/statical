@@ -1,26 +1,21 @@
-use chrono::TimeZone;
-use chrono_tz::UTC;
-use color_eyre::eyre::{eyre, Result};
+use chrono::{DateTime, Months, TimeZone, Utc};
+use color_eyre::eyre::Result;
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
-use rrule::DateFilter;
+use rrule::Tz as RruleTz;
 use std::collections::HashSet;
 use std::io::BufRead;
 use std::rc::Rc;
-use time::ext::NumericalDuration;
-use time::util::days_in_year_month;
-use time::OffsetDateTime;
-
-use crate::model::event::Event;
 
 use super::event::{EventList, UnparsedProperties};
+use crate::model::event::Event;
 
 #[derive(Debug)]
 pub struct Calendar {
     name: Option<String>,
     description: Option<String>,
-    start: OffsetDateTime,
-    end: OffsetDateTime,
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
     events: EventList,
     recurring_events: EventList,
 }
@@ -43,27 +38,25 @@ impl Calendar {
         }
         // calculate calendar start and end dates
         // default to today and one month from today
-        let now = OffsetDateTime::now_utc();
-        let year = now.year();
-        let month = now.month();
+        let now = Utc::now();
 
         // build the new calendar
         Ok(Calendar {
             name,
             description,
             start: now,
-            end: now.saturating_add((days_in_year_month(year, month) as i64).days()),
+            end: now + Months::new(1),
             events: Vec::new(),
             recurring_events: Vec::new(),
         })
     }
 
-    pub fn push(&mut self, event: Rc<Event>) {
+    pub fn push(&mut self, event: Rc<Event>) -> Result<()> {
         // collect calendar start and end dates, we need this for rrule expansion
         self.start = self.start.min(event.start());
         self.end = self.end.max(event.end());
 
-        if event.rrule().is_some() {
+        if event.rrule()?.is_some() {
             // add event to recurring_events
             // TODO might want to look at any recurrence termination dates and set calendar end to that
             self.recurring_events.push(event)
@@ -71,47 +64,38 @@ impl Calendar {
             // add event to calendar event list
             self.events.push(event)
         }
+        Ok(())
     }
 
     pub fn expand_recurrences(
         &mut self,
-        cal_start: OffsetDateTime,
-        cal_end: OffsetDateTime,
+        cal_start: DateTime<Utc>,
+        cal_end: DateTime<Utc>,
     ) -> Result<()> {
         // we need to convert from the time-rs library to chrono for RRule's sake
-        let repeat_start = UTC.timestamp_opt(cal_start.unix_timestamp(), 0);
-        let repeat_end = UTC.timestamp_opt(cal_end.unix_timestamp(), 0);
+        let repeat_start: DateTime<RruleTz> =
+            rrule::Tz::UTC.from_utc_datetime(&cal_start.naive_utc());
+        // .ok_or(bail!("could not get local start time"))
+        // .into();
+        let repeat_end: DateTime<RruleTz> = rrule::Tz::UTC.from_utc_datetime(&cal_end.naive_utc());
+        // .single()
+        // .ok_or(bail!("could not get local end time"));
 
         let mut new_events: EventList = Vec::new();
 
         for event in self.recurring_events() {
             // TODO might want to make this a map based on UID
             println!("Event with rrule found: {:#?}", event);
-            if let Ok(recurrence_datetimes) = event
-                .rrule()
-                .unwrap()
-                // setting inclusive to true since we have moved recurring events into a separate vec
-                .all_between(
-                    repeat_start
-                        .single()
-                        .ok_or(eyre!("could not get local start time"))?,
-                    repeat_end
-                        .single()
-                        .ok_or(eyre!("could not get local end time"))?,
-                    true,
-                )
-            {
+            if let Ok(Some(rrule)) = event.rrule() {
                 // add event to groups
-                println!("{:#?}", recurrence_datetimes);
-                for recurrence_time in recurrence_datetimes {
-                    // we have to convert the DateTime<Tz> back into an OffsetDateTime
-                    let new_start =
-                        OffsetDateTime::from_unix_timestamp(recurrence_time.timestamp())
-                            .expect("could not build timestamp from recurrence time");
+                for recurrence_time in &rrule.after(repeat_start).before(repeat_end) {
                     // TODO might want to push directly into the events vec and skip some of the checks in Calendar.push()
-                    new_events.push(Rc::new(event.duplicate_with_date(new_start)));
+                    new_events.push(Rc::new(
+                        // TODO ensure that we want this to be UTC here
+                        event.duplicate_with_date(recurrence_time.with_timezone(&Utc)),
+                    ));
                 }
-            }
+            };
         }
 
         // add new events to events in calendar
@@ -146,12 +130,12 @@ impl Calendar {
     }
 
     #[must_use]
-    pub fn start(&self) -> OffsetDateTime {
+    pub fn start(&self) -> DateTime<Utc> {
         self.start
     }
 
     #[must_use]
-    pub fn end(&self) -> OffsetDateTime {
+    pub fn end(&self) -> DateTime<Utc> {
         self.end
     }
 

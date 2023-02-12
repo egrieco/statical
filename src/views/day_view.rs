@@ -1,4 +1,5 @@
-use color_eyre::eyre::{eyre, Result};
+use chrono::{DateTime, Datelike, Month, Utc};
+use color_eyre::eyre::Result;
 use num_traits::cast::FromPrimitive;
 use std::{
     collections::BTreeMap,
@@ -6,8 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tera::{Context, Tera};
-use time::{macros::format_description, Date};
-use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
@@ -18,8 +17,10 @@ use crate::{
     util::write_template,
 };
 
+const YMD_FORMAT: &str = "[year]-[month]-[day]";
+
 /// Type alias representing a specific day in time
-type Day = Date;
+type Day = DateTime<Utc>;
 
 /// A triple with the previous, current, and next days present
 ///
@@ -36,13 +37,13 @@ pub struct DayView {
 
 impl DayView {
     pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut day_map: BTreeMap<Date, EventList> = BTreeMap::new();
+        let mut day_map: BTreeMap<DateTime<Utc>, EventList> = BTreeMap::new();
 
         // add events to the day_map
         for calendar in calendars {
             for event in calendar.events() {
                 day_map
-                    .entry(event.start().date())
+                    .entry(event.start())
                     .or_default()
                     .push(event.clone());
             }
@@ -133,23 +134,12 @@ impl DayView {
                 event.start(),
             );
         }
-        let file_name = format!(
-            "{}.html",
-            day.format(format_description!("[year]-[month]-[day]"))?
-        );
+        let file_name = format!("{}.html", day.format(YMD_FORMAT));
         // TODO should we raise the error on format() failing?
-        let previous_file_name = previous_day.map(|(previous_day, _events)| {
-            previous_day
-                .format(format_description!("[year]-[month]-[day]"))
-                .map(|file_root| format!("{}.html", file_root))
-                .unwrap_or_default()
-        });
-        let next_file_name = next_day.map(|(next_day, _events)| {
-            next_day
-                .format(format_description!("[year]-[month]-[day]"))
-                .map(|file_root| format!("{}.html", file_root))
-                .unwrap_or_default()
-        });
+        let previous_file_name = previous_day
+            .map(|(previous_day, _events)| format!("{}.html", previous_day.format(YMD_FORMAT)));
+        let next_file_name =
+            next_day.map(|(next_day, _events)| format!("{}.html", next_day.format(YMD_FORMAT)));
 
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
@@ -158,8 +148,8 @@ impl DayView {
         context.insert("month", &day.month());
         context.insert(
             "month_name",
-            &chrono::Month::from_u8(day.month().into())
-                .ok_or(eyre!("unknown month"))?
+            Month::from_u32(day.month())
+                .expect("could not get month name")
                 .name(),
         );
         context.insert("day", &day.day());

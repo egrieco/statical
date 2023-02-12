@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use color_eyre::eyre::Result;
 use std::{
     collections::BTreeMap,
@@ -6,8 +7,6 @@ use std::{
     rc::Rc,
 };
 use tera::{Context, Tera};
-use time::macros::format_description;
-use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
@@ -59,7 +58,7 @@ impl AgendaView {
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list
             .iter()
-            .partition(|e| e.start().date() < config.agenda_start_date);
+            .partition(|e| e.start() < config.agenda_start_date);
 
         // process past events
         past_events.sort_by_key(|e| e.start());
@@ -200,9 +199,7 @@ impl AgendaView {
         let mut event_groups = EventDayGroups::new();
         for event in events.iter() {
             event_groups
-                .entry(event.start().format(format_description!(
-                    "[weekday repr:short], [day] [month repr:short] [year]"
-                ))?)
+                .entry(event.start().format("%a, %d %m %Y").to_string())
                 .or_default()
                 .push(event.context(config.display_timezone))
         }

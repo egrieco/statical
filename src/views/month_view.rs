@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use color_eyre::eyre::{eyre, Result};
 use num_traits::cast::FromPrimitive;
 use std::{
@@ -6,7 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tera::{Context, Tera};
-use time_tz::TimeZone;
 
 use super::week_view::WeekMap;
 use crate::{
@@ -170,7 +170,7 @@ impl MonthView {
                                 event.summary(),
                                 event.start(),
                             );
-                            let day_of_week = event.start().weekday().number_days_from_sunday();
+                            let day_of_week = event.start().weekday().num_days_from_sunday() as u8;
                             week_day_map
                                 .entry(day_of_week)
                                 .or_default()

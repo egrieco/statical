@@ -1,17 +1,37 @@
+use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDateTime, Utc};
+use chrono_tz::Tz;
 use color_eyre::eyre::{bail, ContextCompat, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
-use rrule::RRule;
+use rrule::RRuleSet;
 use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
-use time::{
-    macros::{format_description, offset},
-    Duration, OffsetDateTime, PrimitiveDateTime,
-};
-use time_tz::{timezones::get_by_name, OffsetDateTimeExt, PrimitiveDateTimeExt, Tz};
 use unescaper::unescape;
 
 const MISSING_SUMMARY: &str = "None";
+// const PROPERTY_DATETIME_FORMAT: &str = "[year][month][day]T[hour][minute][second]";
+const PROPERTY_DATETIME_FORMAT: &str = "%y%m%dT%H%M%S";
+// const START_DATETIME_FORMAT = format_description!(
+//     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
+// );
+const START_DATETIME_FORMAT: &str = "%a %B %d, %Y at %H:%M%P";
+// const END_DATETIME_FORMAT = format_description!(
+//     "[hour repr:12]:[minute][period case:lower]"
+// );
+const END_DATETIME_FORMAT: &str = "%H:%M%P";
+// const CONTEXT_START_DATETIME_FORMAT: &str = format_description!(
+//     "[hour repr:12 padding:none]:[minute][period case:lower]"
+// );
+const CONTEXT_START_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
+// const CONTEXT_END_DATETIME_FORMAT: &str = format_description!(
+//     "[hour repr:12 padding:none]:[minute][period case:lower]"
+// );
+const CONTEXT_END_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
+
+// const RRULE_DTSTART_PARSING_FORMAT = format_description!(
+//     "[year][month][day]T[hour][minute][second]Z"
+// );
+const RRULE_DTSTART_PARSING_FORMAT: &str = format!("{}Z", PROPERTY_DATETIME_FORMAT).as_str();
 
 pub type Year = i32;
 pub type WeekNum = u8;
@@ -27,7 +47,7 @@ pub type EventList = Vec<Rc<Event>>;
 pub struct Event {
     summary: Option<String>,
     description: Option<String>,
-    start: OffsetDateTime,
+    start: DateTime<Utc>,
     duration: Duration,
     rrule: Option<String>,
     location: Option<String>,
@@ -52,12 +72,8 @@ impl fmt::Display for Event {
             f,
             "{} ({} to {} for {})\n{}",
             self.summary.as_ref().unwrap_or(&"NO SUMMARY".to_string()),
-            self.start
-                .format(format_description!(
-                    "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
-                ))
-                .expect("could not format start time"),
-            self.end().format(format_description!("[hour repr:12]:[minute][period case:lower]")).expect("could not format end time"),
+            self.start.format(START_DATETIME_FORMAT),
+            self.end().format(END_DATETIME_FORMAT),
             self.duration,
             self.description
                 .as_ref()
@@ -78,20 +94,16 @@ impl Event {
                 .into(),
             start: self
                 .start()
-                .to_timezone(tz)
-                .format(format_description!(
-                    "[hour repr:12 padding:none]:[minute][period case:lower]"
-                ))
-                .unwrap_or_else(|_| "NO START TIME".to_string()),
-            start_timestamp: self.start().to_timezone(tz).unix_timestamp(),
+                .with_timezone(tz)
+                .format(CONTEXT_START_DATETIME_FORMAT)
+                .to_string(),
+            start_timestamp: self.start().with_timezone(tz).timestamp(),
             end: self
                 .end()
-                .to_timezone(tz)
-                .format(format_description!(
-                    "[hour repr:12 padding:none]:[minute][period case:lower]"
-                ))
-                .unwrap_or_else(|_| "NO END TIME".to_string()),
-            end_timestamp: self.end().to_timezone(tz).unix_timestamp(),
+                .with_timezone(tz)
+                .format(CONTEXT_END_DATETIME_FORMAT)
+                .to_string(),
+            end_timestamp: self.end().with_timezone(tz).timestamp(),
             duration: self.duration.to_string(),
             url: self.url().to_owned(),
         }
@@ -101,11 +113,11 @@ impl Event {
         self.summary.as_deref().unwrap_or(MISSING_SUMMARY)
     }
 
-    pub fn start(&self) -> OffsetDateTime {
+    pub fn start(&self) -> DateTime<Utc> {
         self.start
     }
 
-    pub fn end(&self) -> OffsetDateTime {
+    pub fn end(&self) -> DateTime<Utc> {
         self.start + self.duration
     }
 
@@ -121,42 +133,37 @@ impl Event {
     ///
     /// This returns the ISO week (as opposed to the `sunday_based_week()` or `monday_based_week()` functions)
     /// since there is a `from_iso_week_date()` function we can use when rendering the week view.
-    pub fn week(&self) -> WeekNum {
+    pub fn iso_week(&self) -> IsoWeek {
         self.start.iso_week()
     }
 
-    pub fn rrule(&self) -> Option<RRule> {
-        println!("Attempting to parse: {:?}", self.rrule);
+    /// Returns the week number of the event
+    ///
+    /// This returns the ISO week (as opposed to the `sunday_based_week()` or `monday_based_week()` functions)
+    /// since there is a `from_iso_week_date()` function we can use when rendering the week view.
+    pub fn week(&self) -> u8 {
+        self.start.iso_week().week() as u8
+    }
+
+    pub fn rrule(&self) -> Result<Option<RRuleSet>> {
+        println!("Attempting to parse rrule: {:?}", self.rrule);
+
+        // ensure that DTSTART is provided in UTC
+        let start_time = self.start().format(RRULE_DTSTART_PARSING_FORMAT);
+
         if let Some(rrule_str) = &self.rrule {
-            match format!(
-                "DTSTART:{}\n{}",
-                self.start()
-                    // ensure that DTSTART is provided in UTC
-                    .to_offset(offset!(+0))
-                    .format(format_description!(
-                        "[year][month][day]T[hour][minute][second]Z"
-                    ))
-                    .unwrap(),
-                rrule_str
-            )
-            .parse()
-            {
-                Ok(rrule) => Some(rrule),
-                Err(e) => {
-                    println!("Could not parse rrule: {}", e);
-                    None
-                }
-            }
+            let rrule = format!("DTSTART:{}\n{}", start_time, rrule_str).parse()?;
+            Ok(Some(rrule))
         } else {
-            None
+            Ok(None)
         }
     }
 
     pub fn new(event: IcalEvent) -> Result<(Event, UnparsedProperties)> {
         let mut summary = None;
         let mut description = None;
-        let mut start: Option<OffsetDateTime> = None;
-        let mut end: Option<OffsetDateTime> = None;
+        let mut start: Option<DateTime<Utc>> = None;
+        let mut end: Option<DateTime<Utc>> = None;
         let mut rrule = None;
         let mut location = None;
         let mut url = None;
@@ -218,7 +225,7 @@ impl Event {
     /// Creates a duplicate event with a different start datetime.
     ///
     /// This is useful when we are creating events from rrule expansions.
-    pub fn duplicate_with_date(&self, date: OffsetDateTime) -> Event {
+    pub fn duplicate_with_date(&self, date: DateTime<Utc>) -> Event {
         // TODO might want to link this event back to its parent event in some way, maybe even have a separate event class
         Event {
             summary: self.summary.clone(),
@@ -234,7 +241,7 @@ impl Event {
 }
 
 /// Given a time based ical property, parse it into a OffsetDateTime
-fn property_to_time(property: &ical::property::Property) -> Result<Option<OffsetDateTime>> {
+fn property_to_time(property: &ical::property::Property) -> Result<Option<DateTime<Utc>>> {
     let date_format = Regex::new("^(\\d+T\\d+)(Z)?$")?;
     let date_captures = date_format
         .captures(
@@ -245,33 +252,39 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<Offset
         )
         .expect("could not get captures");
 
-    let timezone = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {
-        get_by_name("UTC")
+    let timezone: chrono_tz::Tz = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {
+        "UTC".parse().expect("could not parse timezone")
     } else {
         // if necessary, parse the primitive time and zone separately
         if let Some(params) = &property.params {
             let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
-            zones.first().and_then(|tz_name| get_by_name(tz_name))
+            zones
+                .first()
+                .and_then(|tz_name| Some(tz_name.parse::<Tz>().expect("could not parse timezone")))
+                .expect("could not get timezone from property")
         } else {
             // need to set a default timezone
-            get_by_name("America/Phoenix")
+            "America/Phoenix".parse().expect("could not parse timezone")
         }
     };
 
     // parse the time without zone information
-    let primitive_time = PrimitiveDateTime::parse(
+    let primitive_time: DateTime<Utc> = match NaiveDateTime::parse_from_str(
         date_captures
             .get(1)
             .map(|c| c.as_str())
             .expect("could not get capture"),
-        format_description!("[year][month][day]T[hour][minute][second]"),
+        PROPERTY_DATETIME_FORMAT,
     )
-    .context("could not parse this time")?;
+    .wrap_err("could not parse this time")?
+    .and_local_timezone(timezone)
+    {
+        chrono::LocalResult::None => bail!("no sensible time for given value"),
+        chrono::LocalResult::Single(time) => time.with_timezone(&Utc),
+        // TODO handle cases where we actually want the second time
+        chrono::LocalResult::Ambiguous(time, _second_time) => time.with_timezone(&Utc),
+    };
 
     // adjust the timezone
-    Ok(Some(
-        primitive_time
-            .assume_timezone(timezone.expect("no timezone determined for start time"))
-            .unwrap(),
-    ))
+    Ok(Some(primitive_time))
 }

@@ -1,8 +1,8 @@
-use color_eyre::eyre::{bail, eyre, Context, Result};
+use chrono::{DateTime, Local, NaiveDateTime};
+use chrono_tz::Tz;
+use color_eyre::eyre::{bail, eyre, Context as EyreContext, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use time::{Date, OffsetDateTime};
-use time_tz::Tz;
 
 use crate::model::calendar_source::CalendarSource;
 
@@ -61,17 +61,21 @@ impl Default for Config {
 impl Config {
     pub fn parse(&self) -> Result<ParsedConfig> {
         let output_dir = PathBuf::from(&self.output_dir);
-        let display_timezone = time_tz::timezones::get_by_name(&self.display_timezone)
-            .ok_or(eyre!("unknown timezone"))?;
+        let display_timezone: chrono_tz::Tz = self
+            .display_timezone
+            .parse::<chrono_tz::Tz>()
+            .expect("could not parse display timezone");
+        // TODO parse this into the config specified timezone
         let agenda_start_date = if self.agenda_start_date.is_empty() {
-            OffsetDateTime::now_utc().date()
+            Local::now()
         } else {
-            Date::parse(
-                &self.agenda_start_date,
-                &time::format_description::parse("[year]-[month]-[day]")
-                    .expect("could not parse time format description"),
-            )
-            .context("invalid agenda start date in config")?
+            // TODO need to add a more forgiving parser
+
+            NaiveDateTime::parse_from_str(&self.agenda_start_date, "%Y-%m-%d")
+                .context("invalid agenda start date in config")?
+                .and_local_timezone(Local)
+                .single()
+                .ok_or(eyre!("ambiguous agenda start date"))?
         };
         let stylesheet_path = PathBuf::from(&self.stylesheet_path);
         let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
@@ -84,7 +88,7 @@ impl Config {
             render_month: self.render_month,
             render_week: self.render_week,
             output_dir,
-            display_timezone,
+            display_timezone: &display_timezone,
             agenda_events_per_page: self.agenda_events_per_page,
             agenda_start_date,
             default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,
@@ -133,7 +137,7 @@ pub struct ParsedConfig<'a> {
     /// Number of events per page in agenda
     pub agenda_events_per_page: usize,
     /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
-    pub agenda_start_date: Date,
+    pub agenda_start_date: DateTime<Local>,
     /// The view (month, week, or day) to use for the main index page
     pub default_calendar_view: CalendarView,
     /// The path to add into the stylesheet link tag

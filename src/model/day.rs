@@ -1,7 +1,9 @@
+use chrono::{Datelike, NaiveDate};
 use serde::Serialize;
-use time::{macros::format_description, Date};
 
 use super::event::EventContext;
+
+const YMD_FORMAT: &str = "[year]-[month]-[day]";
 
 #[derive(Debug, Serialize)]
 pub struct DayContext {
@@ -13,12 +15,10 @@ pub struct DayContext {
 }
 
 impl DayContext {
-    pub fn new(date: Date, events: Vec<EventContext>) -> DayContext {
+    pub fn new(date: NaiveDate, events: Vec<EventContext>) -> DayContext {
         DayContext {
-            date: date
-                .format(format_description!("[year]-[month]-[day]"))
-                .unwrap_or_else(|_| "bad date".to_string()),
-            day: date.day(),
+            date: date.format(YMD_FORMAT).to_string(),
+            day: date.day() as u8,
             month: date.month().to_string(),
             wday: date.weekday().to_string(),
             events,

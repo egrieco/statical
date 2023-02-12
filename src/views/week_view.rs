@@ -1,3 +1,4 @@
+use chrono::Datelike;
 use color_eyre::eyre::Result;
 use dedup_iter::DedupAdapter;
 use std::{
@@ -6,7 +7,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use tera::{Context, Tera};
-use time_tz::TimeZone;
 
 use crate::{
     config::{CalendarView, ParsedConfig},
@@ -89,7 +89,7 @@ impl WeekView {
                     // create the agenda start week tuple
                     let agenda_start_week = (
                         config.agenda_start_date.year(),
-                        config.agenda_start_date.iso_week(),
+                        config.agenda_start_date.iso_week().week() as u8,
                     );
 
                     // write the index file if the next month is after the current date
@@ -161,7 +161,7 @@ impl WeekView {
                 event.summary(),
                 event.start(),
             );
-            let day_of_week = event.start().weekday().number_days_from_sunday();
+            let day_of_week = event.start().weekday().num_days_from_sunday() as u8;
             week_day_map
                 .entry(day_of_week)
                 .or_default()
