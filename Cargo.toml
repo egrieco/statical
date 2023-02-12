@@ -20,7 +20,7 @@ harness = false
 chrono = { version = "0.4.23", features = ["serde"] }
 chrono-tz = "0.8.1"
 chronoutil = "0.2.3"
-clap = { version = "4.1.3", features = ["derive"] }
+clap = { version = "4.1.4", features = ["derive"] }
 color-eyre = "0.6.2"
 const_format = "0.2.30"
 dedup_iter = "0.1.1"
@@ -32,7 +32,7 @@ rrule = "0.10.0"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 #serde_json = "1.0.83"
 tera = { version = "1.17.1", features = ["date-locale"] }
-toml_edit = { version = "0.18.0", features = ["easy"] }
+toml_edit = { version = "0.18.1", features = ["easy"] }
 unescaper = "0.1.1"
 ureq = "2.6.2"
 url = "2.3.1"
@@ -55,5 +55,5 @@ url = "2.3.1"
 
 [dev-dependencies]
 pretty_assertions = "1.3.0"
-indoc = "1.0.8"
+indoc = "1.0.9"
 criterion = "0.4.0"
