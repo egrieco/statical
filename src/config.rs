@@ -88,7 +88,7 @@ impl Config {
             render_month: self.render_month,
             render_week: self.render_week,
             output_dir,
-            display_timezone: display_timezone,
+            display_timezone,
             agenda_events_per_page: self.agenda_events_per_page,
             agenda_start_date,
             default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,

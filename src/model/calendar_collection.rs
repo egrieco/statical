@@ -89,13 +89,13 @@ impl CalendarCollection {
             .iter()
             .map(|c| c.start())
             .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or_else(|| Utc::now());
+            .unwrap_or_else(Utc::now);
         let cal_end = calendars
             .iter()
             .map(|c| c.end())
             .reduce(|max_end, end| max_end.max(end))
             // TODO consider a better approach to finding the correct number of days
-            .unwrap_or_else(|| end_of_month_default);
+            .unwrap_or(end_of_month_default);
 
         // add events to views
         let months = if config.render_month {

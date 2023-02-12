@@ -261,7 +261,7 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<DateTi
             let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
             zones
                 .first()
-                .and_then(|tz_name| Some(tz_name.parse::<Tz>().expect("could not parse timezone")))
+                .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
                 .expect("could not get timezone from property")
         } else {
             // need to set a default timezone
