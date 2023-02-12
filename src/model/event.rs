@@ -11,7 +11,7 @@ use unescaper::unescape;
 
 const MISSING_SUMMARY: &str = "None";
 // const PROPERTY_DATETIME_FORMAT: &str = "[year][month][day]T[hour][minute][second]";
-const PROPERTY_DATETIME_FORMAT: &str = "%y%m%dT%H%M%S";
+const PROPERTY_DATETIME_FORMAT: &str = "%Y%m%dT%H%M%S";
 // const START_DATETIME_FORMAT = format_description!(
 //     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
 // );
@@ -253,6 +253,7 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<DateTi
         )
         .expect("could not get captures");
 
+    // TODO clean up timezone logic, looks like there are inefficiencies and bugs
     let timezone: chrono_tz::Tz = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {
         "UTC".parse().expect("could not parse timezone")
     } else {
