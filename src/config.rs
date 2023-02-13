@@ -98,11 +98,17 @@ impl From<&Document> for Config {
 
 impl Config {
     pub fn parse(&self) -> Result<ParsedConfig> {
+        log::debug!("parsing config...");
+
         let output_dir = PathBuf::from(&self.output_dir);
+        log::debug!("output_dir: {:?}", output_dir);
+
         let display_timezone: chrono_tz::Tz = self
             .display_timezone
             .parse::<chrono_tz::Tz>()
             .expect("could not parse display timezone");
+        log::debug!("display_timezone: {}", display_timezone);
+
         // TODO parse this into the config specified timezone
         let agenda_start_date = if self.agenda_start_date.is_empty() {
             Local::now()
@@ -115,9 +121,16 @@ impl Config {
                 .single()
                 .ok_or(eyre!("ambiguous agenda start date"))?
         };
+        log::debug!("agenda_start_date: {}", agenda_start_date);
+
         let stylesheet_path = PathBuf::from(&self.stylesheet_path);
+        log::debug!("stylesheet_path: {:?}", stylesheet_path);
+
         let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
-        let calendars = CalendarSource::from_strings(self.calendar_sources.clone());
+        log::debug!("copy_stylesheet_from: {:?}", copy_stylesheet_from);
+
+        let calendar_sources = CalendarSource::from_strings(self.calendar_sources.clone())?;
+        log::debug!("calendar_sources: {:?}", calendar_sources);
         // TODO need to show calendar source errors to user
 
         Ok(ParsedConfig {
@@ -133,7 +146,7 @@ impl Config {
             stylesheet_path,
             copy_stylesheet_to_output: self.copy_stylesheet_to_output,
             copy_stylesheet_from,
-            calendar_sources: calendars.into_iter().filter_map(|c| c.ok()).collect(),
+            calendar_sources,
         })
     }
 }

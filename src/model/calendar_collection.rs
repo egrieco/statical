@@ -48,19 +48,21 @@ impl CalendarCollection {
 
         // add sources from config file
         let calendar_sources = &config.calendar_sources;
+        log::debug!("config calendar sources: {:?}", calendar_sources);
 
         // read calendar sources from cli options
         let cli_sources: Vec<CalendarSource> = if let Some(arg_sources) = args.source {
-            let cli_arg_sources = CalendarSource::from_strings(arg_sources);
-            cli_arg_sources.into_iter().filter_map(|c| c.ok()).collect()
+            CalendarSource::from_strings(arg_sources)?
         } else {
             Vec::new()
         };
+        log::debug!("cli arg calendar sources: {:?}", cli_sources);
 
         // parse calendars from all sources
         for source in calendar_sources.iter().chain(cli_sources.iter()) {
             match source {
                 CalendarFile(file) => {
+                    log::info!("reading calendar file: {:?}", file);
                     let buf = BufReader::new(File::open(file)?);
                     let (parsed_calendars, calendar_unparsed_properties) =
                         &mut Calendar::parse_calendars(buf)?;
@@ -68,6 +70,7 @@ impl CalendarCollection {
                     calendars.append(parsed_calendars);
                 }
                 CalendarUrl(url) => {
+                    log::info!("reading calendar url: {}", url);
                     let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
                     let (parsed_calendars, calendar_unparsed_properties) =
                         &mut Calendar::parse_calendars(ics_string.as_bytes())?;

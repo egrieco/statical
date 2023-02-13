@@ -22,11 +22,13 @@ fn main() -> eyre::Result<()> {
 
     log::info!("reading configuration...");
     let config: ParsedConfig = if let Ok(mut config_file) = std::fs::File::open(&args.config) {
+        log::debug!("reading configuration from file: {:?}", config_file);
         let mut config_raw = String::new();
         config_file.read_to_string(&mut config_raw)?;
         let parsed_toml = &config_raw.parse::<Document>()?;
         <&toml_edit::Document as std::convert::Into<Config>>::into(parsed_toml)
     } else {
+        log::debug!("creating default config");
         let config: statical::config::Config = Default::default();
         if let Ok(mut config_file) = std::fs::File::create(&args.config) {
             if let Ok(config_raw) = to_string_pretty(&config) {
