@@ -1,5 +1,5 @@
 use chrono::{DateTime, Months, TimeZone, Utc};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use rrule::Tz as RruleTz;
@@ -122,7 +122,9 @@ impl Calendar {
                 let (new_event, event_unparsed_properties) = Event::new(event)?;
                 unparsed_properties.extend(event_unparsed_properties.into_iter());
                 let rc_event = Rc::new(new_event);
-                new_calendar.push(rc_event);
+                new_calendar
+                    .push(rc_event)
+                    .wrap_err("could not add event to calendar")?;
             }
             calendars.push(new_calendar);
         }
