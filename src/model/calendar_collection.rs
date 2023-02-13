@@ -138,6 +138,7 @@ impl CalendarCollection {
         };
 
         // expand recurring events
+        log::debug!("expanding recurring events...");
         for calendar in calendars.iter_mut() {
             calendar.expand_recurrences(cal_start, cal_end)?;
         }

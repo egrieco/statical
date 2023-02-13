@@ -1,6 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDateTime, Utc};
 use chrono_tz::Tz;
-use color_eyre::eyre::{bail, ContextCompat, Result, WrapErr};
+use color_eyre::eyre::{bail, eyre, ContextCompat, Result, WrapErr};
 use const_format::concatcp;
 use ical::parser::ical::component::IcalEvent;
 use regex::Regex;
@@ -161,6 +161,8 @@ impl Event {
     }
 
     pub fn new(event: IcalEvent) -> Result<(Event, UnparsedProperties)> {
+        log::debug!("creating new Event...");
+
         let mut summary = None;
         let mut description = None;
         let mut start: Option<DateTime<Utc>> = None;
@@ -172,6 +174,7 @@ impl Event {
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for property in event.properties {
+            log::debug!("parsing property: {}: {:?}", property.name, property.value);
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
                 "DESCRIPTION" => {
@@ -188,6 +191,7 @@ impl Event {
                 "LOCATION" => location = property.value,
                 "URL" => url = property.value,
                 _ => {
+                    log::trace!("adding unparsed property: {}", property.name);
                     unparsed_properties.insert(property.name);
                     // TODO collect unparsed params as well
                     // if let Some(params) = property.params {
@@ -251,7 +255,7 @@ fn property_to_time(property: &ical::property::Property) -> Result<Option<DateTi
                 .as_ref()
                 .context("no value for this property")?,
         )
-        .expect("could not get captures");
+        .ok_or(eyre!("could not parse time value: {:?}", property.value))?;
 
     // TODO clean up timezone logic, looks like there are inefficiencies and bugs
     let timezone: chrono_tz::Tz = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {

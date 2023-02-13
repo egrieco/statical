@@ -112,12 +112,16 @@ impl Calendar {
     where
         B: BufRead,
     {
+        log::debug!("parsing calendars...");
         let mut calendars = Vec::new();
         let reader = IcalParser::new(buf);
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for calendar in reader.flatten() {
+            log::debug!("parsing calendar: {:#?}", calendar);
             let mut new_calendar = Calendar::new(&calendar)?;
+
+            log::debug!("parsing calendar events...");
             for event in calendar.events {
                 let (new_event, event_unparsed_properties) = Event::new(event)?;
                 unparsed_properties.extend(event_unparsed_properties.into_iter());
