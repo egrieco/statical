@@ -3,6 +3,7 @@ use chrono_tz::Tz;
 use color_eyre::eyre::{bail, eyre, Context as EyreContext, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use toml_edit::{Array, Document};
 
 use crate::model::calendar_source::CalendarSource;
 
@@ -54,6 +55,43 @@ impl Default for Config {
             copy_stylesheet_to_output: false,
             copy_stylesheet_from: "public/statical.css".into(),
             calendar_sources: Vec::new(),
+        }
+    }
+}
+
+impl From<&Document> for Config {
+    fn from(doc: &Document) -> Self {
+        Self {
+            render_agenda: doc["render_agenda"].as_bool().unwrap_or(true),
+            render_day: doc["render_day"].as_bool().unwrap_or(true),
+            render_month: doc["render_month"].as_bool().unwrap_or(true),
+            render_week: doc["render_week"].as_bool().unwrap_or(true),
+            output_dir: doc["output_dir"].as_str().unwrap_or("output").into(),
+            display_timezone: doc["display_timezone"].as_str().unwrap_or("GMT").into(),
+            agenda_events_per_page: doc["agenda_events_per_page"].as_integer().unwrap_or(5)
+                as usize,
+            // TODO make this take human dates e.g. "today"
+            agenda_start_date: doc["agenda_start_date"].as_str().unwrap_or("").into(),
+            default_calendar_view: doc["default_calendar_view"]
+                .as_str()
+                .unwrap_or("month")
+                .into(),
+            stylesheet_path: doc["stylesheet_path"]
+                .as_str()
+                .unwrap_or("/styles/style.css")
+                .into(),
+            copy_stylesheet_to_output: doc["copy_stylesheet_to_output"].as_bool().unwrap_or(false),
+            copy_stylesheet_from: doc["copy_stylesheet_from"]
+                .as_str()
+                .unwrap_or("public/statical.css")
+                .into(),
+            calendar_sources: doc["calendar_sources"]
+                .as_array()
+                .unwrap_or(&Array::new())
+                .into_iter()
+                .filter_map(|i| i.as_str())
+                .map(|i| i.to_string())
+                .collect(),
         }
     }
 }
