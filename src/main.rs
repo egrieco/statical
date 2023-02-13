@@ -1,5 +1,6 @@
 use clap::Parser;
 use color_eyre::eyre::{self, Context};
+use flexi_logger::Logger;
 use std::io::{Read, Write};
 use toml_edit::ser::to_string_pretty;
 use toml_edit::Document;
@@ -16,6 +17,10 @@ fn main() -> eyre::Result<()> {
     let args = Opt::parse();
     color_eyre::install()?;
 
+    // setup logging
+    Logger::try_with_env_or_str("debug")?.start()?;
+
+    log::info!("reading configuration...");
     let config: ParsedConfig = if let Ok(mut config_file) = std::fs::File::open(&args.config) {
         let mut config_raw = String::new();
         config_file.read_to_string(&mut config_raw)?;
@@ -33,9 +38,13 @@ fn main() -> eyre::Result<()> {
     .parse()
     .wrap_err("could not parse config")?;
 
+    log::info!("creating calendar collection...");
     let calendar_collection = CalendarCollection::new(args, config)?;
+
+    log::info!("writing html pages");
     calendar_collection.create_html_pages()?;
 
+    log::info!("final debug output");
     calendar_collection.print_unparsed_properties();
 
     Ok(())
