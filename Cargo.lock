@@ -722,9 +722,9 @@ dependencies = [
 
 [[package]]
 name = "ical"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a9f7215ad0d77e69644570dee000c7678a47ba7441062c1b5f918adde0d73cf"
+checksum = "356d82bd58997815d55ea6f9081bd4cac149e50ca943f7a4f7c050fec7271c1f"
 dependencies = [
  "thiserror",
 ]
