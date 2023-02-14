@@ -100,6 +100,18 @@ impl CalendarCollection {
             // TODO consider a better approach to finding the correct number of days
             .unwrap_or(end_of_month_default);
 
+        // expand recurring events
+        log::debug!("expanding recurring events...");
+        for calendar in calendars.iter_mut() {
+            let pre_expansion_count = calendar.events().len();
+            calendar.expand_recurrences(cal_start, cal_end)?;
+            log::debug!(
+                "calendar events pre_expansion_count: {} post_expansion_count: {}",
+                pre_expansion_count,
+                calendar.events().len()
+            );
+        }
+
         // add events to views
         let months = if config.render_month {
             Some(MonthView::new(
@@ -136,12 +148,6 @@ impl CalendarCollection {
         } else {
             None
         };
-
-        // expand recurring events
-        log::debug!("expanding recurring events...");
-        for calendar in calendars.iter_mut() {
-            calendar.expand_recurrences(cal_start, cal_end)?;
-        }
 
         Ok(CalendarCollection {
             calendars,

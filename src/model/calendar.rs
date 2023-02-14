@@ -72,6 +72,9 @@ impl Calendar {
         cal_start: DateTime<Utc>,
         cal_end: DateTime<Utc>,
     ) -> Result<()> {
+        log::debug!("expanding recurrences for calendar: {:?}", self.name);
+        log::debug!("calendar_runs from '{}' to '{}'", cal_start, cal_end);
+
         // we need to convert from the time-rs library to chrono for RRule's sake
         let repeat_start: DateTime<RruleTz> =
             rrule::Tz::UTC.from_utc_datetime(&cal_start.naive_utc());
@@ -89,6 +92,10 @@ impl Calendar {
             if let Ok(Some(rrule)) = event.rrule() {
                 // add event to groups
                 for recurrence_time in &rrule.after(repeat_start).before(repeat_end) {
+                    log::debug!(
+                        "adding duplicate event with recurrence_time: {}",
+                        recurrence_time
+                    );
                     // TODO might want to push directly into the events vec and skip some of the checks in Calendar.push()
                     new_events.push(Rc::new(
                         // TODO ensure that we want this to be UTC here
@@ -100,6 +107,7 @@ impl Calendar {
 
         // add new events to events in calendar
         // this extra step was necessary due to mutability rules in Rust and iterators
+        log::debug!("adding {} new_events to calendar events", new_events.len());
         self.events.extend(new_events);
 
         Ok(())
@@ -118,7 +126,6 @@ impl Calendar {
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for calendar in reader.flatten() {
-            log::debug!("parsing calendar: {:#?}", calendar);
             let mut new_calendar = Calendar::new(&calendar)?;
 
             log::debug!("parsing calendar events...");
