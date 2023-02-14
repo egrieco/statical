@@ -264,7 +264,6 @@ fn property_to_time(
         (r"^(\d+)$", "%Y%m%d", ParseType::ParseDate),
     ];
     let set = RegexSet::new(regex_fmt_map.iter().map(|r| r.0))?;
-    log::debug!("regex_set: {:#?}", set);
 
     let prop_value = &property
         .value
@@ -278,15 +277,34 @@ fn property_to_time(
     // TODO clean up timezone logic, looks like there are inefficiencies and bugs
     // let timezone: chrono_tz::Tz = UTC;
     let timezone: chrono_tz::Tz = if let Some(params) = &property.params {
+        log::debug!("property has parameters, searching for TZID...");
         // if necessary, parse the primitive time and zone separately
-        let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
-        zones
-            .first()
-            // TODO replace expect calls with proper error handling
-            .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
-            .expect("could not get timezone from property")
+        match params.iter().find(|(name, _zones)| name == "TZID") {
+            Some((_, zones)) => {
+                log::debug!("found TZID, zones: {:?}", zones);
+                match zones
+                    .first()
+                    // TODO replace expect calls with proper error handling
+                    .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
+                {
+                    Some(tz) => {
+                        log::debug!("returning timezone: {}", tz);
+                        tz
+                    }
+                    None => {
+                        log::debug!("returning default timezone");
+                        default_timezone
+                    }
+                }
+            }
+            None => {
+                log::debug!("returning default timezone");
+                default_timezone
+            }
+        }
     } else {
         // set a default timezone
+        log::debug!("returning default timezone");
         default_timezone
     };
 
