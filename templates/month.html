@@ -17,12 +17,14 @@
       {% for week in weeks %}
       {% set first_week = loop.first %}
       {% for day in week %}
+      {% set first_day = loop.first %}
       <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %}">
         {% if first_week %}
         <p class="header">{{ day.wday }}</p> {% endif %}
         <p class="date">
-          {% if day.day == 1 %}
-          {{ day.month }}
+          {% set show_month = first_week and first_day %}
+          {% if day.day == 1 or show_month %}
+          {{ day.month_name }}
           {% endif %}
           {{ day.day }}
         </p>

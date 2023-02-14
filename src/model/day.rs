@@ -1,4 +1,5 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Month, NaiveDate};
+use num_traits::FromPrimitive;
 use serde::Serialize;
 
 use super::event::EventContext;
@@ -11,6 +12,7 @@ pub struct DayContext {
     pub(crate) day: u8,
     pub(crate) wday: String,
     pub(crate) month: String,
+    pub(crate) month_name: String,
     pub(crate) events: Vec<EventContext>,
 }
 
@@ -20,6 +22,10 @@ impl DayContext {
             date: date.format(YMD_FORMAT).to_string(),
             day: date.day() as u8,
             month: date.month().to_string(),
+            month_name: Month::from_u32(date.month())
+                .expect("invalid month")
+                .name()
+                .to_string(),
             wday: date.weekday().to_string(),
             events,
         }
