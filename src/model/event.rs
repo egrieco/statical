@@ -1,4 +1,5 @@
 use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDate, NaiveDateTime, Utc};
+use chrono_humanize::{Accuracy, HumanTime, Tense};
 use chrono_tz::Tz;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
@@ -109,7 +110,7 @@ impl Event {
                 .format(CONTEXT_END_DATETIME_FORMAT)
                 .to_string(),
             end_timestamp: self.end().with_timezone(tz).timestamp(),
-            duration: self.duration.num_hours().to_string(),
+            duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             url: self.url().to_owned(),
         }
     }
