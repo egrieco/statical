@@ -252,7 +252,15 @@ pub(crate) fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Rang
         .expect("could not create rolling day rule")
         .next()
         .expect("could not get last day of month");
-    let last_week = last_day.iso_week();
+    let last_week = match last_day.weekday() == Sun {
+        // iso weeks start on Monday
+        true => last_day
+            .succ_opt()
+            .ok_or(eyre!("could not get successive day"))?,
+        false => last_day,
+    }
+    .iso_week();
+
     Ok((first_week.week() as u8)..(last_week.week() as u8))
 }
 
