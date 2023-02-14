@@ -18,6 +18,10 @@ h1 {
   padding: 0.1em;
 }
 
+.day.other-month {
+  background-color: white;
+}
+
 .calendar .header {
   background: lightgray;
   padding: 0.5em;
