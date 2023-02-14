@@ -22,8 +22,12 @@ h1 {
   background-color: white;
 }
 
+.day.weekend {
+  background-color: lightgrey;
+}
+
 .calendar .header {
-  background: lightgray;
+  background: gray;
   padding: 0.5em;
   margin: 0;
   column-gap: 1em;

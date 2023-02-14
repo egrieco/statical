@@ -13,6 +13,7 @@ pub struct DayContext {
     pub(crate) wday: String,
     pub(crate) month: String,
     pub(crate) month_name: String,
+    pub(crate) is_weekend: bool,
     pub(crate) events: Vec<EventContext>,
 }
 
@@ -27,6 +28,7 @@ impl DayContext {
                 .name()
                 .to_string(),
             wday: date.weekday().to_string(),
+            is_weekend: date.weekday().number_from_monday() > 5,
             events,
         }
     }

@@ -18,7 +18,7 @@
       {% set first_week = loop.first %}
       {% for day in week %}
       {% set first_day = loop.first %}
-      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %}">
+      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
         {% if first_week %}
         <p class="header">{{ day.wday }}</p> {% endif %}
         <p class="date">
