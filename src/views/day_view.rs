@@ -17,7 +17,7 @@ use crate::{
     util::write_template,
 };
 
-const YMD_FORMAT: &str = "[year]-[month]-[day]";
+const YMD_FORMAT: &str = "%Y-%m-%d";
 
 /// Type alias representing a specific day in time
 type Day = DateTime<Utc>;
