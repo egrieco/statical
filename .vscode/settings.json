@@ -1,3 +1,25 @@
 {
-  "cSpell.words": ["indoc"]
+  "cSpell.words": [
+    "CALDESC",
+    "CALNAME",
+    "chrono",
+    "chronoutil",
+    "concatcp",
+    "Datelike",
+    "datetime",
+    "DTEND",
+    "DTSTART",
+    "flexi",
+    "ical",
+    "indoc",
+    "isoywd",
+    "rrule",
+    "stylesheet",
+    "subdir",
+    "tera",
+    "TZID",
+    "unescaper",
+    "ureq",
+    "Vecs"
+  ]
 }
