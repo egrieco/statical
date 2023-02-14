@@ -1,17 +1,21 @@
-use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDateTime, Utc};
+use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDate, NaiveDateTime, Utc};
 use chrono_tz::Tz;
-use color_eyre::eyre::{bail, eyre, ContextCompat, Result, WrapErr};
-use const_format::concatcp;
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
-use regex::Regex;
+use regex::RegexSet;
 use rrule::RRuleSet;
 use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
 use unescaper::unescape;
 
+/// An enum to help us determine how to parse a given date based on the regex that matched
+enum ParseType {
+    ParseDateTime,
+    ParseDate,
+}
+
 const MISSING_SUMMARY: &str = "None";
-// const PROPERTY_DATETIME_FORMAT: &str = "[year][month][day]T[hour][minute][second]";
-const PROPERTY_DATETIME_FORMAT: &str = "%Y%m%dT%H%M%S";
+
 // const START_DATETIME_FORMAT = format_description!(
 //     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
 // );
@@ -32,7 +36,7 @@ const CONTEXT_END_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
 // const RRULE_DTSTART_PARSING_FORMAT = format_description!(
 //     "[year][month][day]T[hour][minute][second]Z"
 // );
-const RRULE_DTSTART_PARSING_FORMAT: &str = concatcp!(PROPERTY_DATETIME_FORMAT, "Z");
+const RRULE_DTSTART_PARSING_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
 pub type Year = i32;
 pub type WeekNum = u8;
@@ -185,8 +189,10 @@ impl Event {
                         .map(|v| unescape(&v))
                         .transpose()?
                 }
-                "DTSTART" => start = property_to_time(&property)?,
-                "DTEND" => end = property_to_time(&property)?,
+                // TODO use the user configured default timezone
+                "DTSTART" => start = property_to_time(&property, chrono_tz::UTC)?,
+                // TODO use the user configured default timezone
+                "DTEND" => end = property_to_time(&property, chrono_tz::UTC)?,
                 "RRULE" => rrule = property.value,
                 "LOCATION" => location = property.value,
                 "URL" => url = property.value,
@@ -246,49 +252,72 @@ impl Event {
 }
 
 /// Given a time based ical property, parse it into a OffsetDateTime
-fn property_to_time(property: &ical::property::Property) -> Result<Option<DateTime<Utc>>> {
-    let date_format = Regex::new("^(\\d+T\\d+)(Z)?$")?;
-    let date_captures = date_format
-        .captures(
-            property
-                .value
-                .as_ref()
-                .context("no value for this property")?,
-        )
-        .ok_or(eyre!("could not parse time value: {:?}", property.value))?;
+fn property_to_time(
+    property: &ical::property::Property,
+    default_timezone: chrono_tz::Tz,
+) -> Result<Option<DateTime<Utc>>> {
+    // this map holds the patterns to match, the corresponding format strings for parsing, and the type of parsing method
+    // TODO use lazy_static! here
+    let regex_fmt_map = vec![
+        (r"^(\d+T\d+)Z$", "%Y%m%dT%H%M%SZ", ParseType::ParseDateTime),
+        (r"^(\d+T\d+)$", "%Y%m%dT%H%M%S", ParseType::ParseDateTime),
+        (r"^(\d+)$", "%Y%m%d", ParseType::ParseDate),
+    ];
+    let set = RegexSet::new(regex_fmt_map.iter().map(|r| r.0))?;
+    log::debug!("regex_set: {:#?}", set);
+
+    let prop_value = &property
+        .value
+        .as_ref()
+        .ok_or(eyre!("no value for this property"))?;
+    log::debug!("prop_value: {}", prop_value);
+
+    let matches: Vec<_> = set.matches(prop_value).into_iter().collect();
+    log::debug!("matches: {:?}", matches);
 
     // TODO clean up timezone logic, looks like there are inefficiencies and bugs
-    let timezone: chrono_tz::Tz = if date_captures.get(2).map(|c| c.as_str()) == Some("Z") {
-        "UTC".parse().expect("could not parse timezone")
-    } else {
+    // let timezone: chrono_tz::Tz = UTC;
+    let timezone: chrono_tz::Tz = if let Some(params) = &property.params {
         // if necessary, parse the primitive time and zone separately
-        if let Some(params) = &property.params {
-            let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
-            zones
-                .first()
-                .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
-                .expect("could not get timezone from property")
-        } else {
-            // need to set a default timezone
-            "America/Phoenix".parse().expect("could not parse timezone")
-        }
+        let (_, zones) = params.iter().find(|(name, _zones)| name == "TZID").unwrap();
+        zones
+            .first()
+            // TODO replace expect calls with proper error handling
+            .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
+            .expect("could not get timezone from property")
+    } else {
+        // set a default timezone
+        default_timezone
     };
 
+    let first_match = matches.first().expect("no matches found");
+
     // parse the time without zone information
-    let primitive_time: DateTime<Utc> = match NaiveDateTime::parse_from_str(
-        date_captures
-            .get(1)
-            .map(|c| c.as_str())
-            .expect("could not get capture"),
-        PROPERTY_DATETIME_FORMAT,
-    )
-    .wrap_err("could not parse this time")?
-    .and_local_timezone(timezone)
-    {
-        chrono::LocalResult::None => bail!("no sensible time for given value"),
-        chrono::LocalResult::Single(time) => time.with_timezone(&Utc),
-        // TODO handle cases where we actually want the second time
-        chrono::LocalResult::Ambiguous(time, _second_time) => time.with_timezone(&Utc),
+    let fmt = regex_fmt_map[*first_match].1;
+    log::debug!("parsing '{}' with '{}'", prop_value, fmt);
+
+    let primitive_time: DateTime<Utc> = match regex_fmt_map[*first_match].2 {
+        ParseType::ParseDateTime => {
+            match NaiveDateTime::parse_from_str(prop_value, fmt)
+                .wrap_err("could not parse this time")?
+                .and_local_timezone(timezone)
+            {
+                chrono::LocalResult::None => bail!("no sensible time for given value"),
+                chrono::LocalResult::Single(time) => time.with_timezone(&Utc),
+                // TODO handle cases where we actually want the second time
+                chrono::LocalResult::Ambiguous(time, _second_time) => time.with_timezone(&Utc),
+            }
+        }
+        ParseType::ParseDate => match NaiveDate::parse_from_str(prop_value, fmt)
+            .wrap_err("could not parse this date")?
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Utc)
+        {
+            chrono::LocalResult::None => unreachable!(),
+            chrono::LocalResult::Single(time) => time,
+            chrono::LocalResult::Ambiguous(time, _second_time) => time,
+        },
     };
 
     // adjust the timezone

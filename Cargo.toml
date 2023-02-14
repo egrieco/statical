@@ -22,7 +22,6 @@ chrono-tz = "0.8.1"
 chronoutil = "0.2.3"
 clap = { version = "4.1.4", features = ["derive"] }
 color-eyre = "0.6.2"
-const_format = "0.2.30"
 dedup_iter = "0.1.1"
 flexi_logger = "0.25.1"
 ical = "0.8.0"
