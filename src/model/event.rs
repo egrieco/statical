@@ -109,7 +109,7 @@ impl Event {
                 .format(CONTEXT_END_DATETIME_FORMAT)
                 .to_string(),
             end_timestamp: self.end().with_timezone(tz).timestamp(),
-            duration: self.duration.to_string(),
+            duration: self.duration.num_hours().to_string(),
             url: self.url().to_owned(),
         }
     }
