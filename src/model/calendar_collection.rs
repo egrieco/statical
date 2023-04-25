@@ -30,12 +30,6 @@ type InternalDate = NaiveDate;
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
 
-    // these are represented as options since the user can choose to render them or not
-    months: Option<MonthView>,
-    weeks: Option<WeekView>,
-    days: Option<DayView>,
-    agenda: Option<AgendaView>,
-
     tera: Tera,
     config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
@@ -112,49 +106,8 @@ impl CalendarCollection {
             );
         }
 
-        // add events to views
-        let months = if config.render_month {
-            Some(MonthView::new(
-                create_subdir(&config.output_dir, "month")?,
-                &calendars,
-            ))
-        } else {
-            None
-        };
-
-        let weeks = if config.render_week {
-            Some(WeekView::new(
-                create_subdir(&config.output_dir, "week")?,
-                &calendars,
-            ))
-        } else {
-            None
-        };
-
-        let days = if config.render_day {
-            Some(DayView::new(
-                create_subdir(&config.output_dir, "day")?,
-                &calendars,
-            ))
-        } else {
-            None
-        };
-
-        let agenda = if config.render_agenda {
-            Some(AgendaView::new(
-                create_subdir(&config.output_dir, "agenda")?,
-                &calendars,
-            ))
-        } else {
-            None
-        };
-
         Ok(CalendarCollection {
             calendars,
-            months,
-            weeks,
-            days,
-            agenda,
             tera: Tera::new("templates/**/*.html")?,
             config,
             unparsed_properties,
@@ -207,33 +160,38 @@ impl CalendarCollection {
     pub fn create_html_pages(&self) -> Result<()> {
         self.setup_output_dir()?;
 
-        if self.months.is_some() {
-            self.months
-                .as_ref()
-                .unwrap()
-                .create_html_pages(&self.config, &self.tera)?;
-        }
+        // add events to views
+        if self.config.render_month {
+            MonthView::new(
+                create_subdir(&self.config.output_dir, "month")?,
+                &self.calendars,
+            )
+            .create_html_pages(&self.config, &self.tera)?;
+        };
 
-        if self.weeks.is_some() {
-            self.weeks
-                .as_ref()
-                .unwrap()
-                .create_html_pages(&self.config, &self.tera)?;
-        }
+        if self.config.render_week {
+            WeekView::new(
+                create_subdir(&self.config.output_dir, "week")?,
+                &self.calendars,
+            )
+            .create_html_pages(&self.config, &self.tera)?;
+        };
 
-        if self.days.is_some() {
-            self.days
-                .as_ref()
-                .unwrap()
-                .create_html_pages(&self.config, &self.tera)?;
-        }
+        if self.config.render_day {
+            DayView::new(
+                create_subdir(&self.config.output_dir, "day")?,
+                &self.calendars,
+            )
+            .create_html_pages(&self.config, &self.tera)?;
+        };
 
-        if self.agenda.is_some() {
-            self.agenda
-                .as_ref()
-                .unwrap()
-                .create_html_pages(&self.config, &self.tera)?;
-        }
+        if self.config.render_agenda {
+            AgendaView::new(
+                create_subdir(&self.config.output_dir, "agenda")?,
+                &self.calendars,
+            )
+            .create_html_pages(&self.config, &self.tera)?;
+        };
 
         Ok(())
     }
