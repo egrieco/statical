@@ -89,7 +89,7 @@ impl AgendaView {
                     .iter()
                     .map(|(events, page)| Some((page, events))),
             )
-            .chain(iter::once(None).into_iter());
+            .chain(iter::once(None));
         let page_windows = &chained_iter.collect::<Vec<Option<(&AgendaPageId, &EventSlice)>>>();
 
         // iterate through all windows

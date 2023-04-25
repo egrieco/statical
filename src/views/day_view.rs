@@ -63,7 +63,7 @@ impl DayView {
         // having None as appropriate
         let chained_iter = iter::once(None)
             .chain(self.day_map.iter().map(Some))
-            .chain(iter::once(None).into_iter());
+            .chain(iter::once(None));
         let day_windows = &chained_iter.collect::<Vec<Option<(&Day, &EventList)>>>();
 
         // iterate through all windows

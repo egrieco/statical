@@ -73,7 +73,7 @@ impl MonthView {
         // having None as appropriate
         let chained_iter = iter::once(None)
             .chain(self.month_map.iter().map(Some))
-            .chain(iter::once(None).into_iter());
+            .chain(iter::once(None));
         let month_windows = &chained_iter.collect::<Vec<Option<(&Month, &WeekMapList)>>>();
 
         // iterate through all windows

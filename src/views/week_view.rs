@@ -74,7 +74,7 @@ impl WeekView {
         // having None as appropriate
         let chained_iter = iter::once(None)
             .chain(self.week_map.iter().map(Some))
-            .chain(iter::once(None).into_iter());
+            .chain(iter::once(None));
         let week_windows = &chained_iter.collect::<Vec<Option<(&Week, &EventList)>>>();
 
         // iterate through all windows
