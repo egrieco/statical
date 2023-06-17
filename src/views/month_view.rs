@@ -12,9 +12,10 @@ use super::week_view::WeekMap;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
-        calendar::Calendar,
-        calendar_collection::{blank_context, iso_weeks_for_month_display, WeekContext},
-        event::{WeekNum, Year},
+        calendar_collection::{
+            blank_context, iso_weeks_for_month_display, CalendarCollection, WeekContext,
+        },
+        event::Year,
     },
     util::write_template,
     views::week_view::WeekDayMap,
@@ -25,33 +26,38 @@ use crate::{model::event::EventList, views::week_view::Week};
 type Month = (Year, u8);
 
 /// A BTreeMap of Vecs grouped by specific months
-pub type MonthMap = BTreeMap<Month, WeekMapList>;
-type WeekMapList = BTreeMap<WeekNum, WeekMap>;
+pub type MonthMap = BTreeMap<Month, WeekMap>;
 
 /// A triple with the previous, current, and next weeks present
 ///
 /// Note that the previous and next weeks may be None
-pub type MonthSlice<'a> = &'a [Option<(&'a Month, &'a WeekMapList)>];
+pub type MonthSlice<'a> = &'a [Option<(&'a Month, &'a WeekMap)>];
 
 #[derive(Debug)]
-pub struct MonthView {
+pub struct MonthView<'a> {
     /// The output directory for month view files
     output_dir: PathBuf,
-    month_map: MonthMap,
+    calendars: &'a CalendarCollection,
 }
 
-impl MonthView {
-    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut month_map: BTreeMap<Week, BTreeMap<u8, BTreeMap<Week, EventList>>> =
-            BTreeMap::new();
+impl MonthView<'_> {
+    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> MonthView<'_> {
+        MonthView {
+            output_dir,
+            calendars,
+        }
+    }
+
+    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+        let mut index_written = false;
+
+        let mut month_map: BTreeMap<Month, BTreeMap<Week, EventList>> = BTreeMap::new();
 
         // add events to the month_map
-        for calendar in calendars {
-            for event in calendar.events() {
+        for events in self.calendars.events_by_day.values() {
+            for event in events {
                 month_map
                     .entry((event.year(), event.start().month() as u8))
-                    .or_default()
-                    .entry(event.week())
                     .or_default()
                     .entry((event.year(), event.week()))
                     .or_default()
@@ -59,22 +65,13 @@ impl MonthView {
             }
         }
 
-        MonthView {
-            output_dir,
-            month_map,
-        }
-    }
-
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let mut index_written = false;
-
         // chain a None to the list of weeks and a None at the end
         // this will allow us to traverse the list as windows with the first and last
         // having None as appropriate
         let chained_iter = iter::once(None)
-            .chain(self.month_map.iter().map(Some))
+            .chain(month_map.iter().map(Some))
             .chain(iter::once(None));
-        let month_windows = &chained_iter.collect::<Vec<Option<(&Month, &WeekMapList)>>>();
+        let month_windows = &chained_iter.collect::<Vec<Option<(&Month, &WeekMap)>>>();
 
         // iterate through all windows
         for window in month_windows.windows(3) {
@@ -155,34 +152,32 @@ impl MonthView {
         let weeks_for_display = iso_weeks_for_month_display(year, month)?;
         println!("From week {:?}", weeks_for_display);
         for week_num in weeks_for_display {
-            match weeks.get(&week_num) {
+            match weeks.get(&(*year, week_num)) {
                 Some(week_map) => {
                     println!("  Creating week {}, {} {}", week_num, month, year);
-                    for ((_y, _w), events) in week_map {
-                        let mut week_day_map: WeekDayMap = BTreeMap::new();
-
-                        for event in events {
-                            println!(
-                                "    event: ({} {} {}) {} {}",
-                                event.start().weekday(),
-                                event.year(),
-                                event.week(),
-                                event.summary(),
-                                event.start(),
-                            );
-                            let day_of_week = event.start().weekday().num_days_from_sunday() as u8;
-                            week_day_map
-                                .entry(day_of_week)
-                                .or_default()
-                                .push(event.clone());
-                        }
-
-                        // create week days
-                        let week_dates =
-                            week_day_map.context(year, &week_num, &config.display_timezone)?;
-                        week_list.push(week_dates);
+                    let mut week_day_map: WeekDayMap = BTreeMap::new();
+                    for event in week_map {
+                        println!(
+                            "    event: ({} {} {}) {} {}",
+                            event.start().weekday(),
+                            event.year(),
+                            event.week(),
+                            event.summary(),
+                            event.start(),
+                        );
+                        let day_of_week = event.start().weekday().num_days_from_sunday() as u8;
+                        week_day_map
+                            .entry(day_of_week)
+                            .or_default()
+                            .push(event.clone());
                     }
+
+                    // create week days
+                    let week_dates =
+                        week_day_map.context(year, &week_num, &config.display_timezone)?;
+                    week_list.push(week_dates);
                 }
+
                 None => {
                     println!("  Inserting blank week {}, {} {}", week_num, month, year);
                     week_list.push(blank_context(year, &week_num)?);

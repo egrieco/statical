@@ -1,9 +1,10 @@
 use chrono::Weekday::Sun;
-use chrono::{Datelike, Days, Duration, Month, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, Days, Duration, Month, NaiveDate, Utc};
 use chrono_tz::Tz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
-use std::collections::HashSet;
+use itertools::Itertools;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -11,7 +12,7 @@ use std::{fs::File, io::BufReader};
 use tera::Tera;
 
 use super::calendar_source::CalendarSource;
-use super::event::UnparsedProperties;
+use super::event::{EventList, UnparsedProperties};
 use crate::config::ParsedConfig;
 use crate::model::calendar::Calendar;
 use crate::model::calendar_source::CalendarSource::*;
@@ -26,9 +27,14 @@ use crate::views::week_view::{WeekDayMap, WeekView};
 
 type InternalDate = NaiveDate;
 
+/// Type alias representing a specific day in time
+pub(crate) type Day = DateTime<Utc>;
+
 #[derive(Debug)]
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
+    /// Events grouped by day in the display timezone
+    pub(crate) events_by_day: BTreeMap<Day, EventList>,
 
     tera: Tera,
     config: ParsedConfig,
@@ -106,8 +112,21 @@ impl CalendarCollection {
             );
         }
 
+        // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
+        let mut events_by_day = BTreeMap::new();
+        let event_day_groups = calendars
+            .iter()
+            .flat_map(|c| c.events())
+            // TODO don't forget to adjust by config.display_timezone
+            // TODO don't forget to handle multi-day events
+            .group_by(|event| event.start());
+        for (day, events) in &event_day_groups {
+            events_by_day.insert(day, events.cloned().collect());
+        }
+
         Ok(CalendarCollection {
             calendars,
+            events_by_day,
             tera: Tera::new("templates/**/*.html")?,
             config,
             unparsed_properties,
@@ -162,11 +181,8 @@ impl CalendarCollection {
 
         // add events to views
         if self.config.render_month {
-            MonthView::new(
-                create_subdir(&self.config.output_dir, "month")?,
-                &self.calendars,
-            )
-            .create_html_pages(&self.config, &self.tera)?;
+            MonthView::new(create_subdir(&self.config.output_dir, "month")?, self)
+                .create_html_pages(&self.config, &self.tera)?;
         };
 
         if self.config.render_week {

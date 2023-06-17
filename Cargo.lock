@@ -1536,6 +1536,7 @@ dependencies = [
  "flexi_logger",
  "ical",
  "indoc",
+ "itertools",
  "log",
  "num-traits",
  "pretty_assertions",

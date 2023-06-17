@@ -12,15 +12,13 @@ use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
         calendar::Calendar,
+        calendar_collection::Day,
         event::{EventContext, EventList},
     },
     util::write_template,
 };
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
-
-/// Type alias representing a specific day in time
-type Day = DateTime<Utc>;
 
 /// A triple with the previous, current, and next days present
 ///
