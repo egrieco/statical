@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use super::event::EventContext;
 
-const YMD_FORMAT: &str = "[year]-[month]-[day]";
+const YMD_FORMAT: &str = "%Y-%m-%d";
 
 #[derive(Debug, Serialize)]
 pub struct DayContext {
