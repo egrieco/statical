@@ -39,6 +39,8 @@ pub struct CalendarCollection {
     tera: Tera,
     config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
+    cal_start: DateTime<Utc>,
+    cal_end: DateTime<Utc>,
 }
 
 impl CalendarCollection {
@@ -130,6 +132,8 @@ impl CalendarCollection {
             tera: Tera::new("templates/**/*.html")?,
             config,
             unparsed_properties,
+            cal_start,
+            cal_end,
         })
     }
 
