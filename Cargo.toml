@@ -17,27 +17,27 @@ name = "main"
 harness = false
 
 [dependencies]
-chrono = { version = "0.4.24", features = ["serde"] }
+chrono = { version = "0.4.26", features = ["serde"] }
 chrono-humanize = "0.2.2"
 chrono-tz = "0.8.2"
-chronoutil = "0.2.3"
-clap = { version = "4.2.4", features = ["derive"] }
+chronoutil = "0.2.4"
+clap = { version = "4.3.4", features = ["derive"] }
 color-eyre = "0.6.2"
 dedup_iter = "0.1.1"
-flexi_logger = "0.25.3"
+flexi_logger = "0.25.5"
 ical = "0.8.0"
 itertools = "0.10.5"
-log = "0.4.17"
+log = "0.4.19"
 num-traits = "0.2.15"
-regex = "1.8.1"
+regex = "1.8.4"
 rrule = "0.10.0"
-serde = { version = "1.0.160", features = ["derive", "rc"] }
+serde = { version = "1.0.164", features = ["derive", "rc"] }
 #serde_json = "1.0.83"
-tera = { version = "1.18.1", features = ["date-locale"] }
-toml_edit = { version = "0.19.8", features = ["serde"] }
+tera = { version = "1.19.0", features = ["date-locale"] }
+toml_edit = { version = "0.19.10", features = ["serde"] }
 unescaper = "0.1.1"
-ureq = "2.6.2"
-url = "2.3.1"
+ureq = "2.7.0"
+url = "2.4.0"
 # serde = { version = "1", features = ["derive"] }
 # config = { version = "0", features = ["hjson"] }  # also supports ini, yaml
 # termcolor = "1"
