@@ -8,11 +8,11 @@ use std::{
 };
 use tera::{Context, Tera};
 
+use crate::views::month_view::WeekContext;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
         calendar::Calendar,
-        calendar_collection::WeekContext,
         event::{EventList, WeekNum, Year},
     },
     util::write_template,
