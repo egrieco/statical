@@ -1,8 +1,9 @@
 use chrono::Weekday::Sun;
-use chrono::{Datelike, Days, Duration, Month as ChronoMonth, NaiveDate};
+use chrono::{Datelike, Days, Duration, Month as ChronoMonth, NaiveDate, NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use chronoutil::DateRule;
-use color_eyre::eyre::{bail, eyre, Result};
+use color_eyre::config;
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use num_traits::cast::FromPrimitive;
 use std::ops::Range;
 use std::{
@@ -13,6 +14,7 @@ use std::{
 use tera::{Context, Tera};
 
 use super::week_view::WeekMap;
+use crate::model::calendar_collection::Day;
 use crate::model::day::DayContext;
 use crate::{
     config::{CalendarView, ParsedConfig},
@@ -52,6 +54,29 @@ impl MonthView<'_> {
 
     pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
         let mut index_written = false;
+
+        // this might be better for sparse traversal
+        // get list of months to pull (sparse for now)
+        // let month_list = self
+        //     .calendars
+        //     .iterator()
+        //     .group_by(|i| (i.year(), i.month()));
+
+        // this will work for non-sparse calendar traversal
+        // TODO: take the local timezone into account
+        let calendar_iter = DateRule::monthly(self.calendars.cal_start)
+            .with_end(self.calendars.cal_end)
+            .with_rolling_day(1)
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not create calendar iterator")?;
+
+        for month in calendar_iter {
+            let events = month_view_date_range(
+                &month.year(),
+                &(month.month() as u8),
+                config.display_timezone,
+            );
+        }
 
         let mut month_map: BTreeMap<Month, BTreeMap<Week, EventList>> = BTreeMap::new();
 
@@ -243,8 +268,67 @@ impl MonthView<'_> {
     }
 }
 
+/// Convert NaiveDateTimes into DateTime<Utc>s which compensating for the local timezone
+///
+/// # Errors
+///
+/// This function will return an error if there is no equivalent local time
+fn convert_through_local_to_utc(datetime: NaiveDateTime, tz: Tz) -> Result<Day> {
+    let local_dt = match datetime.and_local_timezone(tz) {
+        chrono::LocalResult::None => bail!("no equivalent time in local timezone"),
+        chrono::LocalResult::Single(dt) => dt,
+        // TODO: use a better strategy to handle ambiguous double local times
+        chrono::LocalResult::Ambiguous(dt1, _dt2) => dt1,
+    };
+    Ok(local_dt.with_timezone(&Utc))
+}
+
+/// Calendar date range
+///
+/// Provides the range of dates, timezone adjusted, to retrieve from the main event BTreeMap
+///
+/// We cannot simply sort events into a Month -> Week -> Day data structure, as in month views
+/// the first and last week can contain days from the previous and next months respectively
+fn month_view_date_range(year: &i32, month: &u8, tz: Tz) -> Result<Range<Day>> {
+    // get the first day of the month
+    let first_day_of_month = NaiveDate::from_ymd_opt(*year, *month as u32, 1)
+        .ok_or(eyre!("could not get first day of month"))?;
+    // get the last day of the month
+    let last_day_of_month = DateRule::monthly(first_day_of_month)
+        .with_rolling_day(31)
+        .map_err(|e| eyre!(e))
+        .wrap_err("could not create rolling day rule")?
+        .next()
+        .ok_or(eyre!("could not get last day of month"))?;
+
+    // adjust the first day to the first Sunday, even if that is in the previous month
+    let first_day_of_view =
+        first_day_of_month - Days::new(first_day_of_month.weekday().num_days_from_sunday().into());
+    // adjust the last day if that is not a Saturday, even if it is in the next month
+    // TODO: double check the math for ensuring that the last day is sunday
+    let last_day_of_view = last_day_of_month
+        + Days::new(((7 - last_day_of_month.weekday().num_days_from_sunday()) % 7).into());
+
+    // convert Date into DateTime<Utc> for the first and last days
+    let first_day_of_view_utc: Day = convert_through_local_to_utc(
+        first_day_of_view.and_hms_opt(0, 0, 0).ok_or(eyre!(
+            "could not convert the first day of the view into a DateTime"
+        ))?,
+        tz,
+    )?;
+    let last_day_of_view_utc: Day = convert_through_local_to_utc(
+        last_day_of_view.and_hms_opt(23, 59, 59).ok_or(eyre!(
+            "could not convert the last day of the view into a DateTime"
+        ))?,
+        tz,
+    )?;
+
+    Ok(first_day_of_view_utc..last_day_of_view_utc)
+}
+
 /// Return the range of iso weeks this month covers
 pub(crate) fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Range<u8>> {
+    // TODO: refactor in terms of month_view_date_range()
     let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
     let first_week = first_day.iso_week();
     // let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);

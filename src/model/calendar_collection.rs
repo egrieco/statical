@@ -32,8 +32,8 @@ pub struct CalendarCollection {
     tera: Tera,
     config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
-    cal_start: DateTime<Utc>,
-    cal_end: DateTime<Utc>,
+    pub(crate) cal_start: DateTime<Utc>,
+    pub(crate) cal_end: DateTime<Utc>,
 }
 
 impl CalendarCollection {
