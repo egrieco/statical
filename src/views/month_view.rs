@@ -1,8 +1,11 @@
 use chrono::Weekday::Sun;
-use chrono::{Datelike, Days, Duration, Month as ChronoMonth, NaiveDate, NaiveDateTime, Utc};
-use chrono_tz::Tz;
+use chrono::{
+    DateTime, Datelike, Days, Duration, Month as ChronoMonth, NaiveDate, NaiveDateTime, Utc,
+};
+use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
+use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
 use std::ops::Range;
 use std::{
@@ -13,6 +16,7 @@ use std::{
 use tera::{Context, Tera};
 
 use super::week_view::WeekMap;
+use crate::model::calendar_collection::LocalDay;
 use crate::model::day::{Day, DayContext};
 use crate::{
     config::{CalendarView, ParsedConfig},
@@ -33,7 +37,7 @@ pub type MonthMap = BTreeMap<Month, WeekMap>;
 /// A triple with the previous, current, and next weeks present
 ///
 /// Note that the previous and next weeks may be None
-pub type MonthSlice<'a> = &'a [Option<(&'a Month, &'a WeekMap)>];
+pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 
 #[derive(Debug)]
 pub struct MonthView<'a> {
@@ -60,22 +64,6 @@ impl MonthView<'_> {
         //     .iterator()
         //     .group_by(|i| (i.year(), i.month()));
 
-        // this will work for non-sparse calendar traversal
-        // TODO: take the local timezone into account
-        let calendar_iter = DateRule::monthly(self.calendars.cal_start)
-            .with_end(self.calendars.cal_end)
-            .with_rolling_day(1)
-            .map_err(|e| eyre!(e))
-            .wrap_err("could not create calendar iterator")?;
-
-        for month in calendar_iter {
-            let events = month_view_date_range(
-                &month.year(),
-                &(month.month() as u8),
-                config.display_timezone,
-            );
-        }
-
         let mut month_map: BTreeMap<Month, BTreeMap<Week, EventList>> = BTreeMap::new();
 
         // add events to the month_map
@@ -90,13 +78,35 @@ impl MonthView<'_> {
             }
         }
 
+        // months to iterate through
+        // convert start date to beginning of month
+        let aligned_month_start = self
+            .calendars
+            .cal_start
+            .with_day(1)
+            .ok_or(eyre!("could not get aligned start of month"))?;
+        // let aligned_month_end = calendars.end
+        let aligned_month_end = DateRule::monthly(self.calendars.cal_end)
+            .with_rolling_day(31)
+            .unwrap()
+            .next()
+            .ok_or(eyre!("could not get end of month"))?;
+
+        // DateRule::monthly(aligned_month_start).with_end(calenda)
+        // this will work for non-sparse calendar traversal
+        let months_to_show = DateRule::monthly(aligned_month_start)
+            .with_end(aligned_month_end)
+            .with_rolling_day(1)
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not create month iterator")?;
+
         // chain a None to the list of weeks and a None at the end
         // this will allow us to traverse the list as windows with the first and last
         // having None as appropriate
         let chained_iter = iter::once(None)
-            .chain(month_map.iter().map(Some))
+            .chain(months_to_show.into_iter().map(Some))
             .chain(iter::once(None));
-        let month_windows = &chained_iter.collect::<Vec<Option<(&Month, &WeekMap)>>>();
+        let month_windows = &chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
 
         // iterate through all windows
         for window in month_windows.windows(3) {
@@ -107,13 +117,12 @@ impl MonthView<'_> {
             // write the index page for the current month
             if !index_written {
                 if let Some(next_month) = next_month_opt {
-                    let agenda_start_month = (
-                        config.agenda_start_date.year(),
-                        config.agenda_start_date.month() as u8,
-                    );
-
                     // write the index file if the next month is after the current date
-                    if next_month.0 > &agenda_start_month {
+                    if next_month
+                        > config.agenda_start_date.with_day(1).ok_or(eyre!(
+                            "could not convert agenda start date to beginning of month"
+                        ))?
+                    {
                         index_written = true;
                         index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
@@ -168,64 +177,52 @@ impl MonthView<'_> {
             month_slice[1].expect("Current month is None. This should never happen.");
         let next_month = month_slice[2];
 
-        let ((year, month), weeks) = current_month;
-
-        println!("month: {}", month);
+        println!("month: {}", current_month);
         let mut week_list = Vec::new();
 
         // create all weeks in this month
-        let weeks_for_display = iso_weeks_for_month_display(year, month)?;
-        println!("From week {:?}", weeks_for_display);
-        for week_num in weeks_for_display {
-            match weeks.get(&(*year, week_num)) {
-                Some(week_map) => {
-                    println!("  Creating week {}, {} {}", week_num, month, year);
-                    let mut week_day_map: WeekDayMap = BTreeMap::new();
-                    for event in week_map {
-                        println!(
-                            "    event: ({} {} {}) {} {}",
-                            event.start().weekday(),
-                            event.year(),
-                            event.week(),
-                            event.summary(),
-                            event.start(),
-                        );
-                        let day_of_week = event.start().weekday().num_days_from_sunday() as u8;
-                        week_day_map
-                            .entry(day_of_week)
-                            .or_default()
-                            .push(event.clone());
-                    }
-
-                    // create week days
-                    let week_dates =
-                        week_day_map.context(year, &week_num, &config.display_timezone)?;
-                    week_list.push(week_dates);
-                }
-
-                None => {
-                    println!("  Inserting blank week {}, {} {}", week_num, month, year);
-                    week_list.push(blank_context(year, &week_num)?);
-                }
+        let days_by_week = month_view_date_range(current_month)?.chunks(7);
+        let weeks_for_display = days_by_week.into_iter();
+        for (week_num, week) in weeks_for_display.enumerate() {
+            println!("From week {}:", week_num);
+            let mut week_dates = Vec::new();
+            for day in week {
+                let events = self.calendars.events_by_day.get(&day);
+                println!(
+                    "  For week {} day {}: there are {} events",
+                    week_num,
+                    day,
+                    events.and_then(|e| Some(e.len())).or(Some(0)).unwrap()
+                );
+                week_dates.push(DayContext::new(
+                    day.naive_local().date(),
+                    events
+                        .map(|l| {
+                            l.iter()
+                                .map(|e| e.context(&self.calendars.config.display_timezone))
+                                .collect()
+                        })
+                        .unwrap_or_default(),
+                ));
             }
+            week_list.push(week_dates);
         }
 
-        let file_name = format!("{}-{}.html", year, month);
-        let previous_file_name =
-            previous_month.map(|((previous_year, previous_month), _events)| {
-                format!("{}-{}.html", previous_year, previous_month)
-            });
+        let file_name = format!("{}-{}.html", current_month.year(), current_month.month());
+        let previous_file_name = previous_month.map(|previous_month| {
+            format!("{}-{}.html", previous_month.year(), previous_month.month())
+        });
         let next_file_name = next_month
-            .map(|((next_year, next_month), _events)| format!("{}-{}.html", next_year, next_month));
+            .map(|next_month| format!("{}-{}.html", next_month.year(), next_month.month()));
 
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", &config.display_timezone.name());
-        context.insert("year", &year);
-        context.insert("month", &month);
+        context.insert("year", &current_month.year());
+        context.insert("month", &current_month.month());
         context.insert(
             "month_name",
-            &chrono::Month::from_u8(*month)
+            &chrono::Month::from_u8(current_month.month() as u8)
                 .ok_or(eyre!("unknown month"))?
                 .name(),
         );
@@ -271,7 +268,7 @@ impl MonthView<'_> {
 /// # Errors
 ///
 /// This function will return an error if there is no equivalent local time
-fn convert_through_local_to_utc(datetime: NaiveDateTime, tz: Tz) -> Result<Day> {
+fn convert_through_local_to_utc(datetime: NaiveDateTime, tz: ChronoTz) -> Result<Day> {
     let local_dt = match datetime.and_local_timezone(tz) {
         chrono::LocalResult::None => bail!("no equivalent time in local timezone"),
         chrono::LocalResult::Single(dt) => dt,
@@ -287,9 +284,10 @@ fn convert_through_local_to_utc(datetime: NaiveDateTime, tz: Tz) -> Result<Day> 
 ///
 /// We cannot simply sort events into a Month -> Week -> Day data structure, as in month views
 /// the first and last week can contain days from the previous and next months respectively
-fn month_view_date_range(year: &i32, month: &u8, tz: Tz) -> Result<Range<Day>> {
+fn month_view_date_range(month: LocalDay) -> Result<DateRule<LocalDay>> {
     // get the first day of the month
-    let first_day_of_month = NaiveDate::from_ymd_opt(*year, *month as u32, 1)
+    let first_day_of_month = month
+        .with_day(1)
         .ok_or(eyre!("could not get first day of month"))?;
     // get the last day of the month
     let last_day_of_month = DateRule::monthly(first_day_of_month)
@@ -307,21 +305,7 @@ fn month_view_date_range(year: &i32, month: &u8, tz: Tz) -> Result<Range<Day>> {
     let last_day_of_view = last_day_of_month
         + Days::new(((7 - last_day_of_month.weekday().num_days_from_sunday()) % 7).into());
 
-    // convert Date into DateTime<Utc> for the first and last days
-    let first_day_of_view_utc: Day = convert_through_local_to_utc(
-        first_day_of_view.and_hms_opt(0, 0, 0).ok_or(eyre!(
-            "could not convert the first day of the view into a DateTime"
-        ))?,
-        tz,
-    )?;
-    let last_day_of_view_utc: Day = convert_through_local_to_utc(
-        last_day_of_view.and_hms_opt(23, 59, 59).ok_or(eyre!(
-            "could not convert the last day of the view into a DateTime"
-        ))?,
-        tz,
-    )?;
-
-    Ok(first_day_of_view_utc..last_day_of_view_utc)
+    Ok(DateRule::daily(first_day_of_view).with_end(last_day_of_view))
 }
 
 /// Return the range of iso weeks this month covers
@@ -380,11 +364,11 @@ fn first_sunday_of_week(year: &i32, week: &u32) -> Result<InternalDate, color_ey
 ///
 /// Implementing this as a trait so we can call it on a typedef rather than creating a new struct.
 pub trait WeekContext {
-    fn context(&self, year: &i32, week: &u8, tz: &Tz) -> Result<Vec<DayContext>>;
+    fn context(&self, year: &i32, week: &u8, tz: &ChronoTz) -> Result<Vec<DayContext>>;
 }
 
 impl WeekContext for WeekDayMap {
-    fn context(&self, year: &i32, week: &u8, tz: &Tz) -> Result<Vec<DayContext>> {
+    fn context(&self, year: &i32, week: &u8, tz: &ChronoTz) -> Result<Vec<DayContext>> {
         let sunday = first_sunday_of_week(year, &(*week as u32))?;
         let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
             .iter()

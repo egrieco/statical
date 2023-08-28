@@ -32,7 +32,7 @@ pub struct CalendarCollection {
     pub(crate) events_by_day: EventsByLocalDay,
 
     tera: Tera,
-    config: ParsedConfig,
+    pub(crate) config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
