@@ -34,6 +34,10 @@ pub struct Config {
     pub copy_stylesheet_to_output: bool,
     /// The stylesheet to copy to the output dir
     pub copy_stylesheet_from: String,
+    /// The format for the start date of calendar events
+    pub event_start_format: String,
+    /// The format for the end date of calendar events
+    pub event_end_format: String,
     /// The list of calendars to import (can be files and urls)
     pub calendar_sources: Vec<String>,
 }
@@ -54,6 +58,8 @@ impl Default for Config {
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,
             copy_stylesheet_from: "public/statical.css".into(),
+            event_start_format: "%I:%M%P".into(),
+            event_end_format: "%I:%M%P".into(),
             calendar_sources: Vec::new(),
         }
     }
@@ -85,6 +91,12 @@ impl From<&Document> for Config {
                 .as_str()
                 .unwrap_or("public/statical.css")
                 .into(),
+            // TODO: gracefully handle missing fields in the config file
+            event_start_format: doc["event_start_format"]
+                .as_str()
+                .unwrap_or("%I:%M%P")
+                .into(),
+            event_end_format: doc["event_end_format"].as_str().unwrap_or("%I:%M%P").into(),
             calendar_sources: doc["calendar_sources"]
                 .as_array()
                 .unwrap_or(&Array::new())
@@ -129,6 +141,8 @@ impl Config {
         let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
         log::debug!("copy_stylesheet_from: {:?}", copy_stylesheet_from);
 
+        // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
+
         let calendar_sources = CalendarSource::from_strings(self.calendar_sources.clone())?;
         log::debug!("calendar_sources: {:?}", calendar_sources);
         // TODO need to show calendar source errors to user
@@ -146,6 +160,8 @@ impl Config {
             stylesheet_path,
             copy_stylesheet_to_output: self.copy_stylesheet_to_output,
             copy_stylesheet_from,
+            event_start_format: self.event_start_format.clone(),
+            event_end_format: self.event_end_format.clone(),
             calendar_sources,
         })
     }
@@ -197,6 +213,10 @@ pub struct ParsedConfig {
     pub copy_stylesheet_to_output: bool,
     /// The stylesheet to copy to the output dir
     pub copy_stylesheet_from: PathBuf,
+    /// The format for the start date of calendar events
+    pub event_start_format: String,
+    /// The format for the end date of calendar events
+    pub event_end_format: String,
     /// The list of calendars to import (can be files and urls)
     pub(crate) calendar_sources: Vec<CalendarSource>,
 }

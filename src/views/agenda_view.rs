@@ -174,10 +174,7 @@ impl AgendaView {
             );
         }
 
-        let event_contexts: Vec<_> = events
-            .iter()
-            .map(|e| e.context(&config.display_timezone))
-            .collect();
+        let event_contexts: Vec<_> = events.iter().map(|e| e.context(config)).collect();
 
         let file_name = format!("{}.html", page);
         let previous_file_name = previous_page.map(|(page_num, _)| format!("{}.html", page_num));
@@ -201,7 +198,7 @@ impl AgendaView {
             event_groups
                 .entry(event.start().format("%a, %d %m %Y").to_string())
                 .or_default()
-                .push(event.context(&config.display_timezone))
+                .push(event.context(config))
         }
         context.insert("event_groups", &event_groups);
 

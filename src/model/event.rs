@@ -10,6 +10,8 @@ use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
 use unescaper::unescape;
 
+use crate::config::ParsedConfig;
+
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {
     ParseDateTime,
@@ -22,18 +24,11 @@ const MISSING_SUMMARY: &str = "None";
 //     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
 // );
 const START_DATETIME_FORMAT: &str = "%a %B %d, %Y at %H:%M%P";
+
 // const END_DATETIME_FORMAT = format_description!(
 //     "[hour repr:12]:[minute][period case:lower]"
 // );
 const END_DATETIME_FORMAT: &str = "%H:%M%P";
-// const CONTEXT_START_DATETIME_FORMAT: &str = format_description!(
-//     "[hour repr:12 padding:none]:[minute][period case:lower]"
-// );
-const CONTEXT_START_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
-// const CONTEXT_END_DATETIME_FORMAT: &str = format_description!(
-//     "[hour repr:12 padding:none]:[minute][period case:lower]"
-// );
-const CONTEXT_END_DATETIME_FORMAT: &str = END_DATETIME_FORMAT;
 
 // const RRULE_DTSTART_PARSING_FORMAT = format_description!(
 //     "[year][month][day]T[hour][minute][second]Z"
@@ -91,7 +86,7 @@ impl fmt::Display for Event {
 
 impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
-    pub fn context(&self, tz: &ChronoTz) -> EventContext {
+    pub fn context(&self, config: &ParsedConfig) -> EventContext {
         EventContext {
             summary: self.summary().into(),
             description: self
@@ -101,16 +96,22 @@ impl Event {
                 .into(),
             start: self
                 .start()
-                .with_timezone(tz)
-                .format(CONTEXT_START_DATETIME_FORMAT)
+                .with_timezone(&config.display_timezone)
+                .format(&config.event_start_format)
                 .to_string(),
-            start_timestamp: self.start().with_timezone(tz).timestamp(),
+            start_timestamp: self
+                .start()
+                .with_timezone(&config.display_timezone)
+                .timestamp(),
             end: self
                 .end()
-                .with_timezone(tz)
-                .format(CONTEXT_END_DATETIME_FORMAT)
+                .with_timezone(&config.display_timezone)
+                .format(&config.event_end_format)
                 .to_string(),
-            end_timestamp: self.end().with_timezone(tz).timestamp(),
+            end_timestamp: self
+                .end()
+                .with_timezone(&config.display_timezone)
+                .timestamp(),
             duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             url: self.url().to_owned(),
         }

@@ -196,7 +196,7 @@ impl MonthView<'_> {
                     events
                         .map(|l| {
                             l.iter()
-                                .map(|e| e.context(&self.calendars.config.display_timezone))
+                                .map(|e| e.context(&self.calendars.config))
                                 .collect()
                         })
                         .unwrap_or_default(),
@@ -311,11 +311,11 @@ fn first_sunday_of_week(year: &i32, week: &u32) -> Result<InternalDate, color_ey
 ///
 /// Implementing this as a trait so we can call it on a typedef rather than creating a new struct.
 pub trait WeekContext {
-    fn context(&self, year: &i32, week: &u8, tz: &ChronoTz) -> Result<Vec<DayContext>>;
+    fn context(&self, year: &i32, week: &u8, config: &ParsedConfig) -> Result<Vec<DayContext>>;
 }
 
 impl WeekContext for WeekDayMap {
-    fn context(&self, year: &i32, week: &u8, tz: &ChronoTz) -> Result<Vec<DayContext>> {
+    fn context(&self, year: &i32, week: &u8, config: &ParsedConfig) -> Result<Vec<DayContext>> {
         let sunday = first_sunday_of_week(year, &(*week as u32))?;
         let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
             .iter()
@@ -323,7 +323,7 @@ impl WeekContext for WeekDayMap {
                 DayContext::new(
                     sunday + Duration::days(*o as i64),
                     self.get(o)
-                        .map(|l| l.iter().map(|e| e.context(tz)).collect())
+                        .map(|l| l.iter().map(|e| e.context(config)).collect())
                         .unwrap_or_default(),
                 )
             })
