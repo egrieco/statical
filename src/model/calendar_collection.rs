@@ -21,13 +21,13 @@ use crate::views::month_view::MonthView;
 use crate::views::week_view::WeekView;
 
 /// Type alias representing a specific day in time
-pub(crate) type Day = DateTime<Utc>;
+pub(crate) type LocalDay = DateTime<chrono_tz::Tz>;
 
 #[derive(Debug)]
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
     /// Events grouped by day in the display timezone
-    pub(crate) events_by_day: BTreeMap<Day, EventList>,
+    pub(crate) events_by_day: BTreeMap<LocalDay, EventList>,
 
     tera: Tera,
     config: ParsedConfig,
@@ -113,8 +113,9 @@ impl CalendarCollection {
             .iter()
             .flat_map(|c| c.events())
             // TODO don't forget to adjust by config.display_timezone
+            // TODO don't forget to handle events that end on the day as well
             // TODO don't forget to handle multi-day events
-            .group_by(|event| event.start());
+            .group_by(|event| event.start().with_timezone(&config.display_timezone));
         for (day, events) in &event_day_groups {
             events_by_day.insert(day, events.cloned().collect());
         }

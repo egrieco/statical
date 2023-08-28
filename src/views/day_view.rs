@@ -12,7 +12,7 @@ use crate::{
     config::{CalendarView, ParsedConfig},
     model::{
         calendar::Calendar,
-        calendar_collection::Day,
+        day::Day,
         event::{EventContext, EventList},
     },
     util::write_template,

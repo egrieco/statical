@@ -2,7 +2,6 @@ use chrono::Weekday::Sun;
 use chrono::{Datelike, Days, Duration, Month as ChronoMonth, NaiveDate, NaiveDateTime, Utc};
 use chrono_tz::Tz;
 use chronoutil::DateRule;
-use color_eyre::config;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use num_traits::cast::FromPrimitive;
 use std::ops::Range;
@@ -14,8 +13,7 @@ use std::{
 use tera::{Context, Tera};
 
 use super::week_view::WeekMap;
-use crate::model::calendar_collection::Day;
-use crate::model::day::DayContext;
+use crate::model::day::{Day, DayContext};
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{calendar_collection::CalendarCollection, event::Year},

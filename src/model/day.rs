@@ -1,10 +1,13 @@
-use chrono::{Datelike, Month, NaiveDate};
+use chrono::{DateTime, Datelike, Month, NaiveDate, Utc};
 use num_traits::FromPrimitive;
 use serde::Serialize;
 
 use super::event::EventContext;
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
+
+/// Type alias representing a specific day in time
+pub(crate) type Day = DateTime<Utc>;
 
 #[derive(Debug, Serialize)]
 pub struct DayContext {
