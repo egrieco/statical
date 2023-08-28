@@ -1,13 +1,10 @@
 use chrono::Weekday::Sun;
-use chrono::{
-    DateTime, Datelike, Days, Duration, Month as ChronoMonth, NaiveDate, NaiveDateTime, Utc,
-};
+use chrono::{DateTime, Datelike, Days, Duration, NaiveDate};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
-use color_eyre::eyre::{bail, eyre, Result, WrapErr};
+use color_eyre::eyre::{eyre, Result, WrapErr};
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
-use std::ops::Range;
 use std::{
     collections::BTreeMap,
     iter,
@@ -17,7 +14,7 @@ use tera::{Context, Tera};
 
 use super::week_view::WeekMap;
 use crate::model::calendar_collection::LocalDay;
-use crate::model::day::{Day, DayContext};
+use crate::model::day::DayContext;
 use crate::{
     config::{CalendarView, ParsedConfig},
     model::{calendar_collection::CalendarCollection, event::Year},
@@ -263,21 +260,6 @@ impl MonthView<'_> {
     }
 }
 
-/// Convert NaiveDateTimes into DateTime<Utc>s which compensating for the local timezone
-///
-/// # Errors
-///
-/// This function will return an error if there is no equivalent local time
-fn convert_through_local_to_utc(datetime: NaiveDateTime, tz: ChronoTz) -> Result<Day> {
-    let local_dt = match datetime.and_local_timezone(tz) {
-        chrono::LocalResult::None => bail!("no equivalent time in local timezone"),
-        chrono::LocalResult::Single(dt) => dt,
-        // TODO: use a better strategy to handle ambiguous double local times
-        chrono::LocalResult::Ambiguous(dt1, _dt2) => dt1,
-    };
-    Ok(local_dt.with_timezone(&Utc))
-}
-
 /// Calendar date range
 ///
 /// Provides the range of dates, timezone adjusted, to retrieve from the main event BTreeMap
@@ -306,41 +288,6 @@ fn month_view_date_range(month: LocalDay) -> Result<DateRule<LocalDay>> {
         + Days::new(((7 - last_day_of_month.weekday().num_days_from_sunday()) % 7).into());
 
     Ok(DateRule::daily(first_day_of_view).with_end(last_day_of_view))
-}
-
-/// Return the range of iso weeks this month covers
-pub(crate) fn iso_weeks_for_month_display(year: &i32, month: &u8) -> Result<Range<u8>> {
-    // TODO: refactor in terms of month_view_date_range()
-    let first_day = first_sunday_of_view(*year, month_from_u8(*month)?)?;
-    let first_week = first_day.iso_week();
-    // let days_in_month = days_in_year_month(*year, month_from_u8(*month)?);
-    // let last_day = NaiveDate::from_calendar_date(*year, month_from_u8(*month)?, days_in_month)?;
-    let first_day =
-        NaiveDate::from_ymd_opt(*year, *month as u32, 1).expect("could not get first day of month");
-    let last_day = DateRule::monthly(first_day)
-        .with_rolling_day(31)
-        .expect("could not create rolling day rule")
-        .next()
-        .expect("could not get last day of month");
-    let last_week = match last_day.weekday() == Sun {
-        // iso weeks start on Monday
-        true => last_day
-            .succ_opt()
-            .ok_or(eyre!("could not get successive day"))?,
-        false => last_day,
-    }
-    .iso_week();
-
-    Ok((first_week.week() as u8)..(last_week.week() as u8))
-}
-
-/// Return the first Sunday that should appear in a calendar view, even if that date is in the previous month
-fn first_sunday_of_view(year: Year, month: ChronoMonth) -> Result<InternalDate> {
-    let first_day_of_month = NaiveDate::from_ymd_opt(year, month.number_from_month(), 1)
-        .ok_or(eyre!("could not get date for year and month"))?;
-    let days_from_sunday = first_day_of_month.weekday().num_days_from_sunday();
-    let first_day_of_view = first_day_of_month - Days::new(days_from_sunday.into());
-    Ok(first_day_of_view)
 }
 
 /// Return the first Sunday of the week, even if that week is in the previous month
@@ -382,34 +329,5 @@ impl WeekContext for WeekDayMap {
             })
             .collect();
         Ok(week_dates)
-    }
-}
-
-/// Generate DayContext Vecs for empty weeks
-pub(crate) fn blank_context(year: &i32, week: &u8) -> Result<Vec<DayContext>> {
-    let sunday = first_sunday_of_week(year, &(*week as u32))?;
-    let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
-        .iter()
-        .map(|o| DayContext::new(sunday + Duration::days(*o as i64), Vec::new()))
-        .collect();
-    Ok(week_dates)
-}
-
-// TODO convert to use functions from chrono crate
-pub(crate) fn month_from_u8(value: u8) -> Result<ChronoMonth> {
-    match value {
-        1 => Ok(ChronoMonth::January),
-        2 => Ok(ChronoMonth::February),
-        3 => Ok(ChronoMonth::March),
-        4 => Ok(ChronoMonth::April),
-        5 => Ok(ChronoMonth::May),
-        6 => Ok(ChronoMonth::June),
-        7 => Ok(ChronoMonth::July),
-        8 => Ok(ChronoMonth::August),
-        9 => Ok(ChronoMonth::September),
-        10 => Ok(ChronoMonth::October),
-        11 => Ok(ChronoMonth::November),
-        12 => Ok(ChronoMonth::December),
-        _ => bail!("can only convert numbers from 1-12 into months"),
     }
 }
