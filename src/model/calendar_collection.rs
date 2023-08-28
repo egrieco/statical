@@ -124,7 +124,7 @@ impl CalendarCollection {
             // find out if this event ends on this day
             let event_days = event.days_with_timezone(&config.display_timezone);
             println!(
-                "Event ({}, {} days): {}",
+                "Event {} (day span: {})\n  {}",
                 event_num,
                 event_days.len(),
                 event

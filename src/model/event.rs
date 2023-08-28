@@ -4,6 +4,7 @@ use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
+use indent::indent_all_by;
 use regex::RegexSet;
 use rrule::RRuleSet;
 use serde::Serialize;
@@ -72,14 +73,17 @@ impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} ({} to {} for {})\n{}",
+            "{}\n  {} to {} for {}\n{}",
             self.summary.as_ref().unwrap_or(&"NO SUMMARY".to_string()),
             self.start.format(START_DATETIME_FORMAT),
             self.end().format(END_DATETIME_FORMAT),
             HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
-            self.description
-                .as_ref()
-                .unwrap_or(&"NO DESCRIPTION".to_string())
+            indent_all_by(
+                2,
+                self.description
+                    .as_ref()
+                    .unwrap_or(&"NO DESCRIPTION".to_string())
+            )
         )
     }
 }

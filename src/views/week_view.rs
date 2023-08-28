@@ -150,7 +150,7 @@ impl WeekView {
 
         let ((year, week), events) = current_week;
 
-        println!("week: {:?}", current_week);
+        println!("week: {:#?}", current_week);
         let mut week_day_map: WeekDayMap = BTreeMap::new();
         for event in events {
             println!(

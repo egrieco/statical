@@ -3,6 +3,7 @@ use chrono_tz::Tz as ChronoTz;
 use color_eyre::eyre::{Context, Result};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
+use indent::indent_all_by;
 use rrule::Tz as RruleTz;
 use std::io::BufRead;
 use std::rc::Rc;
@@ -28,15 +29,18 @@ impl fmt::Display for Calendar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}\n    {} to {}\n    {} events, {} recurring events\n    {}",
+            "{}\n    {} to {}\n    {} events, {} recurring events\n{}",
             self.name.as_ref().unwrap_or(&"NO NAME".to_string()),
             self.start.format(START_DATETIME_FORMAT),
             self.end().format(END_DATETIME_FORMAT),
             self.events.len(),
             self.recurring_events.len(),
-            self.description
-                .as_ref()
-                .unwrap_or(&"NO DESCRIPTION".to_string())
+            indent_all_by(
+                4,
+                self.description
+                    .as_ref()
+                    .unwrap_or(&"NO DESCRIPTION".to_string())
+            )
         )
     }
 }
