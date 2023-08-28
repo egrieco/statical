@@ -189,7 +189,7 @@ impl MonthView<'_> {
                     "  For week {} day {}: there are {} events",
                     week_num,
                     day,
-                    events.and_then(|e| Some(e.len())).or(Some(0)).unwrap()
+                    events.map(|e| e.len()).unwrap_or(0)
                 );
                 week_dates.push(DayContext::new(
                     day.naive_local().date(),

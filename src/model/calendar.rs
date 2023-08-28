@@ -101,7 +101,7 @@ impl Calendar {
                     // TODO might want to push directly into the events vec and skip some of the checks in Calendar.push()
                     new_events.push(Rc::new(
                         // TODO ensure that we want this to be UTC here
-                        event.duplicate_with_date(recurrence_time.with_timezone(&tz)),
+                        event.duplicate_with_date(recurrence_time.with_timezone(tz)),
                     ));
                 }
             };
