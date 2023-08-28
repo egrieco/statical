@@ -110,14 +110,26 @@ impl CalendarCollection {
             );
         }
 
+        println!("Read {} calendars:", &calendars.len());
+        for calendar in &calendars {
+            println!("  Calendar: {}", calendar);
+        }
+
         // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
         let mut events_by_day = EventsByLocalDay::new();
 
-        for event in calendars.iter().flat_map(|c| c.events()) {
+        for (event_num, event) in calendars.iter().flat_map(|c| c.events()).enumerate() {
             // find out if event is longer than 1 day
             // find out if the event crosses a day boundary in this timezone
             // find out if this event ends on this day
-            for day in event.days_with_timezone(&config.display_timezone) {
+            let event_days = event.days_with_timezone(&config.display_timezone);
+            println!(
+                "Event ({}, {} days): {}",
+                event_num,
+                event_days.len(),
+                event
+            );
+            for day in event_days {
                 events_by_day.entry(day).or_default().push(event.clone());
             }
         }

@@ -4,21 +4,41 @@ use color_eyre::eyre::{Context, Result};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use rrule::Tz as RruleTz;
-use std::collections::HashSet;
 use std::io::BufRead;
 use std::rc::Rc;
+use std::{collections::HashSet, fmt};
 
 use super::event::{EventList, UnparsedProperties};
 use crate::model::event::Event;
+
+const START_DATETIME_FORMAT: &str = "%a %B %d, %Y";
+const END_DATETIME_FORMAT: &str = "%a %B %d, %Y";
 
 #[derive(Debug)]
 pub struct Calendar {
     name: Option<String>,
     description: Option<String>,
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
+    pub(crate) start: DateTime<Utc>,
+    pub(crate) end: DateTime<Utc>,
     events: EventList,
     recurring_events: EventList,
+}
+
+impl fmt::Display for Calendar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}\n    {} to {}\n    {} events, {} recurring events\n    {}",
+            self.name.as_ref().unwrap_or(&"NO NAME".to_string()),
+            self.start.format(START_DATETIME_FORMAT),
+            self.end().format(END_DATETIME_FORMAT),
+            self.events.len(),
+            self.recurring_events.len(),
+            self.description
+                .as_ref()
+                .unwrap_or(&"NO DESCRIPTION".to_string())
+        )
+    }
 }
 
 impl Calendar {

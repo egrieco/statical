@@ -76,7 +76,7 @@ impl fmt::Display for Event {
             self.summary.as_ref().unwrap_or(&"NO SUMMARY".to_string()),
             self.start.format(START_DATETIME_FORMAT),
             self.end().format(END_DATETIME_FORMAT),
-            self.duration,
+            HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             self.description
                 .as_ref()
                 .unwrap_or(&"NO DESCRIPTION".to_string())
