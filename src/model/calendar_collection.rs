@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, Context as EyreContext, Result};
-use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
@@ -23,11 +22,13 @@ use crate::views::week_view::WeekView;
 /// Type alias representing a specific day in time
 pub(crate) type LocalDay = DateTime<chrono_tz::Tz>;
 
+pub(crate) type EventsByLocalDay = BTreeMap<LocalDay, EventList>;
+
 #[derive(Debug)]
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
     /// Events grouped by day in the display timezone
-    pub(crate) events_by_day: BTreeMap<LocalDay, EventList>,
+    pub(crate) events_by_day: EventsByLocalDay,
 
     tera: Tera,
     config: ParsedConfig,
@@ -108,16 +109,15 @@ impl CalendarCollection {
         }
 
         // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
-        let mut events_by_day = BTreeMap::new();
-        let event_day_groups = calendars
-            .iter()
-            .flat_map(|c| c.events())
-            // TODO don't forget to adjust by config.display_timezone
-            // TODO don't forget to handle events that end on the day as well
-            // TODO don't forget to handle multi-day events
-            .group_by(|event| event.start().with_timezone(&config.display_timezone));
-        for (day, events) in &event_day_groups {
-            events_by_day.insert(day, events.cloned().collect());
+        let mut events_by_day = EventsByLocalDay::new();
+
+        for event in calendars.iter().flat_map(|c| c.events()) {
+            // find out if event is longer than 1 day
+            // find out if the event crosses a day boundary in this timezone
+            // find out if this event ends on this day
+            for day in event.days_with_timezone(&config.display_timezone) {
+                events_by_day.entry(day).or_default().push(event.clone());
+            }
         }
 
         Ok(CalendarCollection {

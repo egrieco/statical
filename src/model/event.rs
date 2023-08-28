@@ -1,6 +1,7 @@
 use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDate, NaiveDateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use chrono_tz::Tz;
+use chronoutil::DateRule;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use regex::RegexSet;
@@ -123,8 +124,26 @@ impl Event {
         self.start
     }
 
+    pub fn start_with_timezone(&self, tz: &Tz) -> DateTime<Tz> {
+        self.start.with_timezone(tz)
+    }
+
     pub fn end(&self) -> DateTime<Utc> {
         self.start + self.duration
+    }
+
+    pub fn end_with_timezone(&self, tz: &Tz) -> DateTime<Tz> {
+        (self.start + self.duration).with_timezone(tz)
+    }
+
+    pub fn days_with_timezone(&self, tz: &Tz) -> Vec<DateTime<Tz>> {
+        // adjust by config.display_timezone
+        let start = self.start_with_timezone(tz);
+        let end = self.end_with_timezone(tz);
+
+        // TODO don't forget to handle events that end on the day as well
+        // TODO don't forget to handle multi-day events (events with RRules should already be handled)
+        DateRule::daily(start).with_end(end).into_iter().collect()
     }
 
     pub fn url(&self) -> &str {
@@ -133,6 +152,10 @@ impl Event {
 
     pub fn year(&self) -> Year {
         self.start.year()
+    }
+
+    pub fn year_with_timezone(&self, tz: &Tz) -> Year {
+        self.start_with_timezone(tz).year()
     }
 
     /// Returns the week number of the event
