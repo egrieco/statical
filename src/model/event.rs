@@ -1,6 +1,6 @@
 use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDate, NaiveDateTime, Utc};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
-use chrono_tz::Tz;
+use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
@@ -91,7 +91,7 @@ impl fmt::Display for Event {
 
 impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
-    pub fn context(&self, tz: &Tz) -> EventContext {
+    pub fn context(&self, tz: &ChronoTz) -> EventContext {
         EventContext {
             summary: self.summary().into(),
             description: self
@@ -124,7 +124,7 @@ impl Event {
         self.start
     }
 
-    pub fn start_with_timezone(&self, tz: &Tz) -> DateTime<Tz> {
+    pub fn start_with_timezone(&self, tz: &ChronoTz) -> DateTime<ChronoTz> {
         self.start.with_timezone(tz)
     }
 
@@ -132,11 +132,11 @@ impl Event {
         self.start + self.duration
     }
 
-    pub fn end_with_timezone(&self, tz: &Tz) -> DateTime<Tz> {
+    pub fn end_with_timezone(&self, tz: &ChronoTz) -> DateTime<ChronoTz> {
         (self.start + self.duration).with_timezone(tz)
     }
 
-    pub fn days_with_timezone(&self, tz: &Tz) -> Vec<DateTime<Tz>> {
+    pub fn days_with_timezone(&self, tz: &ChronoTz) -> Vec<DateTime<ChronoTz>> {
         // adjust by config.display_timezone
         let start = self.start_with_timezone(tz);
         let end = self.end_with_timezone(tz);
@@ -154,7 +154,7 @@ impl Event {
         self.start.year()
     }
 
-    pub fn year_with_timezone(&self, tz: &Tz) -> Year {
+    pub fn year_with_timezone(&self, tz: &ChronoTz) -> Year {
         self.start_with_timezone(tz).year()
     }
 
@@ -260,12 +260,12 @@ impl Event {
     /// Creates a duplicate event with a different start datetime.
     ///
     /// This is useful when we are creating events from rrule expansions.
-    pub fn duplicate_with_date(&self, date: DateTime<Utc>) -> Event {
+    pub fn duplicate_with_date(&self, date: DateTime<ChronoTz>) -> Event {
         // TODO might want to link this event back to its parent event in some way, maybe even have a separate event class
         Event {
             summary: self.summary.clone(),
             description: self.description.clone(),
-            start: date,
+            start: date.with_timezone(&Utc),
             duration: self.duration,
             // we're un-setting the rrule to prevent recursion issues here
             rrule: None,
@@ -278,7 +278,7 @@ impl Event {
 /// Given a time based ical property, parse it into a OffsetDateTime
 fn property_to_time(
     property: &ical::property::Property,
-    default_timezone: chrono_tz::Tz,
+    default_timezone: ChronoTz,
 ) -> Result<Option<DateTime<Utc>>> {
     // this map holds the patterns to match, the corresponding format strings for parsing, and the type of parsing method
     // TODO use lazy_static! here
@@ -309,8 +309,11 @@ fn property_to_time(
                 match zones
                     .first()
                     // TODO replace expect calls with proper error handling
-                    .map(|tz_name| tz_name.parse::<Tz>().expect("could not parse timezone"))
-                {
+                    .map(|tz_name| {
+                        tz_name
+                            .parse::<ChronoTz>()
+                            .expect("could not parse timezone")
+                    }) {
                     Some(tz) => {
                         log::debug!("returning timezone: {}", tz);
                         tz

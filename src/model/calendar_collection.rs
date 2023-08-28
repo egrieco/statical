@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, Context as EyreContext, Result};
 use std::collections::{BTreeMap, HashSet};
@@ -20,7 +21,7 @@ use crate::views::month_view::MonthView;
 use crate::views::week_view::WeekView;
 
 /// Type alias representing a specific day in time
-pub(crate) type LocalDay = DateTime<chrono_tz::Tz>;
+pub(crate) type LocalDay = DateTime<ChronoTz>;
 
 pub(crate) type EventsByLocalDay = BTreeMap<LocalDay, EventList>;
 
@@ -33,8 +34,8 @@ pub struct CalendarCollection {
     tera: Tera,
     config: ParsedConfig,
     unparsed_properties: UnparsedProperties,
-    pub(crate) cal_start: DateTime<Utc>,
-    pub(crate) cal_end: DateTime<Utc>,
+    pub(crate) cal_start: DateTime<ChronoTz>,
+    pub(crate) cal_end: DateTime<ChronoTz>,
 }
 
 impl CalendarCollection {
@@ -76,22 +77,23 @@ impl CalendarCollection {
             }
         }
 
-        let end_of_month_default = DateRule::monthly(Utc::now())
-            .with_rolling_day(31)
-            .unwrap()
-            .next()
-            .unwrap();
+        let end_of_month_default =
+            DateRule::monthly(Utc::now().with_timezone(&config.display_timezone))
+                .with_rolling_day(31)
+                .unwrap()
+                .next()
+                .unwrap();
         // .ok_or(eyre!("could not get end of month")?;
 
         // get start and end date for entire collection
         let cal_start = calendars
             .iter()
-            .map(|c| c.start())
+            .map(|c| c.start().with_timezone(&config.display_timezone))
             .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or_else(Utc::now);
+            .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone));
         let cal_end = calendars
             .iter()
-            .map(|c| c.end())
+            .map(|c| c.end().with_timezone(&config.display_timezone))
             .reduce(|max_end, end| max_end.max(end))
             // TODO consider a better approach to finding the correct number of days
             .unwrap_or(end_of_month_default);
@@ -100,7 +102,7 @@ impl CalendarCollection {
         log::debug!("expanding recurring events...");
         for calendar in calendars.iter_mut() {
             let pre_expansion_count = calendar.events().len();
-            calendar.expand_recurrences(cal_start, cal_end)?;
+            calendar.expand_recurrences(cal_start, cal_end, &config.display_timezone)?;
             log::debug!(
                 "calendar events pre_expansion_count: {} post_expansion_count: {}",
                 pre_expansion_count,
