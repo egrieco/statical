@@ -16,6 +16,20 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
 
 ## TODOs
 
+- [x] ~~_Redo event grouping logic_~~ (2023-08-28)
+  - [x] ~~_Store all events in a BTreeMap (it allows efficient in-order access and thus ranges)_~~ (2023-08-28)
+  - [x] ~~_This should allow a single map to hold all events rather than the complex, nested structures we are using now_~~ (2023-08-28)
+  - [x] ~~_Retrieve events from the map on view creation, maybe group them into relevant contexts then_~~ (2023-08-28)
+- [ ] Switch week view to BTreeMap based event lists
+- [ ] Switch day view to BTreeMap based event lists
+- [ ] Switch agenda view to BTreeMap based event lists (if needed)
+- [ ] Calculate beginning and end dates of each calendar, do not default to today
+- [ ] Loop through all months, weeks, days in the calendar ranges
+- [ ] Add a sparse flag to not render missing intervals or to put placeholders there
+- [ ] Add styling to hide event descriptions in the calendar view and show them on hover
+- [ ] Add JavaScript (or CSS toggle) to toggle event descriptions for mobile
+- [ ] Add JavaScript to jump to the closest date to the one selected when switching view formats
+- [ ] Add keybindings to allow keyboard navigation of calendar
 - [ ] Add ics feed generation
 - [ ] Calendar filtering and processing
   - [ ] Event de-duplication
@@ -28,28 +42,28 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
     - [ ] Move/copy/edit events
     - [ ] Add calendar groups
     - [ ] Calendar feed routing
-- [X] Add toml config
+- [x] Add toml config
   - [ ] top level config object should be a site
   - [ ] paths for time intervals should be configurable
   - [ ] calendar colors and CSS classes
-- [X] ~~*Add [tera](https://lib.rs/crates/tera) templates*~~ [2022-05-17]
+- [x] ~~_Add [tera](https://lib.rs/crates/tera) templates_~~ (2022-05-17)
 - [ ] Add call to get first X day of the month
-- [X] ~~*Add call to get date of the first day of the week*~~ [2022-05-19]
+- [x] ~~_Add call to get date of the first day of the week_~~ (2022-05-19)
 - [ ] Output html pages
   - [ ] event detail
-  - [X] agenda (list of events)
-  - [X] ~~*day*~~ [2022-09-15]
-  - [X] ~~*week*~~ [2022-05-19]
-  - [X] ~~*month*~~ [2022-09-15]
+  - [x] agenda (list of events)
+  - [x] ~~_day_~~ (2022-09-15)
+  - [x] ~~_week_~~ (2022-05-19)
+  - [x] ~~_month_~~ (2022-09-15)
   - [ ] quarter?
   - [ ] year?
-  - [X] ~~*index pages for each time interval*~~ [2022-09-15]
-  - [X] ~~*link pages with forward and back links*~~ [2022-05-19]
+  - [x] ~~_index pages for each time interval_~~ (2022-09-15)
+  - [x] ~~_link pages with forward and back links_~~ (2022-05-19)
   - [ ] add a sparse setting and decide how to handle missing intervals
   - [ ] add a dense HTML calendar generation setting
-  - [X] ~~*add default CSS*~~ [2022-05-19]
+  - [x] ~~_add default CSS_~~ (2022-05-19)
   - [ ] cleanup css
-  - [X] ~~*add links to switch between intervals*~~ [2022-09-15]
+  - [x] ~~_add links to switch between intervals_~~ (2022-09-15)
 - [ ] Styling
   - [ ] Add weekday vs weekend classes
   - [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
