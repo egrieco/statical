@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, Context as EyreContext, Result};
@@ -23,13 +23,13 @@ use crate::views::week_view::WeekView;
 /// Type alias representing a specific day in time
 pub(crate) type LocalDay = DateTime<ChronoTz>;
 
-pub(crate) type EventsByLocalDay = BTreeMap<LocalDay, EventList>;
+pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
 #[derive(Debug)]
 pub struct CalendarCollection {
     calendars: Vec<Calendar>,
     /// Events grouped by day in the display timezone
-    pub(crate) events_by_day: EventsByLocalDay,
+    pub(crate) events_by_day: EventsByDay,
 
     tera: Tera,
     pub(crate) config: ParsedConfig,
@@ -116,7 +116,7 @@ impl CalendarCollection {
         }
 
         // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
-        let mut events_by_day = EventsByLocalDay::new();
+        let mut events_by_day = EventsByDay::new();
 
         for (event_num, event) in calendars.iter().flat_map(|c| c.events()).enumerate() {
             // find out if event is longer than 1 day
@@ -130,7 +130,11 @@ impl CalendarCollection {
                 event
             );
             for day in event_days {
-                events_by_day.entry(day).or_default().push(event.clone());
+                events_by_day
+                    // TODO: do we need to adjust for timezone here?
+                    .entry(day.date_naive())
+                    .or_default()
+                    .push(event.clone());
             }
         }
 

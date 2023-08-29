@@ -184,7 +184,7 @@ impl MonthView<'_> {
             println!("From week {}:", week_num);
             let mut week_dates = Vec::new();
             for day in week {
-                let events = self.calendars.events_by_day.get(&day);
+                let events = self.calendars.events_by_day.get(&day.date_naive());
                 println!(
                     "  For week {} day {}: there are {} events",
                     week_num,
