@@ -200,6 +200,7 @@ impl MonthView<'_> {
                     events
                         .map(|l| {
                             l.iter()
+                                .sorted()
                                 .map(|e| e.context(&self.calendars.config))
                                 .collect()
                         })

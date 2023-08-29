@@ -46,7 +46,7 @@ pub type UnparsedProperties = HashSet<String>;
 /// These are reference counted since they may appear in more than one list
 pub type EventList = Vec<Rc<Event>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Event {
     summary: Option<String>,
     description: Option<String>,
@@ -85,6 +85,18 @@ impl fmt::Display for Event {
                     .unwrap_or(&"NO DESCRIPTION".to_string())
             )
         )
+    }
+}
+
+impl Ord for Event {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.start.cmp(&other.start)
+    }
+}
+
+impl PartialOrd for Event {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.start.partial_cmp(&other.start)
     }
 }
 
