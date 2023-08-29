@@ -132,7 +132,7 @@ impl CalendarCollection {
             for day in event_days {
                 events_by_day
                     // TODO: do we need to adjust for timezone here?
-                    .entry(day.date_naive())
+                    .entry(day.with_timezone(&config.display_timezone).date_naive())
                     .or_default()
                     .push(event.clone());
             }

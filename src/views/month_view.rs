@@ -184,7 +184,11 @@ impl MonthView<'_> {
             println!("From week {}:", week_num);
             let mut week_dates = Vec::new();
             for day in week {
-                let events = self.calendars.events_by_day.get(&day.date_naive());
+                let events = self
+                    .calendars
+                    .events_by_day
+                    // TODO: I doubt that we need to adjust the timezone here, probably remove it
+                    .get(&day.with_timezone(&config.display_timezone).date_naive());
                 println!(
                     "  For week {} day {}: there are {} events",
                     week_num,
