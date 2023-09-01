@@ -122,17 +122,17 @@ ul li {
 }
 
 /* hide body until hover */
-.event .body {
+.calendar .month .event .body {
   display: none;
 }
 
 /* show body on hover over header */
-.event .body:hover {
+.calendar .month .event .body:hover {
   display: inline-block;
 }
 
 /* continue showing body on hover over body */
-.event .header:hover + .body {
+.calendar .month .event .header:hover + .body {
   display: inline-block;
 }
 
