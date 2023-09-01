@@ -121,6 +121,21 @@ ul li {
   font-weight: bold;
 }
 
+/* hide body until hover */
+.event .body {
+  display: none;
+}
+
+/* show body on hover over header */
+.event .body:hover {
+  display: inline-block;
+}
+
+/* continue showing body on hover over body */
+.event .header:hover + .body {
+  display: inline-block;
+}
+
 .event .body {
   padding: 0.5em;
 }
