@@ -21,7 +21,6 @@ use crate::{
     util::write_template,
     views::week_view::WeekDayMap,
 };
-use crate::{model::event::EventList, views::week_view::Week};
 
 type InternalDate = NaiveDate;
 
@@ -51,62 +50,44 @@ impl MonthView<'_> {
         }
     }
 
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
-        let mut index_written = false;
-
-        // this might be better for sparse traversal
-        // get list of months to pull (sparse for now)
-        // let month_list = self
-        //     .calendars
-        //     .iterator()
-        //     .group_by(|i| (i.year(), i.month()));
-
-        let mut month_map: BTreeMap<Month, BTreeMap<Week, EventList>> = BTreeMap::new();
-
-        // add events to the month_map
-        for events in self.calendars.events_by_day.values() {
-            for event in events {
-                month_map
-                    .entry((event.year(), event.start().month() as u8))
-                    .or_default()
-                    .entry((event.year(), event.week()))
-                    .or_default()
-                    .push(event.clone());
-            }
-        }
-
-        // months to iterate through
-        // convert start date to beginning of month
+    /// Returns the months to show of this [`MonthView`] with a `None` at the beginning and end.
+    ///
+    /// This makes it easier to iterate over all of the months in the view and place links to the previous and next months.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if it cannot construct the [`DateRule`] properly.
+    // TODO: map the returned values to NaiveDate objects
+    fn months_to_show(&self) -> Result<Vec<Option<DateTime<ChronoTz>>>, color_eyre::eyre::Error> {
         let aligned_month_start = self
             .calendars
             .cal_start
             .with_day(1)
             .ok_or(eyre!("could not get aligned start of month"))?;
-        // let aligned_month_end = calendars.end
         let aligned_month_end = DateRule::monthly(self.calendars.cal_end)
             .with_rolling_day(31)
-            .unwrap()
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not create an iterator with rolling day at end of month")?
             .next()
             .ok_or(eyre!("could not get end of month"))?;
-
-        // DateRule::monthly(aligned_month_start).with_end(calenda)
-        // this will work for non-sparse calendar traversal
         let months_to_show = DateRule::monthly(aligned_month_start)
             .with_end(aligned_month_end)
             .with_rolling_day(1)
             .map_err(|e| eyre!(e))
             .wrap_err("could not create month iterator")?;
-
-        // chain a None to the list of weeks and a None at the end
-        // this will allow us to traverse the list as windows with the first and last
-        // having None as appropriate
         let chained_iter = iter::once(None)
             .chain(months_to_show.into_iter().map(Some))
             .chain(iter::once(None));
-        let month_windows = &chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
+        let month_windows = chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
+        Ok(month_windows)
+    }
+
+    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+        let mut index_written = false;
 
         // iterate through all windows
-        for window in month_windows.windows(3) {
+        // TODO: for sparse traversal filter out the months with no events
+        for window in self.months_to_show()?.windows(3) {
             let next_month_opt = window[2];
 
             let mut index_paths = vec![];
