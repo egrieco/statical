@@ -18,6 +18,11 @@ h1 {
   padding: 0.1em;
 }
 
+.day img {
+  /* Fix to keep absurdly large images contained within the .day cell */
+  max-width: 100%;
+}
+
 .day.other-month {
   background-color: white;
 }
