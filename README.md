@@ -16,21 +16,23 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
 
 ## TODOs
 
+- [ ] Calculate beginning and end dates of each calendar, do not default to today
+- [ ] Add HTML sanitization to calendar descriptions
+- [ ] Add support for Markdown in calendar descriptions
+- [ ] Add ics feed generation
+- [ ] Add keybindings to allow keyboard navigation of calendar
+- [ ] Switch week view to BTreeMap based event lists
+- [ ] Switch day view to BTreeMap based event lists
+- [ ] Switch agenda view to BTreeMap based event lists (if needed)
+- [ ] Loop through all months, weeks, days in the calendar ranges
+- [ ] Add a sparse flag to not render missing intervals or to put placeholders there
 - [x] ~~_Redo event grouping logic_~~ (2023-08-28)
   - [x] ~~_Store all events in a BTreeMap (it allows efficient in-order access and thus ranges)_~~ (2023-08-28)
   - [x] ~~_This should allow a single map to hold all events rather than the complex, nested structures we are using now_~~ (2023-08-28)
   - [x] ~~_Retrieve events from the map on view creation, maybe group them into relevant contexts then_~~ (2023-08-28)
-- [ ] Switch week view to BTreeMap based event lists
-- [ ] Switch day view to BTreeMap based event lists
-- [ ] Switch agenda view to BTreeMap based event lists (if needed)
-- [ ] Calculate beginning and end dates of each calendar, do not default to today
-- [ ] Loop through all months, weeks, days in the calendar ranges
-- [ ] Add a sparse flag to not render missing intervals or to put placeholders there
-- [ ] Add styling to hide event descriptions in the calendar view and show them on hover
+- [x] ~~_Add styling to hide event descriptions in the calendar view and show them on hover_~~ (2023-09-01)
 - [ ] Add JavaScript (or CSS toggle) to toggle event descriptions for mobile
 - [ ] Add JavaScript to jump to the closest date to the one selected when switching view formats
-- [ ] Add keybindings to allow keyboard navigation of calendar
-- [ ] Add ics feed generation
 - [ ] Calendar filtering and processing
   - [ ] Event de-duplication
   - [ ] Event information merging
