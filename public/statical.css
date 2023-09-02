@@ -6,6 +6,10 @@ h1 {
   text-align: center;
 }
 
+.calendar > .expand-events {
+  float: right;
+}
+
 .month .wday.header {
   position: sticky;
   top: 0;
@@ -138,7 +142,8 @@ ul li {
 
 /* continue showing body on hover over body */
 .calendar .month .event .body:hover,
-.calendar .month .event .header:hover + .body {
+.calendar .month .event .header:hover + .body,
+input#expand-events:checked ~ .month .events .event .body {
   visibility: visible;
 
   /* cannot use 100% or auto here, nor can we transition between such values on height
