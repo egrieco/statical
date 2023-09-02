@@ -9,6 +9,7 @@ use std::{fs::File, io::BufReader};
 use tera::Tera;
 
 use super::calendar_source::CalendarSource;
+use super::day::Day;
 use super::event::{EventList, UnparsedProperties};
 use super::week::Week;
 use crate::config::ParsedConfig;
@@ -199,6 +200,22 @@ impl CalendarCollection {
         Ok(chained_iter.collect())
     }
 
+    pub fn days_to_show(&self) -> Result<Vec<Option<Day>>> {
+        let days_iterator = DateRule::daily(self.cal_start).with_end(self.cal_end);
+        let mut days_to_show: Vec<Option<Day>> = vec![];
+
+        for day in days_iterator.into_iter() {
+            days_to_show.push(Some(Day::new(day, &self.config.display_timezone)))
+        }
+
+        // chain a None to the list of weeks and a None at the end
+        // this will allow us to traverse the list as windows with the first and last
+        // having None as appropriate
+        let chained_iter = iter::once(None).chain(days_to_show).chain(iter::once(None));
+
+        Ok(chained_iter.collect())
+    }
+
     /// Get a reference to the calendar collection's tera.
     #[must_use]
     pub fn tera(&self) -> &Tera {
@@ -241,11 +258,8 @@ impl CalendarCollection {
         };
 
         if self.config.render_day {
-            DayView::new(
-                create_subdir(&self.config.output_dir, "day")?,
-                &self.calendars,
-            )
-            .create_html_pages(&self.config, &self.tera)?;
+            DayView::new(create_subdir(&self.config.output_dir, "day")?, self)
+                .create_html_pages(&self.config, &self.tera)?;
         };
 
         if self.config.render_agenda {
