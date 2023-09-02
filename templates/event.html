@@ -2,8 +2,10 @@
   <a href="{{ event.url }}">
     <p class="header"><span class="time">{{ event.start }} - {{ event.end }}</span> <span class="duration">({{ event.duration }})</span></p>
     <div class="body">
-      <p class="summary">{{ event.summary }}</p>
-      <p class="description">{{ event.description | linebreaksbr | safe }}</p>
+      <div class="content">
+        <p class="summary">{{ event.summary }}</p>
+        <p class="description">{{ event.description | linebreaksbr | safe }}</p>
+      </div>
     </div>
   </a>
 </div>
