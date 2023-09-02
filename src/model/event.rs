@@ -222,6 +222,7 @@ impl Event {
             log::debug!("parsing property: {}: {:?}", property.name, property.value);
             match property.name.as_str() {
                 "SUMMARY" => summary = property.value,
+                // TODO: sanitize html, maybe expand markdown
                 "DESCRIPTION" => {
                     description = property
                         .value
