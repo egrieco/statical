@@ -1,15 +1,16 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
-use color_eyre::eyre::{self, Context as EyreContext, Result};
+use color_eyre::eyre::{self, eyre, Context as EyreContext, Result};
 use std::collections::{BTreeMap, HashSet};
-use std::fs;
 use std::path::PathBuf;
+use std::{fs, iter};
 use std::{fs::File, io::BufReader};
 use tera::Tera;
 
 use super::calendar_source::CalendarSource;
 use super::event::{EventList, UnparsedProperties};
+use super::week::Week;
 use crate::config::ParsedConfig;
 use crate::model::calendar::Calendar;
 use crate::model::calendar_source::CalendarSource::*;
@@ -165,6 +166,39 @@ impl CalendarCollection {
         self.calendars.as_ref()
     }
 
+    /// Returns the weeks to show of this [`CalendarCollection`].
+    pub fn weeks_to_show(&self) -> Result<Vec<Option<Week>>> {
+        // Create a DateRule to iterate over all of the weeks this calendar should display
+
+        // get the first week starting on the configured start of month day
+        // let cal_start = self.cal_start;
+        let aligned_week_start = self
+            .cal_start
+            .checked_sub_days(Days::new(
+                self.cal_start.weekday().num_days_from_sunday().into(),
+            ))
+            .ok_or(eyre!("could not create the aligned week start"))?;
+        // TODO: make sure that we are doing the math correctly here
+        let aligned_week_end = self
+            .cal_end
+            .checked_add_days(Days::new(
+                (7 - self.cal_end.weekday().num_days_from_sunday()).into(),
+            ))
+            .ok_or(eyre!("could not create the aligned week end"))?;
+
+        // setup DateRule to iterate over weeks
+        let weeks_iterator = DateRule::weekly(aligned_week_start).with_end(aligned_week_end);
+        let mut weeks_to_show: Vec<Option<Week>> = vec![];
+        for day in weeks_iterator.into_iter() {
+            weeks_to_show.push(Some(Week::new(day, &self.config.display_timezone)?))
+        }
+        let chained_iter = iter::once(None)
+            .chain(weeks_to_show)
+            .chain(iter::once(None));
+        // let week_windows = chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
+        Ok(chained_iter.collect())
+    }
+
     /// Get a reference to the calendar collection's tera.
     #[must_use]
     pub fn tera(&self) -> &Tera {
@@ -202,11 +236,8 @@ impl CalendarCollection {
         };
 
         if self.config.render_week {
-            WeekView::new(
-                create_subdir(&self.config.output_dir, "week")?,
-                &self.calendars,
-            )
-            .create_html_pages(&self.config, &self.tera)?;
+            WeekView::new(create_subdir(&self.config.output_dir, "week")?, self)
+                .create_html_pages(&self.config, &self.tera)?;
         };
 
         if self.config.render_day {
