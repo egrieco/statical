@@ -22,7 +22,7 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
 - [ ] Add ics feed generation
 - [ ] Add keybindings to allow keyboard navigation of calendar
 - [x] ~~_Switch week view to BTreeMap based event lists_~~ (2023-09-02)
-- [ ] Switch day view to BTreeMap based event lists
+- [x] ~~_Switch day view to BTreeMap based event lists_~~ (2023-09-02)
 - [ ] Switch agenda view to BTreeMap based event lists (if needed)
 - [ ] Loop through all months, weeks, days in the calendar ranges
 - [ ] Add a sparse flag to not render missing intervals or to put placeholders there
