@@ -149,6 +149,7 @@ impl Calendar {
         log::debug!("parsing calendars...");
         let mut calendars = Vec::new();
         let reader = IcalParser::new(buf);
+        // TODO: might want to store the unparsed properties in the calendar itself
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for calendar in reader.flatten() {

@@ -1,45 +1,103 @@
-use chrono::{DateTime, Local, NaiveDateTime};
+use chrono::{DateTime, Local};
 use chrono_tz::Tz;
-use color_eyre::eyre::{bail, eyre, Context as EyreContext, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use toml_edit::{Array, Document};
+use std::{
+    ffi::OsStr,
+    fmt::{self},
+    path::PathBuf,
+};
 
-use crate::model::calendar_source::CalendarSource;
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub enum CalendarView {
+    Month,
+    Week,
+    Day,
+    Agenda,
+}
 
-/// A struct containing the configuration options.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     /// Flag to control rendering of the agenda pages.
     pub render_agenda: bool,
+
     /// Flag to control rendering of the day pages.
     pub render_day: bool,
+
     /// Flag to control rendering of the month pages.
     pub render_month: bool,
+
     /// Flag to control rendering of the week pages.
     pub render_week: bool,
+
     /// The path to the output directory where files will be written.
-    pub output_dir: String,
+    pub output_dir: PathBuf,
+
     /// Name of the timezone used to format time
-    pub display_timezone: String,
+    pub display_timezone: chrono_tz::Tz,
+
     /// Number of events per page in agenda
     pub agenda_events_per_page: usize,
+
     /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
-    pub agenda_start_date: String,
+    // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
+    // TODO: should this be Local or Tz?
+    pub agenda_start_date: DateTime<Local>,
+
     /// The view (month, week, or day) to use for the main index page
-    pub default_calendar_view: String,
+    // TODO: consider making this case sensitive maybe with EnumString from strum_macros
+    // strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
+    pub default_calendar_view: CalendarView,
+
     /// The path to add into the stylesheet link tag
-    pub stylesheet_path: String,
+    pub stylesheet_path: PathBuf,
+
     /// Whether to copy the referenced stylesheet into the output dir
     pub copy_stylesheet_to_output: bool,
+
     /// The stylesheet to copy to the output dir
-    pub copy_stylesheet_from: String,
+    pub copy_stylesheet_from: PathBuf,
+
     /// The format for the start date of calendar events
+    // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     pub event_start_format: String,
+
     /// The format for the end date of calendar events
+    // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     pub event_end_format: String,
+
     /// The list of calendars to import (can be files and urls)
-    pub calendar_sources: Vec<String>,
+    pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
+}
+
+/// A Config item representing a calendar source
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CalendarSourceConfig {
+    /// The url or file path of the calendar
+    pub source: String,
+}
+
+impl fmt::Display for CalendarSourceConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source,)
+    }
+}
+
+impl<'a> From<&'a CalendarSourceConfig> for &'a str {
+    fn from(value: &'a CalendarSourceConfig) -> &str {
+        &value.source
+    }
+}
+
+impl From<&CalendarSourceConfig> for String {
+    fn from(value: &CalendarSourceConfig) -> Self {
+        value.source.clone()
+    }
+}
+
+impl AsRef<OsStr> for CalendarSourceConfig {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        OsStr::new(&self.source)
+    }
 }
 
 /// Sane default values for the config struct.
@@ -51,10 +109,10 @@ impl Default for Config {
             render_month: true,
             render_week: true,
             output_dir: "output".into(),
-            display_timezone: "GMT".into(),
+            display_timezone: Tz::GMT,
             agenda_events_per_page: 5,
-            agenda_start_date: String::new(),
-            default_calendar_view: "month".into(),
+            agenda_start_date: Local::now(),
+            default_calendar_view: CalendarView::Month,
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,
             copy_stylesheet_from: "public/statical.css".into(),
@@ -63,160 +121,4 @@ impl Default for Config {
             calendar_sources: Vec::new(),
         }
     }
-}
-
-impl From<&Document> for Config {
-    fn from(doc: &Document) -> Self {
-        Self {
-            render_agenda: doc["render_agenda"].as_bool().unwrap_or(true),
-            render_day: doc["render_day"].as_bool().unwrap_or(true),
-            render_month: doc["render_month"].as_bool().unwrap_or(true),
-            render_week: doc["render_week"].as_bool().unwrap_or(true),
-            output_dir: doc["output_dir"].as_str().unwrap_or("output").into(),
-            display_timezone: doc["display_timezone"].as_str().unwrap_or("GMT").into(),
-            agenda_events_per_page: doc["agenda_events_per_page"].as_integer().unwrap_or(5)
-                as usize,
-            // TODO make this take human dates e.g. "today"
-            agenda_start_date: doc["agenda_start_date"].as_str().unwrap_or("").into(),
-            default_calendar_view: doc["default_calendar_view"]
-                .as_str()
-                .unwrap_or("month")
-                .into(),
-            stylesheet_path: doc["stylesheet_path"]
-                .as_str()
-                .unwrap_or("/styles/style.css")
-                .into(),
-            copy_stylesheet_to_output: doc["copy_stylesheet_to_output"].as_bool().unwrap_or(false),
-            copy_stylesheet_from: doc["copy_stylesheet_from"]
-                .as_str()
-                .unwrap_or("public/statical.css")
-                .into(),
-            // TODO: gracefully handle missing fields in the config file
-            event_start_format: doc["event_start_format"]
-                .as_str()
-                .unwrap_or("%I:%M%P")
-                .into(),
-            event_end_format: doc["event_end_format"].as_str().unwrap_or("%I:%M%P").into(),
-            calendar_sources: doc["calendar_sources"]
-                .as_array()
-                .unwrap_or(&Array::new())
-                .into_iter()
-                .filter_map(|i| i.as_str())
-                .map(|i| i.to_string())
-                .collect(),
-        }
-    }
-}
-
-impl Config {
-    pub fn parse(&self) -> Result<ParsedConfig> {
-        log::debug!("parsing config...");
-
-        let output_dir = PathBuf::from(&self.output_dir);
-        log::debug!("output_dir: {:?}", output_dir);
-
-        let display_timezone: chrono_tz::Tz = self
-            .display_timezone
-            .parse::<chrono_tz::Tz>()
-            .expect("could not parse display timezone");
-        log::debug!("display_timezone: {}", display_timezone);
-
-        // TODO parse this into the config specified timezone
-        let agenda_start_date = if self.agenda_start_date.is_empty() {
-            Local::now()
-        } else {
-            // TODO need to add a more forgiving parser
-
-            NaiveDateTime::parse_from_str(&self.agenda_start_date, "%Y-%m-%d")
-                .context("invalid agenda start date in config")?
-                .and_local_timezone(Local)
-                .single()
-                .ok_or(eyre!("ambiguous agenda start date"))?
-        };
-        log::debug!("agenda_start_date: {}", agenda_start_date);
-
-        let stylesheet_path = PathBuf::from(&self.stylesheet_path);
-        log::debug!("stylesheet_path: {:?}", stylesheet_path);
-
-        let copy_stylesheet_from = PathBuf::from(&self.copy_stylesheet_from);
-        log::debug!("copy_stylesheet_from: {:?}", copy_stylesheet_from);
-
-        // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
-
-        let calendar_sources = CalendarSource::from_strings(self.calendar_sources.clone())?;
-        log::debug!("calendar_sources: {:?}", calendar_sources);
-        // TODO need to show calendar source errors to user
-
-        Ok(ParsedConfig {
-            render_agenda: self.render_agenda,
-            render_day: self.render_day,
-            render_month: self.render_month,
-            render_week: self.render_week,
-            output_dir,
-            display_timezone,
-            agenda_events_per_page: self.agenda_events_per_page,
-            agenda_start_date,
-            default_calendar_view: parse_calendar_view(&self.default_calendar_view)?,
-            stylesheet_path,
-            copy_stylesheet_to_output: self.copy_stylesheet_to_output,
-            copy_stylesheet_from,
-            event_start_format: self.event_start_format.clone(),
-            event_end_format: self.event_end_format.clone(),
-            calendar_sources,
-        })
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum CalendarView {
-    Month,
-    Week,
-    Day,
-    Agenda,
-}
-
-// consider replacing with EnumString in strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
-fn parse_calendar_view(view: &str) -> Result<CalendarView> {
-    // TODO normalize case and strip whitespace
-    match view {
-        "month" => Ok(CalendarView::Month),
-        "week" => Ok(CalendarView::Week),
-        "day" => Ok(CalendarView::Day),
-        "agenda" => Ok(CalendarView::Agenda),
-        _ => bail!("could not parse calendar view"),
-    }
-}
-
-#[derive(Debug)]
-pub struct ParsedConfig {
-    /// Flag to control rendering of the agenda pages.
-    pub render_agenda: bool,
-    /// Flag to control rendering of the day pages.
-    pub render_day: bool,
-    /// Flag to control rendering of the month pages.
-    pub render_month: bool,
-    /// Flag to control rendering of the week pages.
-    pub render_week: bool,
-    /// The path to the output directory where files will be written.
-    pub output_dir: PathBuf,
-    /// Name of the timezone used to format time
-    pub display_timezone: Tz,
-    /// Number of events per page in agenda
-    pub agenda_events_per_page: usize,
-    /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
-    pub agenda_start_date: DateTime<Local>,
-    /// The view (month, week, or day) to use for the main index page
-    pub default_calendar_view: CalendarView,
-    /// The path to add into the stylesheet link tag
-    pub stylesheet_path: PathBuf,
-    /// Whether to copy the referenced stylesheet into the output dir
-    pub copy_stylesheet_to_output: bool,
-    /// The stylesheet to copy to the output dir
-    pub copy_stylesheet_from: PathBuf,
-    /// The format for the start date of calendar events
-    pub event_start_format: String,
-    /// The format for the end date of calendar events
-    pub event_end_format: String,
-    /// The list of calendars to import (can be files and urls)
-    pub(crate) calendar_sources: Vec<CalendarSource>,
 }

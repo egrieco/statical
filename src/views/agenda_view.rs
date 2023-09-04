@@ -9,7 +9,7 @@ use std::{
 use tera::{Context, Tera};
 
 use crate::{
-    config::{CalendarView, ParsedConfig},
+    config::{CalendarView, Config},
     model::{
         calendar::Calendar,
         event::{Event, EventContext},
@@ -51,7 +51,7 @@ impl AgendaView {
         }
     }
 
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
         let mut index_written = false;
 
         // partition events into past and future events
@@ -149,7 +149,7 @@ impl AgendaView {
     /// This function will return an error if the file cannot be written to disk.
     fn write_view(
         &self,
-        config: &ParsedConfig,
+        config: &Config,
         tera: &Tera,
         agenda_slice: &AgendaSlice,
         output_dir: &Path,

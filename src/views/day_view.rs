@@ -8,7 +8,7 @@ use std::{
 use tera::{Context, Tera};
 
 use crate::{
-    config::{CalendarView, ParsedConfig},
+    config::{CalendarView, Config},
     model::{
         calendar_collection::CalendarCollection,
         day::{Day, DayContext},
@@ -39,7 +39,7 @@ impl DayView<'_> {
         }
     }
 
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -87,7 +87,7 @@ impl DayView<'_> {
 
     fn write_view(
         &self,
-        config: &ParsedConfig,
+        config: &Config,
         tera: &Tera,
         day_slice: &DaySlice,
         output_dir: &Path,

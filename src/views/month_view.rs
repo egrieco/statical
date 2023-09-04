@@ -16,7 +16,7 @@ use super::week_view::WeekMap;
 use crate::model::calendar_collection::LocalDay;
 use crate::model::day::DayContext;
 use crate::{
-    config::{CalendarView, ParsedConfig},
+    config::{CalendarView, Config},
     model::{calendar_collection::CalendarCollection, event::Year},
     util::write_template,
     views::week_view::WeekDayMap,
@@ -82,7 +82,7 @@ impl MonthView<'_> {
         Ok(month_windows)
     }
 
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -144,7 +144,7 @@ impl MonthView<'_> {
     /// This function will return an error if the file cannot be written to disk.
     fn write_view(
         &self,
-        config: &ParsedConfig,
+        config: &Config,
         tera: &Tera,
         month_slice: &MonthSlice,
         output_dir: &Path,
@@ -297,11 +297,11 @@ fn first_sunday_of_week(year: &i32, week: &u32) -> Result<InternalDate, color_ey
 ///
 /// Implementing this as a trait so we can call it on a typedef rather than creating a new struct.
 pub trait WeekContext {
-    fn context(&self, year: &i32, week: &u8, config: &ParsedConfig) -> Result<Vec<DayContext>>;
+    fn context(&self, year: &i32, week: &u8, config: &Config) -> Result<Vec<DayContext>>;
 }
 
 impl WeekContext for WeekDayMap {
-    fn context(&self, year: &i32, week: &u8, config: &ParsedConfig) -> Result<Vec<DayContext>> {
+    fn context(&self, year: &i32, week: &u8, config: &Config) -> Result<Vec<DayContext>> {
         let sunday = first_sunday_of_week(year, &(*week as u32))?;
         let week_dates: Vec<DayContext> = [0_u8, 1_u8, 2_u8, 3_u8, 4_u8, 5_u8, 6_u8]
             .iter()

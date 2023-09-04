@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
 use unescaper::unescape;
 
-use crate::config::ParsedConfig;
+use crate::config::Config;
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {
@@ -102,7 +102,7 @@ impl PartialOrd for Event {
 
 impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
-    pub fn context(&self, config: &ParsedConfig) -> EventContext {
+    pub fn context(&self, config: &Config) -> EventContext {
         EventContext {
             summary: self.summary().into(),
             description: self

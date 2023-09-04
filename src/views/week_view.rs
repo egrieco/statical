@@ -9,7 +9,7 @@ use tera::{Context, Tera};
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
 use crate::{
-    config::{CalendarView, ParsedConfig},
+    config::{CalendarView, Config},
     model::{day::DayContext, event::EventList},
     util::write_template,
 };
@@ -47,7 +47,7 @@ impl WeekView<'_> {
     /// # Errors
     ///
     /// This function will return an error if templates cannot be written.
-    pub fn create_html_pages(&self, config: &ParsedConfig, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
         let mut index_written = false;
 
         // let week_windows = self.fun_name();
@@ -107,7 +107,7 @@ impl WeekView<'_> {
     /// This function will return an error if the file cannot be written to disk.
     fn write_view(
         &self,
-        config: &ParsedConfig,
+        config: &Config,
         tera: &Tera,
         week_slice: &WeekSlice,
         output_dir: &Path,

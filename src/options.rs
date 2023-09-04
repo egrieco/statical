@@ -1,7 +1,8 @@
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 
 /// Command line options
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Serialize, Deserialize)]
 #[clap(author, version, about)]
 pub struct Opt {
     /// The config file to read

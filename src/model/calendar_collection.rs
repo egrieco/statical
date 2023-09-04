@@ -1,21 +1,18 @@
 use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
-use color_eyre::eyre::{self, eyre, Context as EyreContext, Result};
+use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
 use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 use std::{fs, iter};
-use std::{fs::File, io::BufReader};
 use tera::Tera;
 
 use super::calendar_source::CalendarSource;
 use super::day::Day;
 use super::event::{EventList, UnparsedProperties};
 use super::week::Week;
-use crate::config::ParsedConfig;
+use crate::config::Config;
 use crate::model::calendar::Calendar;
-use crate::model::calendar_source::CalendarSource::*;
-use crate::options::Opt;
 use crate::util::{self, create_subdir};
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
@@ -34,48 +31,40 @@ pub struct CalendarCollection {
     pub(crate) events_by_day: EventsByDay,
 
     tera: Tera,
-    pub(crate) config: ParsedConfig,
+    pub(crate) config: Config,
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
 }
 
 impl CalendarCollection {
-    pub fn new(args: Opt, config: ParsedConfig) -> eyre::Result<CalendarCollection> {
+    pub fn new(config: Config) -> eyre::Result<CalendarCollection> {
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
 
-        // add sources from config file
-        let calendar_sources = &config.calendar_sources;
-        log::debug!("config calendar sources: {:?}", calendar_sources);
+        // convert the CalendarSourceConfigs into Result<CalendarSources>
+        let calendars_sources_configs = config.calendar_sources.iter().map(CalendarSource::new);
 
-        // read calendar sources from cli options
-        let cli_sources: Vec<CalendarSource> = if let Some(arg_sources) = args.source {
-            CalendarSource::from_strings(arg_sources)?
-        } else {
-            Vec::new()
-        };
-        log::debug!("cli arg calendar sources: {:?}", cli_sources);
+        // sort properly configured calendars and errors
+        let (calendar_sources, calendar_errors): (
+            Vec<Result<CalendarSource>>,
+            Vec<Result<CalendarSource>>,
+        ) = calendars_sources_configs.partition(|s| s.is_ok());
 
-        // parse calendars from all sources
-        for source in calendar_sources.iter().chain(cli_sources.iter()) {
-            match source {
-                CalendarFile(file) => {
-                    log::info!("reading calendar file: {:?}", file);
-                    let buf = BufReader::new(File::open(file)?);
-                    let (parsed_calendars, calendar_unparsed_properties) =
-                        &mut Calendar::parse_calendars(buf)?;
+        // bail if any of them failed
+        if !calendar_errors.is_empty() {
+            // TODO: let the user configure whether to bail or just report errors and continue
+            bail!("errors in calendars configuration")
+        }
+
+        // parse calendar sources that are ok
+        for source in calendar_sources {
+            match source?.parse_calendars() {
+                Ok((mut parsed_calendars, calendar_unparsed_properties)) => {
                     unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
-                    calendars.append(parsed_calendars);
+                    calendars.append(&mut parsed_calendars);
                 }
-                CalendarUrl(url) => {
-                    log::info!("reading calendar url: {}", url);
-                    let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
-                    let (parsed_calendars, calendar_unparsed_properties) =
-                        &mut Calendar::parse_calendars(ics_string.as_bytes())?;
-                    unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
-                    calendars.append(parsed_calendars);
-                }
+                Err(_) => todo!(),
             }
         }
 

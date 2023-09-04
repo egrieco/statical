@@ -1,6 +1,8 @@
 use color_eyre::eyre::{bail, Result};
-use std::path::PathBuf;
+use std::{collections::HashSet, fs::File, io::BufReader, path::PathBuf};
 use url::Url;
+
+use crate::{config::CalendarSourceConfig, model::calendar::Calendar};
 
 #[derive(Debug)]
 pub(crate) enum CalendarSource {
@@ -9,9 +11,9 @@ pub(crate) enum CalendarSource {
 }
 
 impl CalendarSource {
-    pub(crate) fn new(source: &str) -> Result<CalendarSource> {
+    pub(crate) fn new(source: &CalendarSourceConfig) -> Result<CalendarSource> {
         log::debug!("creating calendar source: {}", source);
-        if let Ok(url) = Url::parse(source) {
+        if let Ok(url) = Url::parse(source.into()) {
             log::debug!("calendar source is a url");
             return Ok(CalendarSource::CalendarUrl(url));
         };
@@ -24,14 +26,23 @@ impl CalendarSource {
         }
     }
 
-    /// Create calendar sources from strings
+    /// Returns the parsed calendars of this [`CalendarSource`].
     ///
-    /// Fail immediately if any of the sources is invalid
-    pub(crate) fn from_strings(cal_strs: Vec<String>) -> Result<Vec<CalendarSource>> {
-        let mut sources = vec![];
-        for cal_str in cal_strs {
-            sources.push(CalendarSource::new(&cal_str)?);
-        }
-        Ok(sources)
+    /// Listed as plural because a single source may contain multiple calendars as per the ical/ics standard.
+    pub(crate) fn parse_calendars(&self) -> Result<(Vec<Calendar>, HashSet<String>)> {
+        let (parsed_calendars, calendar_unparsed_properties) = match self {
+            Self::CalendarFile(file) => {
+                log::info!("reading calendar file: {:?}", file);
+                let buf = BufReader::new(File::open(file)?);
+                Calendar::parse_calendars(buf)?
+            }
+            Self::CalendarUrl(url) => {
+                log::info!("reading calendar url: {}", url);
+                let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
+                Calendar::parse_calendars(ics_string.as_bytes())?
+            }
+        };
+
+        Ok((parsed_calendars, calendar_unparsed_properties))
     }
 }
