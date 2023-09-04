@@ -12,4 +12,8 @@ pub struct Opt {
     /// The calendar sources to read (can be URLs or file paths)
     #[clap(short, long)]
     pub source: Option<Vec<String>>,
+
+    /// Generate the example config template
+    #[clap(long, default_value_t = false)]
+    pub generate_default_config: bool,
 }

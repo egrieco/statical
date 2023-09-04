@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use clap::Parser;
 use color_eyre::eyre::{self};
 use figment::{
@@ -14,6 +16,13 @@ fn main() -> eyre::Result<()> {
     let args = Opt::parse();
     color_eyre::install()?;
 
+    if args.generate_default_config {
+        // TODO: figure out how to pre-populate the calendar sources with example data
+        println!("{}", doku::to_toml::<Config>());
+
+        exit(0);
+    }
+
     // setup logging
     Logger::try_with_env_or_str("debug")?.start()?;
 
@@ -22,8 +31,6 @@ fn main() -> eyre::Result<()> {
         .merge(Toml::file("statical.toml"))
         .admerge(Serialized::defaults(args))
         .extract()?;
-
-    println!("{:#?}", config);
 
     log::info!("creating calendar collection...");
     let calendar_collection = CalendarCollection::new(config)?;

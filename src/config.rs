@@ -1,13 +1,33 @@
 use chrono::{DateTime, Local};
 use chrono_tz::Tz;
+use doku::Document;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
     fmt::{self},
+    ops::Deref,
     path::PathBuf,
 };
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
+/// Wrapper type for chrono_tz::Tz so we can use doku to generate example config files
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ConfigTimeZone(chrono_tz::Tz);
+
+impl Deref for ConfigTimeZone {
+    type Target = chrono_tz::Tz;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<ConfigTimeZone> for chrono_tz::Tz {
+    fn from(value: ConfigTimeZone) -> Self {
+        value.0
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Document)]
 pub enum CalendarView {
     Month,
     Week,
@@ -15,7 +35,7 @@ pub enum CalendarView {
     Agenda,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
     /// Flag to control rendering of the agenda pages.
     pub render_agenda: bool,
@@ -33,7 +53,7 @@ pub struct Config {
     pub output_dir: PathBuf,
 
     /// Name of the timezone used to format time
-    pub display_timezone: chrono_tz::Tz,
+    pub display_timezone: ConfigTimeZone,
 
     /// Number of events per page in agenda
     pub agenda_events_per_page: usize,
@@ -70,7 +90,7 @@ pub struct Config {
 }
 
 /// A Config item representing a calendar source
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Document)]
 pub struct CalendarSourceConfig {
     /// The url or file path of the calendar
     pub source: String,
@@ -109,7 +129,7 @@ impl Default for Config {
             render_month: true,
             render_week: true,
             output_dir: "output".into(),
-            display_timezone: Tz::GMT,
+            display_timezone: ConfigTimeZone(Tz::GMT),
             agenda_events_per_page: 5,
             agenda_start_date: Local::now(),
             default_calendar_view: CalendarView::Month,
@@ -120,5 +140,11 @@ impl Default for Config {
             event_end_format: "%I:%M%P".into(),
             calendar_sources: Vec::new(),
         }
+    }
+}
+
+impl doku::Document for ConfigTimeZone {
+    fn ty() -> doku::Type {
+        doku::Type::from(doku::TypeKind::String)
     }
 }

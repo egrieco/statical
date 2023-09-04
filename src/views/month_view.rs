@@ -169,7 +169,10 @@ impl MonthView<'_> {
                     .calendars
                     .events_by_day
                     // TODO: I doubt that we need to adjust the timezone here, probably remove it
-                    .get(&day.with_timezone(&config.display_timezone).date_naive());
+                    .get(
+                        &day.with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
+                            .date_naive(),
+                    );
                 println!(
                     "  For week {} day {}: there are {} events",
                     week_num,

@@ -81,7 +81,7 @@ Use options `-f <file>` or `-u <url>` to specify the ICS file. The templates mus
   - [ ] switch views while maintaining selected day(s)
   - [ ] add JS to toggle display of events by calendar
   - [ ] add JS to toggle display of events by category
-- [ ] add an option to generate example templates or provide them in the docs/repo
+- [x] ~~_add an option to generate example templates or provide them in the docs/repo_~~ (2023-09-04)
 
 ## Related Projects
 

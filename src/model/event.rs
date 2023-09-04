@@ -112,21 +112,21 @@ impl Event {
                 .into(),
             start: self
                 .start()
-                .with_timezone(&config.display_timezone)
+                .with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
                 .format(&config.event_start_format)
                 .to_string(),
             start_timestamp: self
                 .start()
-                .with_timezone(&config.display_timezone)
+                .with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
                 .timestamp(),
             end: self
                 .end()
-                .with_timezone(&config.display_timezone)
+                .with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
                 .format(&config.event_end_format)
                 .to_string(),
             end_timestamp: self
                 .end()
-                .with_timezone(&config.display_timezone)
+                .with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
                 .timestamp(),
             duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             url: self.url().to_owned(),

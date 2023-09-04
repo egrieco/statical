@@ -69,7 +69,7 @@ impl CalendarCollection {
         }
 
         let end_of_month_default =
-            DateRule::monthly(Utc::now().with_timezone(&config.display_timezone))
+            DateRule::monthly(Utc::now().with_timezone(&config.display_timezone.into()))
                 .with_rolling_day(31)
                 .unwrap()
                 .next()
@@ -79,12 +79,12 @@ impl CalendarCollection {
         // get start and end date for entire collection
         let cal_start = calendars
             .iter()
-            .map(|c| c.start().with_timezone(&config.display_timezone))
+            .map(|c| c.start().with_timezone(&config.display_timezone.into()))
             .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone));
+            .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
         let cal_end = calendars
             .iter()
-            .map(|c| c.end().with_timezone(&config.display_timezone))
+            .map(|c| c.end().with_timezone(&config.display_timezone.into()))
             .reduce(|max_end, end| max_end.max(end))
             // TODO consider a better approach to finding the correct number of days
             .unwrap_or(end_of_month_default);
@@ -123,7 +123,10 @@ impl CalendarCollection {
             for day in event_days {
                 events_by_day
                     // TODO: do we need to adjust for timezone here?
-                    .entry(day.with_timezone(&config.display_timezone).date_naive())
+                    .entry(
+                        day.with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
+                            .date_naive(),
+                    )
                     .or_default()
                     .push(event.clone());
             }
