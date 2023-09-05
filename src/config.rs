@@ -43,46 +43,55 @@ pub struct Config {
     /// Flag to control rendering of the day pages.
     pub render_day: bool,
 
-    /// Flag to control rendering of the month pages.
-    pub render_month: bool,
-
     /// Flag to control rendering of the week pages.
     pub render_week: bool,
 
+    /// Flag to control rendering of the month pages.
+    pub render_month: bool,
+
     /// The path to the output directory where files will be written.
+    #[doku(example = "output")]
     pub output_dir: PathBuf,
 
     /// Name of the timezone used to format time
+    #[doku(example = "America/Phoenix")]
     pub display_timezone: ConfigTimeZone,
 
     /// Number of events per page in agenda
+    #[doku(example = "10")]
     pub agenda_events_per_page: usize,
 
     /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
     // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
     // TODO: should this be Local or Tz?
+    #[doku(example = "today")]
     pub agenda_start_date: DateTime<Local>,
 
-    /// The view (month, week, or day) to use for the main index page
+    /// The view (Month, Week, or Day) to use for the main index page
     // TODO: consider making this case sensitive maybe with EnumString from strum_macros
     // strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
+    #[doku(example = "Month")]
     pub default_calendar_view: CalendarView,
 
     /// The path to add into the stylesheet link tag
+    #[doku(example = "/styles/style.css")]
     pub stylesheet_path: PathBuf,
 
     /// Whether to copy the referenced stylesheet into the output dir
     pub copy_stylesheet_to_output: bool,
 
     /// The stylesheet to copy to the output dir
+    #[doku(example = "public/statical.css")]
     pub copy_stylesheet_from: PathBuf,
 
     /// The format for the start date of calendar events
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
+    #[doku(example = "%I:%M%P")]
     pub event_start_format: String,
 
     /// The format for the end date of calendar events
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
+    #[doku(example = "%I:%M%P")]
     pub event_end_format: String,
 
     /// The list of calendars to import (can be files and urls)
@@ -93,6 +102,10 @@ pub struct Config {
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct CalendarSourceConfig {
     /// The url or file path of the calendar
+    #[doku(
+        example = "calendars/mycalendar_file.ics",
+        example = "https://example.com/my/calendar/url/ical/"
+    )]
     pub source: String,
 }
 
