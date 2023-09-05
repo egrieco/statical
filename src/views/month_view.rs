@@ -204,6 +204,10 @@ impl MonthView<'_> {
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", &config.display_timezone.name());
+        context.insert(
+            "view_date",
+            &current_month.format(&config.month_view_format).to_string(),
+        );
         context.insert("year", &current_month.year());
         context.insert("month", &current_month.month());
         context.insert(

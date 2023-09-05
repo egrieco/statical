@@ -188,6 +188,19 @@ impl AgendaView {
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", config.display_timezone.name());
+        // TODO: we need to refactor the way agenda pages are created before we can enable the below
+        // context.insert(
+        //     "view_date_start",
+        //     &current_page
+        //         .format(&config.agenda_view_format_start)
+        //         .to_string(),
+        // );
+        // context.insert(
+        //     "view_date_end",
+        //     &current_page
+        //         .format(&config.agenda_view_format_end)
+        //         .to_string(),
+        // );
         context.insert("page", &page);
         context.insert("events", &event_contexts);
 

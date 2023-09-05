@@ -162,6 +162,10 @@ impl WeekView<'_> {
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", &config.display_timezone.name());
+        context.insert(
+            "view_date",
+            &current_week.format(&config.week_view_format).to_string(),
+        );
         context.insert("year", &year);
         // TODO add month numbers
         context.insert("month_name", &current_week.month());

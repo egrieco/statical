@@ -90,6 +90,26 @@ pub struct Config {
     /// Whether to render the agenda pages.
     pub render_agenda: bool,
 
+    /// The strftime format for the Month `view_date` template variable
+    #[doku(example = "%B %Y")]
+    pub month_view_format: String,
+
+    /// The strftime format for the Week `view_date` template variable
+    #[doku(example = "%B %Y")]
+    pub week_view_format: String,
+
+    /// The strftime format for the Day `view_date` template variable
+    #[doku(example = "%A, %B %-d, %Y")]
+    pub day_view_format: String,
+
+    /// The strftime format for the Agenda `view_date_start` template variable
+    #[doku(example = "%B %-d, %Y")]
+    pub agenda_view_format_start: String,
+
+    /// The strftime format for the Agenda `view_date_end` template variable
+    #[doku(example = "%B %-d, %Y")]
+    pub agenda_view_format_end: String,
+
     /// Number of events per page in agenda
     #[doku(example = "10")]
     pub agenda_events_per_page: usize,
@@ -163,6 +183,11 @@ impl Default for Config {
             event_start_format: "%I:%M%P".into(),
             event_end_format: "%I:%M%P".into(),
             calendar_sources: Vec::new(),
+            month_view_format: "%B %Y".into(),
+            week_view_format: "%B %Y".into(),
+            day_view_format: "%A, %B %-d, %Y".into(),
+            agenda_view_format_start: "%B %-d, %Y".into(),
+            agenda_view_format_end: "%B %-d, %Y".into(),
         }
     }
 }

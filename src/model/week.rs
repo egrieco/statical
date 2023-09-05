@@ -1,11 +1,13 @@
 use crate::model::event::WeekNum;
 use crate::model::event::Year;
+use chrono::format::{DelayedFormat, StrftimeItems};
 use chrono::Month;
 use chrono::{DateTime, Datelike, Days, NaiveDate};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{eyre, Result};
 
+#[derive(Copy, Clone, Debug)]
 pub struct Week {
     pub(crate) start_datetime: DateTime<ChronoTz>,
     pub(crate) start: NaiveDate,
@@ -45,6 +47,10 @@ impl Week {
         DateRule::daily(self.start_datetime)
             .with_count(7)
             .map(|d| d.naive_local().date())
+    }
+
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'_>> {
+        self.start.format(fmt)
     }
 }
 

@@ -134,6 +134,10 @@ impl DayView<'_> {
         let mut context = Context::new();
         context.insert("stylesheet_path", &config.stylesheet_path);
         context.insert("timezone", config.display_timezone.name());
+        context.insert(
+            "view_date",
+            &current_day.format(&config.day_view_format).to_string(),
+        );
         context.insert("year", &day.year());
         context.insert("month", &day.month());
         context.insert("month_name", &current_day.month());
