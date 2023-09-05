@@ -37,41 +37,27 @@ pub enum CalendarView {
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
-    /// Flag to control rendering of the agenda pages.
-    pub render_agenda: bool,
+    /// The date that is considered "today" on the rendered calendar
+    /// (defaults to today if left empty)
+    ///
+    /// This corresponds to page 0 on the Agenda view
+    // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
+    // TODO: should this be Local or Tz?
+    #[doku(example = "today", example = "yyyy-mm-ddd")]
+    pub calendar_today_date: DateTime<Local>,
 
-    /// Flag to control rendering of the day pages.
-    pub render_day: bool,
+    /// Name of the timezone in which to display rendered times
+    ///
+    /// See available timezones here: https://docs.rs/chrono-tz/latest/chrono_tz/enum.Tz.html
+    #[doku(example = "America/Phoenix")]
+    pub display_timezone: ConfigTimeZone,
 
-    /// Flag to control rendering of the week pages.
-    pub render_week: bool,
-
-    /// Flag to control rendering of the month pages.
-    pub render_month: bool,
+    /// The list of calendars to import (can be files and urls)
+    pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
 
     /// The path to the output directory where files will be written.
     #[doku(example = "output")]
     pub output_dir: PathBuf,
-
-    /// Name of the timezone used to format time
-    #[doku(example = "America/Phoenix")]
-    pub display_timezone: ConfigTimeZone,
-
-    /// Number of events per page in agenda
-    #[doku(example = "10")]
-    pub agenda_events_per_page: usize,
-
-    /// Agenda page 0 starts at this `yyyy-mm-dd` date (or now if empty)
-    // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
-    // TODO: should this be Local or Tz?
-    #[doku(example = "today")]
-    pub agenda_start_date: DateTime<Local>,
-
-    /// The view (Month, Week, or Day) to use for the main index page
-    // TODO: consider making this case sensitive maybe with EnumString from strum_macros
-    // strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
-    #[doku(example = "Month")]
-    pub default_calendar_view: CalendarView,
 
     /// The path to add into the stylesheet link tag
     #[doku(example = "/styles/style.css")]
@@ -81,21 +67,46 @@ pub struct Config {
     pub copy_stylesheet_to_output: bool,
 
     /// The stylesheet to copy to the output dir
+    ///
+    /// This is mostly useful for local testing, unless you want to use a separate stylesheet for the calendar
     #[doku(example = "public/statical.css")]
     pub copy_stylesheet_from: PathBuf,
 
+    /// The view (Month, Week, or Day) to use for the main index page
+    // TODO: consider making this case sensitive maybe with EnumString from strum_macros
+    // strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
+    #[doku(example = "Month")]
+    pub default_calendar_view: CalendarView,
+
+    /// Whether to render the month pages.
+    pub render_month: bool,
+
+    /// Whether to render the week pages.
+    pub render_week: bool,
+
+    /// Whether to render the day pages.
+    pub render_day: bool,
+
+    /// Whether to render the agenda pages.
+    pub render_agenda: bool,
+
+    /// Number of events per page in agenda
+    #[doku(example = "10")]
+    pub agenda_events_per_page: usize,
+
     /// The format for the start date of calendar events
+    ///
+    /// Available format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     #[doku(example = "%I:%M%P")]
     pub event_start_format: String,
 
     /// The format for the end date of calendar events
+    ///
+    /// Available format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     #[doku(example = "%I:%M%P")]
     pub event_end_format: String,
-
-    /// The list of calendars to import (can be files and urls)
-    pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
 }
 
 /// A Config item representing a calendar source
@@ -144,7 +155,7 @@ impl Default for Config {
             output_dir: "output".into(),
             display_timezone: ConfigTimeZone(Tz::GMT),
             agenda_events_per_page: 5,
-            agenda_start_date: Local::now(),
+            calendar_today_date: Local::now(),
             default_calendar_view: CalendarView::Month,
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,

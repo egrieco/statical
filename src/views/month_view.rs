@@ -97,7 +97,7 @@ impl MonthView<'_> {
                 if let Some(next_month) = next_month_opt {
                     // write the index file if the next month is after the current date
                     if next_month
-                        > config.agenda_start_date.with_day(1).ok_or(eyre!(
+                        > config.calendar_today_date.with_day(1).ok_or(eyre!(
                             "could not convert agenda start date to beginning of month"
                         ))?
                     {

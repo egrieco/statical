@@ -58,7 +58,7 @@ impl AgendaView {
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list
             .iter()
-            .partition(|e| e.start() < config.agenda_start_date);
+            .partition(|e| e.start() < config.calendar_today_date);
 
         // process past events
         past_events.sort_by_key(|e| e.start());

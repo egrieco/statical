@@ -62,7 +62,7 @@ impl WeekView<'_> {
             if !index_written {
                 if let Some(next_week) = next_week_opt {
                     // write the index file if the next month is after the current date
-                    if next_week.start_datetime >= config.agenda_start_date {
+                    if next_week.start_datetime >= config.calendar_today_date {
                         index_written = true;
                         index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
