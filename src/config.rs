@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local};
 use chrono_tz::Tz;
 use doku::Document;
+use relative_path::RelativePathBuf;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
@@ -23,6 +24,24 @@ impl Deref for ConfigTimeZone {
 
 impl From<ConfigTimeZone> for chrono_tz::Tz {
     fn from(value: ConfigTimeZone) -> Self {
+        value.0
+    }
+}
+
+/// Wrapper type for RelativePathBuf so we can use doku to generate example config files
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ConfigBaseUrl(RelativePathBuf);
+
+impl Deref for ConfigBaseUrl {
+    type Target = RelativePathBuf;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<ConfigBaseUrl> for RelativePathBuf {
+    fn from(value: ConfigBaseUrl) -> Self {
         value.0
     }
 }
@@ -58,6 +77,10 @@ pub struct Config {
     /// The path to the output directory where files will be written.
     #[doku(example = "output")]
     pub output_dir: PathBuf,
+
+    /// The base url at which the site will be served
+    #[doku(example = "/")]
+    pub base_url_path: ConfigBaseUrl,
 
     /// The path to add into the stylesheet link tag
     #[doku(example = "/styles/style.css")]
@@ -188,6 +211,7 @@ impl Default for Config {
             day_view_format: "%A, %B %-d, %Y".into(),
             agenda_view_format_start: "%B %-d, %Y".into(),
             agenda_view_format_end: "%B %-d, %Y".into(),
+            base_url_path: "/".into(),
         }
     }
 }
@@ -195,5 +219,17 @@ impl Default for Config {
 impl doku::Document for ConfigTimeZone {
     fn ty() -> doku::Type {
         doku::Type::from(doku::TypeKind::String)
+    }
+}
+
+impl doku::Document for ConfigBaseUrl {
+    fn ty() -> doku::Type {
+        doku::Type::from(doku::TypeKind::String)
+    }
+}
+
+impl From<&str> for ConfigBaseUrl {
+    fn from(value: &str) -> Self {
+        ConfigBaseUrl(value.into())
     }
 }
