@@ -1,7 +1,6 @@
 use chrono::{DateTime, Local};
 use chrono_tz::Tz;
 use doku::Document;
-use relative_path::RelativePathBuf;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
@@ -9,6 +8,7 @@ use std::{
     ops::Deref,
     path::PathBuf,
 };
+use unix_path::{Path as UnixPath, PathBuf as UnixPathBuf};
 
 /// Wrapper type for chrono_tz::Tz so we can use doku to generate example config files
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -30,18 +30,24 @@ impl From<ConfigTimeZone> for chrono_tz::Tz {
 
 /// Wrapper type for RelativePathBuf so we can use doku to generate example config files
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct ConfigBaseUrl(RelativePathBuf);
+pub struct ConfigUrl(UnixPathBuf);
 
-impl Deref for ConfigBaseUrl {
-    type Target = RelativePathBuf;
+impl ConfigUrl {
+    pub fn path_buf(&self) -> &UnixPathBuf {
+        &self.0
+    }
+}
+
+impl Deref for ConfigUrl {
+    type Target = UnixPathBuf;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl From<ConfigBaseUrl> for RelativePathBuf {
-    fn from(value: ConfigBaseUrl) -> Self {
+impl From<ConfigUrl> for UnixPathBuf {
+    fn from(value: ConfigUrl) -> Self {
         value.0
     }
 }
@@ -80,11 +86,11 @@ pub struct Config {
 
     /// The base url at which the site will be served
     #[doku(example = "/")]
-    pub base_url_path: ConfigBaseUrl,
+    pub base_url_path: ConfigUrl,
 
     /// The path to add into the stylesheet link tag
     #[doku(example = "/styles/style.css")]
-    pub stylesheet_path: PathBuf,
+    pub stylesheet_path: ConfigUrl,
 
     /// Whether to copy the referenced stylesheet into the output dir
     pub copy_stylesheet_to_output: bool,
@@ -222,14 +228,14 @@ impl doku::Document for ConfigTimeZone {
     }
 }
 
-impl doku::Document for ConfigBaseUrl {
+impl doku::Document for ConfigUrl {
     fn ty() -> doku::Type {
         doku::Type::from(doku::TypeKind::String)
     }
 }
 
-impl From<&str> for ConfigBaseUrl {
+impl From<&str> for ConfigUrl {
     fn from(value: &str) -> Self {
-        ConfigBaseUrl(value.into())
+        ConfigUrl(UnixPath::new(value).into())
     }
 }

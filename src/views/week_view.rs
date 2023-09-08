@@ -1,5 +1,6 @@
 use color_eyre::eyre::Result;
 use itertools::Itertools;
+use log::debug;
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
@@ -56,7 +57,14 @@ impl WeekView<'_> {
         for window in self.calendars.weeks_to_show()?.windows(3) {
             let next_week_opt = &window[2];
 
-            let mut index_paths = vec![];
+            // let mut index_paths = vec![];
+
+            // write the index view if the next item is greater than or equal to this one
+            // write the main index view if the default calendar view is set to match this class
+            // write the index view if the next item is None and we have not yet written the index
+
+            let mut write_view_index = false;
+            let mut write_main_index = false;
 
             // figure out which dates should be the index files and pass in an array of index file paths
             if !index_written {
@@ -64,21 +72,25 @@ impl WeekView<'_> {
                     // write the index file if the next month is after the current date
                     if next_week.start_datetime >= config.calendar_today_date {
                         index_written = true;
-                        index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                        write_view_index = true;
+                        // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the week view
                         if config.default_calendar_view == CalendarView::Week {
-                            index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                            write_main_index = true;
+                            // index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                         }
                     }
                 } else {
                     // write the index if we get to the last week and still haven't met the condition
                     index_written = true;
-                    index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                    write_view_index = true;
+                    // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                     // write the main index as the week view
                     if config.default_calendar_view == CalendarView::Week {
-                        index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                        write_main_index = true;
+                        // index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                     }
                 }
             }
@@ -89,7 +101,8 @@ impl WeekView<'_> {
                 tera,
                 &window,
                 &self.output_dir,
-                index_paths.as_slice(),
+                write_view_index,
+                write_main_index,
             )?;
         }
 
@@ -111,7 +124,8 @@ impl WeekView<'_> {
         tera: &Tera,
         week_slice: &WeekSlice,
         output_dir: &Path,
-        index_paths: &[PathBuf],
+        write_view_index: bool,
+        write_main_index: bool,
     ) -> Result<()> {
         let previous_week = &week_slice[0].as_ref();
         let current_week = week_slice[1]
@@ -160,7 +174,10 @@ impl WeekView<'_> {
 
         // setup the tera context
         let mut context = Context::new();
-        context.insert("stylesheet_path", &config.stylesheet_path);
+        context.insert(
+            "stylesheet_path",
+            &config.base_url_path.join(&*config.stylesheet_path),
+        );
         context.insert("timezone", &config.display_timezone.name());
         context.insert(
             "view_date",
@@ -174,31 +191,72 @@ impl WeekView<'_> {
 
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
-        let mut file_paths = vec![&binding];
-        // then add any additional index paths
-        file_paths.extend(index_paths);
+        // the first item in this tuple is a flag indicating whether to prepend the view path
+        let mut file_paths = vec![(true, binding)];
+
+        if write_view_index {
+            file_paths.push((true, self.output_dir.join(PathBuf::from("index.html"))));
+        }
+        if write_main_index {
+            file_paths.push((true, config.output_dir.join(PathBuf::from("index.html"))));
+        }
 
         // write the template to all specified paths
-        for file_path in file_paths {
+        debug!("{} file paths to write", file_paths.len());
+        for (prepend_view_path, file_path) in file_paths {
             // if the path matches the root path, prepend the default view to the next and previous links
-            if file_path.parent() == Some(&config.output_dir) {
-                context.insert(
-                    "previous_file_name",
-                    &previous_file_name
-                        .as_ref()
-                        .map(|path| ["week", path].join("/")),
-                );
-                context.insert(
-                    "next_file_name",
-                    &next_file_name.as_ref().map(|path| ["week", path].join("/")),
-                );
-            } else {
-                context.insert("previous_file_name", &previous_file_name);
-                context.insert("next_file_name", &next_file_name);
-            }
+
+            let mut base_url_path: unix_path::PathBuf =
+                self.calendars.config.base_url_path.path_buf().clone();
+            context.insert("month_view_path", &base_url_path.join("month"));
+            context.insert("week_view_path", &base_url_path.join("week"));
+            context.insert("day_view_path", &base_url_path.join("day"));
+            context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
+            // TODO: need to clean up the prepending logic, we're always taking the same code path at the moment
+            // TODO: need to decide whether to support relative paths where that logic was necessary
+
+            // we're prepending the view path here
+            if prepend_view_path {
+                base_url_path.push("week")
+            };
+
+            let prepend_base_path = true;
+
+            // and we're prepending the base path here
+            let previous_file_path = match (&previous_file_name, prepend_base_path) {
+                (Some(prev_file), true) => base_url_path
+                    .as_path()
+                    .join(prev_file)
+                    .to_str()
+                    .map(String::from),
+                (Some(prev_file), false) => Some(prev_file).cloned(),
+                (None, _) => None,
+            };
+            let next_file_path = match (&next_file_name, prepend_base_path) {
+                (Some(next_file), true) => base_url_path
+                    .as_path()
+                    .join(next_file)
+                    .to_str()
+                    .map(String::from),
+                (Some(next_file), false) => Some(next_file).cloned(),
+                (None, _) => None,
+            };
+            context.insert("previous_file_name", &previous_file_path);
+            context.insert("next_file_name", &next_file_path);
+            debug!("writing file path: {:?}", file_path);
+            debug!("base_url_path is: {:?}", base_url_path);
+            debug!("previous_file_name is: {:?}", previous_file_name);
+            debug!("previous_file_path is: {:?}", previous_file_path);
+            debug!("next_file_name is: {:?}", next_file_name);
+            debug!("next_file_path is: {:?}", next_file_path);
+            // } else {
+            // context.insert("previous_file_name", &previous_file_name);
+            // context.insert("next_file_name", &next_file_name);
+            // }
 
             // write the actual template
-            write_template(tera, "week.html", &context, file_path)?;
+            write_template(tera, "week.html", &context, &file_path)?;
         }
 
         Ok(())

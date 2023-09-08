@@ -11,7 +11,7 @@ use tera::{Context, Tera};
 use crate::{
     config::{CalendarView, Config},
     model::{
-        calendar::Calendar,
+        calendar_collection::CalendarCollection,
         event::{Event, EventContext},
     },
     util::write_template,
@@ -28,27 +28,22 @@ pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
 type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
 #[derive(Debug)]
-pub(crate) struct AgendaView {
+pub(crate) struct AgendaView<'a> {
     /// The output directory for agenda view files
     output_dir: PathBuf,
-    event_list: Vec<Rc<Event>>,
+    calendars: &'a CalendarCollection,
 }
 
-impl AgendaView {
-    pub fn new(output_dir: PathBuf, calendars: &Vec<Calendar>) -> Self {
-        let mut event_list = Vec::new();
-
-        // add events to the event_list
-        for calendar in calendars {
-            for event in calendar.events() {
-                event_list.push(event.clone())
-            }
-        }
-
+impl AgendaView<'_> {
+    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> AgendaView<'_> {
         AgendaView {
             output_dir,
-            event_list,
+            calendars,
         }
+    }
+
+    fn event_list(&self) -> impl Iterator<Item = &Rc<Event>> {
+        self.calendars.events()
     }
 
     pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
@@ -56,8 +51,7 @@ impl AgendaView {
 
         // partition events into past and future events
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
-            .event_list
-            .iter()
+            .event_list()
             .partition(|e| e.start() < config.calendar_today_date);
 
         // process past events
@@ -186,7 +180,10 @@ impl AgendaView {
         );
 
         let mut context = Context::new();
-        context.insert("stylesheet_path", &config.stylesheet_path);
+        context.insert(
+            "stylesheet_path",
+            &config.base_url_path.join(&*config.stylesheet_path),
+        );
         context.insert("timezone", config.display_timezone.name());
         // TODO: we need to refactor the way agenda pages are created before we can enable the below
         // context.insert(
@@ -215,6 +212,13 @@ impl AgendaView {
         }
         context.insert("event_groups", &event_groups);
 
+        let base_url_path: unix_path::PathBuf =
+            self.calendars.config.base_url_path.path_buf().clone();
+        context.insert("month_view_path", &base_url_path.join("month"));
+        context.insert("week_view_path", &base_url_path.join("week"));
+        context.insert("day_view_path", &base_url_path.join("day"));
+        context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
@@ -223,24 +227,15 @@ impl AgendaView {
 
         // write the template to all specified paths
         for file_path in file_paths {
-            // if the path matches the root path, prepend the default view to the next and previous links
-            if file_path.parent() == Some(&config.output_dir) {
-                context.insert(
-                    "previous_file_name",
-                    &previous_file_name
-                        .as_ref()
-                        .map(|path| ["agenda", path].join("/")),
-                );
-                context.insert(
-                    "next_file_name",
-                    &next_file_name
-                        .as_ref()
-                        .map(|path| ["agenda", path].join("/")),
-                );
-            } else {
-                context.insert("previous_file_name", &previous_file_name);
-                context.insert("next_file_name", &next_file_name);
-            }
+            let view_path = base_url_path.join("agenda");
+            context.insert(
+                "previous_file_name",
+                &previous_file_name.as_ref().map(|path| view_path.join(path)),
+            );
+            context.insert(
+                "next_file_name",
+                &next_file_name.as_ref().map(|path| view_path.join(path)),
+            );
 
             // write the actual template
             write_template(tera, "agenda.html", &context, file_path)?;

@@ -202,7 +202,10 @@ impl MonthView<'_> {
             .map(|next_month| format!("{}-{}.html", next_month.year(), next_month.month()));
 
         let mut context = Context::new();
-        context.insert("stylesheet_path", &config.stylesheet_path);
+        context.insert(
+            "stylesheet_path",
+            &config.base_url_path.join(&*config.stylesheet_path),
+        );
         context.insert("timezone", &config.display_timezone.name());
         context.insert(
             "view_date",
@@ -218,6 +221,13 @@ impl MonthView<'_> {
         );
         context.insert("weeks", &week_list);
 
+        let base_url_path: unix_path::PathBuf =
+            self.calendars.config.base_url_path.path_buf().clone();
+        context.insert("month_view_path", &base_url_path.join("month"));
+        context.insert("week_view_path", &base_url_path.join("week"));
+        context.insert("day_view_path", &base_url_path.join("day"));
+        context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
         // create the main file path
         let binding = output_dir.join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
@@ -226,24 +236,15 @@ impl MonthView<'_> {
 
         // write the template to all specified paths
         for file_path in file_paths {
-            // if the path matches the root path, prepend the default view to the next and previous links
-            if file_path.parent() == Some(&config.output_dir) {
-                context.insert(
-                    "previous_file_name",
-                    &previous_file_name
-                        .as_ref()
-                        .map(|path| ["month", path].join("/")),
-                );
-                context.insert(
-                    "next_file_name",
-                    &next_file_name
-                        .as_ref()
-                        .map(|path| ["month", path].join("/")),
-                );
-            } else {
-                context.insert("previous_file_name", &previous_file_name);
-                context.insert("next_file_name", &next_file_name);
-            }
+            let view_path = base_url_path.join("month");
+            context.insert(
+                "previous_file_name",
+                &previous_file_name.as_ref().map(|path| view_path.join(path)),
+            );
+            context.insert(
+                "next_file_name",
+                &next_file_name.as_ref().map(|path| view_path.join(path)),
+            );
 
             // write the actual template
             write_template(tera, "month.html", &context, file_path)?;

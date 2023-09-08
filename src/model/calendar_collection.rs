@@ -4,12 +4,13 @@ use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
 use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::{fs, iter};
 use tera::Tera;
 
 use super::calendar_source::CalendarSource;
 use super::day::Day;
-use super::event::{EventList, UnparsedProperties};
+use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
 use crate::config::Config;
 use crate::model::calendar::Calendar;
@@ -159,6 +160,10 @@ impl CalendarCollection {
         self.calendars.as_ref()
     }
 
+    pub(crate) fn events(&self) -> impl Iterator<Item = &Rc<Event>> {
+        self.calendars.iter().flat_map(|c| c.events())
+    }
+
     /// Returns the weeks to show of this [`CalendarCollection`].
     pub fn weeks_to_show(&self) -> Result<Vec<Option<Week>>> {
         // Create a DateRule to iterate over all of the weeks this calendar should display
@@ -255,11 +260,8 @@ impl CalendarCollection {
         };
 
         if self.config.render_agenda {
-            AgendaView::new(
-                create_subdir(&self.config.output_dir, "agenda")?,
-                &self.calendars,
-            )
-            .create_html_pages(&self.config, &self.tera)?;
+            AgendaView::new(create_subdir(&self.config.output_dir, "agenda")?, self)
+                .create_html_pages(&self.config, &self.tera)?;
         };
 
         Ok(())
