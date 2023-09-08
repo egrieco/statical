@@ -216,7 +216,7 @@ impl MonthView<'_> {
         context.insert("weeks", &week_list);
 
         // create the main file path
-        let binding = self.config().output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir().join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);
