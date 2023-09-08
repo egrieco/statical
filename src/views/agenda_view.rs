@@ -44,25 +44,27 @@ impl AgendaView<'_> {
         self.calendars.events()
     }
 
-    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
+    pub fn create_html_pages(&self) -> Result<()> {
         let mut index_written = false;
 
         // partition events into past and future events
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list()
-            .partition(|e| e.start() < config.calendar_today_date);
+            .partition(|e| e.start() < self.config().calendar_today_date);
 
         // process past events
         past_events.sort_by_key(|e| e.start());
         let mut past_events: Vec<_> = past_events
-            .rchunks(config.agenda_events_per_page)
+            .rchunks(self.config().agenda_events_per_page)
             .zip((1_isize..).map(|i| -i))
             .collect();
         past_events.reverse();
 
         // process future events
         future_events.sort_by_key(|e| e.start());
-        let future_events_iter = future_events.chunks(config.agenda_events_per_page).zip(0..);
+        let future_events_iter = future_events
+            .chunks(self.config().agenda_events_per_page)
+            .zip(0..);
 
         // combine all events into one list
         past_events.extend(future_events_iter);
@@ -103,8 +105,9 @@ impl AgendaView<'_> {
                         index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the week view
-                        if config.default_calendar_view == CalendarView::Agenda {
-                            index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                        if self.config().default_calendar_view == CalendarView::Agenda {
+                            index_paths
+                                .push(self.config().output_dir.join(PathBuf::from("index.html")));
                         }
                     }
                 } else {
@@ -112,8 +115,9 @@ impl AgendaView<'_> {
                     index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                     // write the main index as the week view
-                    if config.default_calendar_view == CalendarView::Agenda {
-                        index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                    if self.config().default_calendar_view == CalendarView::Agenda {
+                        index_paths
+                            .push(self.config().output_dir.join(PathBuf::from("index.html")));
                     }
                 }
             }

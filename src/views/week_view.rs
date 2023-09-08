@@ -48,7 +48,7 @@ impl WeekView<'_> {
     /// # Errors
     ///
     /// This function will return an error if templates cannot be written.
-    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
+    pub fn create_html_pages(&self) -> Result<()> {
         let mut index_written = false;
 
         // let week_windows = self.fun_name();
@@ -70,13 +70,13 @@ impl WeekView<'_> {
             if !index_written {
                 if let Some(next_week) = next_week_opt {
                     // write the index file if the next month is after the current date
-                    if next_week.start_datetime >= config.calendar_today_date {
+                    if next_week.start_datetime >= self.config().calendar_today_date {
                         index_written = true;
                         write_view_index = true;
                         // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the week view
-                        if config.default_calendar_view == CalendarView::Week {
+                        if self.config().default_calendar_view == CalendarView::Week {
                             write_main_index = true;
                             // index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                         }
@@ -88,7 +88,7 @@ impl WeekView<'_> {
                     // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                     // write the main index as the week view
-                    if config.default_calendar_view == CalendarView::Week {
+                    if self.config().default_calendar_view == CalendarView::Week {
                         write_main_index = true;
                         // index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
                     }

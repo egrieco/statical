@@ -81,7 +81,7 @@ impl MonthView<'_> {
         Ok(month_windows)
     }
 
-    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
+    pub fn create_html_pages(&self) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -96,7 +96,7 @@ impl MonthView<'_> {
                 if let Some(next_month) = next_month_opt {
                     // write the index file if the next month is after the current date
                     if next_month
-                        > config.calendar_today_date.with_day(1).ok_or(eyre!(
+                        > self.config().calendar_today_date.with_day(1).ok_or(eyre!(
                             "could not convert agenda start date to beginning of month"
                         ))?
                     {
@@ -104,8 +104,9 @@ impl MonthView<'_> {
                         index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the month view
-                        if config.default_calendar_view == CalendarView::Month {
-                            index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                        if self.config().default_calendar_view == CalendarView::Month {
+                            index_paths
+                                .push(self.config().output_dir.join(PathBuf::from("index.html")));
                         }
                     }
                 } else {
@@ -113,8 +114,9 @@ impl MonthView<'_> {
                     index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                     // write the main index as the month view
-                    if config.default_calendar_view == CalendarView::Month {
-                        index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                    if self.config().default_calendar_view == CalendarView::Month {
+                        index_paths
+                            .push(self.config().output_dir.join(PathBuf::from("index.html")));
                     }
                 }
             }

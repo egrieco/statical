@@ -38,7 +38,7 @@ impl DayView<'_> {
         &self.calendars.config
     }
 
-    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
+    pub fn create_html_pages(&self) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -51,13 +51,14 @@ impl DayView<'_> {
             if !index_written {
                 if let Some(next_day) = next_day_opt {
                     // write the index file if the next day is after the current date
-                    if next_day.start_datetime > config.calendar_today_date {
+                    if next_day.start_datetime > self.config().calendar_today_date {
                         index_written = true;
                         index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                         // write the main index as the day view
-                        if config.default_calendar_view == CalendarView::Day {
-                            index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                        if self.config().default_calendar_view == CalendarView::Day {
+                            index_paths
+                                .push(self.config().output_dir.join(PathBuf::from("index.html")));
                         }
                     }
                 } else {
@@ -66,8 +67,9 @@ impl DayView<'_> {
                     index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
 
                     // write the main index as the day view
-                    if config.default_calendar_view == CalendarView::Day {
-                        index_paths.push(config.output_dir.join(PathBuf::from("index.html")));
+                    if self.config().default_calendar_view == CalendarView::Day {
+                        index_paths
+                            .push(self.config().output_dir.join(PathBuf::from("index.html")));
                     }
                 }
             }

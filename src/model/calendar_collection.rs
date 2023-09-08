@@ -270,22 +270,22 @@ impl CalendarCollection {
         // add events to views
         if self.config.render_month {
             MonthView::new(create_subdir(&self.config.output_dir, "month")?, self)
-                .create_html_pages(&self.config)?;
+                .create_html_pages()?;
         };
 
         if self.config.render_week {
             WeekView::new(create_subdir(&self.config.output_dir, "week")?, self)
-                .create_html_pages(&self.config)?;
+                .create_html_pages()?;
         };
 
         if self.config.render_day {
             DayView::new(create_subdir(&self.config.output_dir, "day")?, self)
-                .create_html_pages(&self.config)?;
+                .create_html_pages()?;
         };
 
         if self.config.render_agenda {
             AgendaView::new(create_subdir(&self.config.output_dir, "agenda")?, self)
-                .create_html_pages(&self.config)?;
+                .create_html_pages()?;
         };
 
         Ok(())
