@@ -57,7 +57,7 @@ The **templates must be in** `./templates/`.
 - [x] ~~_add an option to generate example templates or provide them in the docs/repo_~~ (2023-09-04)
 - [x] ~~_Add [tera](https://lib.rs/crates/tera) templates_~~ (2022-05-17)
 - [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
-- [ ] add baseurl support
+- [x] ~~_add baseurl support_~~ (2023-09-08)
 - [ ] Default to looking for the `statical.toml` file in the current dir
 - [ ] Allow template path config.
 
@@ -109,7 +109,7 @@ The **templates must be in** `./templates/`.
   - [ ] use unexpanded events
 - [ ] Add ics feed generation
 - [ ] Add summary to event header
-- [ ] Store templates internally but use external versions if provided.
+- [x] ~~_Store templates internally but use external versions if provided._~~ (2023-09-08)
 - [ ] Clean up pagination and views
 - [ ] Align pagination with grid
 - [ ] Center header
