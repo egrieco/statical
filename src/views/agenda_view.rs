@@ -1,6 +1,11 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
-use std::{collections::BTreeMap, isize, iter, path::PathBuf, rc::Rc};
+use std::{
+    collections::BTreeMap,
+    isize, iter,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use crate::{
     config::{CalendarView, Config},
@@ -8,7 +13,7 @@ use crate::{
         calendar_collection::CalendarCollection,
         event::{Event, EventContext},
     },
-    util::write_template,
+    util::{create_subdir, write_template},
 };
 
 type AgendaPageId = isize;
@@ -23,21 +28,20 @@ type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
 #[derive(Debug)]
 pub(crate) struct AgendaView<'a> {
-    /// The output directory for agenda view files
-    output_dir: PathBuf,
     calendars: &'a CalendarCollection,
 }
 
 impl AgendaView<'_> {
-    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> AgendaView<'_> {
-        AgendaView {
-            output_dir,
-            calendars,
-        }
+    pub fn new(calendars: &CalendarCollection) -> AgendaView<'_> {
+        AgendaView { calendars }
     }
 
     fn config(&self) -> &Config {
         &self.calendars.config
+    }
+
+    fn output_dir(&self) -> &Path {
+        &self.config().output_dir
     }
 
     fn event_list(&self) -> impl Iterator<Item = &Rc<Event>> {
@@ -45,6 +49,9 @@ impl AgendaView<'_> {
     }
 
     pub fn create_html_pages(&self) -> Result<()> {
+        // create the subdirectory to hold the files
+        create_subdir(self.output_dir(), "agenda")?;
+
         let mut index_written = false;
 
         // partition events into past and future events
@@ -102,7 +109,7 @@ impl AgendaView<'_> {
                     // TODO handle the case when there is no page 1 (when there are less than agenda_events_per_page past current)
                     if page == &1_isize {
                         index_written = true;
-                        index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                        index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                         // write the main index as the week view
                         if self.config().default_calendar_view == CalendarView::Agenda {
@@ -112,7 +119,7 @@ impl AgendaView<'_> {
                     }
                 } else {
                     index_written = true;
-                    index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                    index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                     // write the main index as the week view
                     if self.config().default_calendar_view == CalendarView::Agenda {
@@ -200,7 +207,7 @@ impl AgendaView<'_> {
             self.calendars.config.base_url_path.path_buf().clone();
 
         // create the main file path
-        let binding = self.output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir().join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);

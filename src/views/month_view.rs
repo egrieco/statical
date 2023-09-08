@@ -5,11 +5,13 @@ use chronoutil::DateRule;
 use color_eyre::eyre::{eyre, Result, WrapErr};
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
+use std::path::Path;
 use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
 use crate::model::calendar_collection::LocalDay;
 use crate::model::day::DayContext;
+use crate::util::create_subdir;
 use crate::{
     config::{CalendarView, Config},
     model::{calendar_collection::CalendarCollection, event::Year},
@@ -32,21 +34,20 @@ pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 
 #[derive(Debug)]
 pub struct MonthView<'a> {
-    /// The output directory for month view files
-    output_dir: PathBuf,
     calendars: &'a CalendarCollection,
 }
 
 impl MonthView<'_> {
-    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> MonthView<'_> {
-        MonthView {
-            output_dir,
-            calendars,
-        }
+    pub fn new(calendars: &CalendarCollection) -> MonthView<'_> {
+        MonthView { calendars }
     }
 
     fn config(&self) -> &Config {
         &self.calendars.config
+    }
+
+    fn output_dir(&self) -> &Path {
+        &self.config().output_dir
     }
 
     /// Returns the months to show of this [`MonthView`] with a `None` at the beginning and end.
@@ -82,6 +83,9 @@ impl MonthView<'_> {
     }
 
     pub fn create_html_pages(&self) -> Result<()> {
+        // create the subdirectory to hold the files
+        create_subdir(self.output_dir(), "month")?;
+
         let mut index_written = false;
 
         // iterate through all windows
@@ -101,7 +105,7 @@ impl MonthView<'_> {
                         ))?
                     {
                         index_written = true;
-                        index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                        index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                         // write the main index as the month view
                         if self.config().default_calendar_view == CalendarView::Month {
@@ -111,7 +115,7 @@ impl MonthView<'_> {
                     }
                 } else {
                     index_written = true;
-                    index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                    index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                     // write the main index as the month view
                     if self.config().default_calendar_view == CalendarView::Month {

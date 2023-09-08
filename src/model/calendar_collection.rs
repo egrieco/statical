@@ -14,7 +14,7 @@ use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
 use crate::config::Config;
 use crate::model::calendar::Calendar;
-use crate::util::{self, create_subdir};
+use crate::util::create_subdir;
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
@@ -250,7 +250,7 @@ impl CalendarCollection {
         fs::create_dir_all(output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
 
-        let styles_dir = util::create_subdir(output_dir, "styles")?;
+        let styles_dir = create_subdir(output_dir, "styles")?;
 
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
@@ -269,23 +269,19 @@ impl CalendarCollection {
 
         // add events to views
         if self.config.render_month {
-            MonthView::new(create_subdir(&self.config.output_dir, "month")?, self)
-                .create_html_pages()?;
+            MonthView::new(self).create_html_pages()?;
         };
 
         if self.config.render_week {
-            WeekView::new(create_subdir(&self.config.output_dir, "week")?, self)
-                .create_html_pages()?;
+            WeekView::new(self).create_html_pages()?;
         };
 
         if self.config.render_day {
-            DayView::new(create_subdir(&self.config.output_dir, "day")?, self)
-                .create_html_pages()?;
+            DayView::new(self).create_html_pages()?;
         };
 
         if self.config.render_agenda {
-            AgendaView::new(create_subdir(&self.config.output_dir, "agenda")?, self)
-                .create_html_pages()?;
+            AgendaView::new(self).create_html_pages()?;
         };
 
         Ok(())

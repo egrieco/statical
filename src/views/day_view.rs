@@ -1,6 +1,9 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
-use std::{path::PathBuf, rc::Rc};
+use std::{
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use crate::{
     config::{CalendarView, Config},
@@ -9,7 +12,7 @@ use crate::{
         day::Day,
         event::{Event, EventContext},
     },
-    util::write_template,
+    util::{create_subdir, write_template},
 };
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
@@ -21,24 +24,26 @@ pub type DaySlice<'a> = &'a [Option<Day>];
 
 #[derive(Debug)]
 pub struct DayView<'a> {
-    /// The output directory for day view files
-    output_dir: PathBuf,
     calendars: &'a CalendarCollection,
 }
 
 impl DayView<'_> {
-    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> DayView<'_> {
-        DayView {
-            output_dir,
-            calendars,
-        }
+    pub fn new(calendars: &CalendarCollection) -> DayView<'_> {
+        DayView { calendars }
     }
 
     fn config(&self) -> &Config {
         &self.calendars.config
     }
 
+    fn output_dir(&self) -> &Path {
+        &self.config().output_dir
+    }
+
     pub fn create_html_pages(&self) -> Result<()> {
+        // create the subdirectory to hold the files
+        create_subdir(self.output_dir(), "day")?;
+
         let mut index_written = false;
 
         // iterate through all windows
@@ -53,7 +58,7 @@ impl DayView<'_> {
                     // write the index file if the next day is after the current date
                     if next_day.start_datetime > self.config().calendar_today_date {
                         index_written = true;
-                        index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                        index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                         // write the main index as the day view
                         if self.config().default_calendar_view == CalendarView::Day {
@@ -64,7 +69,7 @@ impl DayView<'_> {
                 } else {
                     // write the index if next_day is None and nothing has been written yet
                     index_written = true;
-                    index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
+                    index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 
                     // write the main index as the day view
                     if self.config().default_calendar_view == CalendarView::Day {
@@ -134,7 +139,7 @@ impl DayView<'_> {
             self.calendars.config.base_url_path.path_buf().clone();
 
         // create the main file path
-        let binding = self.output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir().join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);

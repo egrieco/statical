@@ -1,10 +1,12 @@
 use color_eyre::eyre::Result;
 use itertools::Itertools;
 use log::debug;
+use std::path::Path;
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
+use crate::util::create_subdir;
 use crate::{
     config::{CalendarView, Config},
     model::{day::DayContext, event::EventList},
@@ -24,21 +26,20 @@ pub type WeekSlice<'a> = &'a [Option<Week>];
 
 #[derive(Debug)]
 pub struct WeekView<'a> {
-    /// The output directory for week view files
-    output_dir: PathBuf,
     calendars: &'a CalendarCollection,
 }
 
 impl WeekView<'_> {
-    pub fn new(output_dir: PathBuf, calendars: &CalendarCollection) -> WeekView<'_> {
-        WeekView {
-            output_dir,
-            calendars,
-        }
+    pub fn new(calendars: &CalendarCollection) -> WeekView<'_> {
+        WeekView { calendars }
     }
 
     fn config(&self) -> &Config {
         &self.calendars.config
+    }
+
+    fn output_dir(&self) -> &Path {
+        &self.config().output_dir
     }
 
     /// Loops through all of the weeks in this view's collection.
@@ -49,9 +50,10 @@ impl WeekView<'_> {
     ///
     /// This function will return an error if templates cannot be written.
     pub fn create_html_pages(&self) -> Result<()> {
-        let mut index_written = false;
+        // create the subdirectory to hold the files
+        create_subdir(self.output_dir(), "week")?;
 
-        // let week_windows = self.fun_name();
+        let mut index_written = false;
 
         // iterate through all windows
         for window in self.calendars.weeks_to_show()?.windows(3) {
@@ -177,12 +179,12 @@ impl WeekView<'_> {
         context.insert("week_dates", &week_dates);
 
         // create the main file path
-        let binding = self.output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir().join(PathBuf::from(&file_name));
         // the first item in this tuple is a flag indicating whether to prepend the view path
         let mut file_paths = vec![(true, binding)];
 
         if write_view_index {
-            file_paths.push((true, self.output_dir.join(PathBuf::from("index.html"))));
+            file_paths.push((true, self.output_dir().join(PathBuf::from("index.html"))));
         }
         if write_main_index {
             file_paths.push((
