@@ -2,6 +2,7 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
+use log::info;
 use std::collections::{BTreeMap, HashSet};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
 use crate::config::Config;
 use crate::model::calendar::Calendar;
+use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
@@ -249,6 +251,13 @@ impl CalendarCollection {
         // make the output dir if it doesn't exist
         fs::create_dir_all(output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
+
+        // remove any files present
+        info!(
+            "removing contents of the output directory: {:?}",
+            output_dir
+        );
+        delete_dir_contents(output_dir);
 
         // create the styles dir
         let styles_dir = output_dir.join("styles");

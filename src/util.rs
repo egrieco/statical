@@ -1,25 +1,34 @@
-use color_eyre::eyre::{self, Context};
+use color_eyre::eyre::{self};
 use std::fs::File;
 use std::io::Write;
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 use tera::Tera;
 
-/// Takes a base dir and subdir, creates the subdirectory if it does not exist
-pub fn create_subdir(
-    base_output_dir: &Path,
-    subdir_name: &str,
-) -> Result<PathBuf, color_eyre::Report> {
-    let output_dir = base_output_dir.join(subdir_name);
-    if !output_dir.exists() {
-        fs::create_dir(&output_dir).context(format!(
-            "could not create {} dir in {:?}",
-            subdir_name, base_output_dir
-        ))?;
+/// Delete all contents of a directory without modifying the directory itself
+///
+/// This function prints error messages directly to `STDERR` but otherwise ignores them and does not fail
+pub fn delete_dir_contents<P: AsRef<Path>>(path: P) {
+    match fs::read_dir(path) {
+        Err(e) => eprintln!("could not read output dir: {}", e),
+        Ok(dir) => {
+            for entry in dir {
+                match entry {
+                    Err(e) => eprintln!("entry error in output dir: {}", e),
+                    Ok(entry) => {
+                        let path = entry.path();
+
+                        if path.is_dir() {
+                            if let Err(e) = fs::remove_dir_all(path) {
+                                eprintln!("could not delete directory in output dir: {}", e);
+                            };
+                        } else if let Err(e) = fs::remove_file(path) {
+                            eprintln!("could not delete file in output dir: {}", e);
+                        }
+                    }
+                }
+            }
+        }
     }
-    Ok(output_dir)
 }
 
 pub fn render(tera: &Tera, template_name: &str, context: &tera::Context) -> eyre::Result<String> {
