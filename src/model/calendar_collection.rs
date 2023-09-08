@@ -2,7 +2,11 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
-use log::info;
+use include_dir::{
+    include_dir, Dir,
+    DirEntry::{Dir as DirEnt, File as FileEnt},
+};
+use log::{debug, info};
 use std::collections::{BTreeMap, HashSet};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -26,6 +30,8 @@ use crate::views::week_view::WeekView;
 pub(crate) type LocalDay = DateTime<ChronoTz>;
 
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
+
+static TEMPLATE_DIR: Dir = include_dir!("templates");
 
 #[derive(Debug)]
 pub struct CalendarCollection {
@@ -135,10 +141,34 @@ impl CalendarCollection {
             }
         }
 
+        // load custom tera templates
+        info!("loading custom templates...");
+        let mut tera = Tera::new("templates/**/*.html")?;
+
+        // load default tera templates
+        info!("loading default templates...");
+        let mut default_templates = Tera::default();
+        for template in TEMPLATE_DIR.find("**/*.html")? {
+            match template {
+                DirEnt(_) => Ok(()),
+                FileEnt(t) => match (t.path().to_str(), t.contents_utf8()) {
+                    (Some(template_name), Some(template_contents)) => {
+                        debug!("adding default template: {}", template_name);
+                        default_templates.add_raw_template(template_name, template_contents)
+                    }
+                    // TODO: probably want to surface these errors
+                    (_, _) => Ok(()),
+                },
+            }?;
+        }
+
+        // combine the defaults with the custom templates
+        tera.extend(&default_templates)?;
+
         Ok(CalendarCollection {
             calendars,
             events_by_day,
-            tera: Tera::new("templates/**/*.html")?,
+            tera,
             config,
             unparsed_properties,
             cal_start,

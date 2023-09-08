@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use clap::Parser;
 use color_eyre::eyre::{self};
 use figment::{
@@ -7,10 +5,9 @@ use figment::{
     Figment,
 };
 use flexi_logger::Logger;
+use std::process::exit;
 
 use statical::{config::Config, model::calendar_collection::CalendarCollection, options::Opt};
-
-mod options;
 
 fn main() -> eyre::Result<()> {
     let args = Opt::parse();
