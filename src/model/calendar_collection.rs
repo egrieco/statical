@@ -77,6 +77,7 @@ impl CalendarCollection {
             }
         }
 
+        // TODO: have each calendar determine its own start and end
         let end_of_month_default =
             DateRule::monthly(Utc::now().with_timezone(&config.display_timezone.into()))
                 .with_rolling_day(31)
@@ -99,6 +100,7 @@ impl CalendarCollection {
             .unwrap_or(end_of_month_default);
 
         // expand recurring events
+        // TODO: make Events an enum so that original events and recurrences are distinct
         log::debug!("expanding recurring events...");
         for calendar in calendars.iter_mut() {
             let pre_expansion_count = calendar.events().len();

@@ -56,10 +56,11 @@ The **templates must be in** `./templates/`.
 - [x] Add toml config
 - [x] ~~_add an option to generate example templates or provide them in the docs/repo_~~ (2023-09-04)
 - [x] ~~_Add [tera](https://lib.rs/crates/tera) templates_~~ (2022-05-17)
-- [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
 - [x] ~~_add baseurl support_~~ (2023-09-08)
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
+- [ ] Make all paths relative to the config file
 - [ ] Allow template path config.
+- [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
 
 ### Setup and Configuration (Future Work)
 
