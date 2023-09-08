@@ -58,7 +58,7 @@ The **templates must be in** `./templates/`.
 - [x] ~~_Add [tera](https://lib.rs/crates/tera) templates_~~ (2022-05-17)
 - [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
 - [x] ~~_add baseurl support_~~ (2023-09-08)
-- [ ] Default to looking for the `statical.toml` file in the current dir
+- [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
 - [ ] Allow template path config.
 
 ### Setup and Configuration (Future Work)
@@ -83,14 +83,14 @@ The **templates must be in** `./templates/`.
 
 ### Styling (Future Work)
 
-- [ ] Add weekday vs weekend classes
-- [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
+- [x] ~~_Add weekday vs weekend classes_~~ (2023-09-08)
 - [ ] highlight current day
 - [ ] add event classes
 - [ ] add source calendar
 - [ ] add event categories
 - [ ] cleanup css
 - [ ] scss processing
+- [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
 - [ ] Make overlapping events stack horizontally in the Day view on desktop (maybe week and month if space allows)
 - [ ] Add times on left side and align events in week and day view
 
@@ -135,7 +135,6 @@ The **templates must be in** `./templates/`.
 - [ ] Fix agenda event collection logic
 - [ ] Fix event ordering in day view
 - [ ] Calculate beginning and end dates of each calendar, do not default to today
-- [ ] Switch agenda view to BTreeMap based event lists
 
 ### Calendar Generation (Future Work)
 
