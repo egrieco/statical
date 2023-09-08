@@ -73,7 +73,7 @@ pub struct Config {
 
     /// Name of the timezone in which to display rendered times
     ///
-    /// See available timezones here: https://docs.rs/chrono-tz/latest/chrono_tz/enum.Tz.html
+    /// See available timezones here: <https://docs.rs/chrono-tz/latest/chrono_tz/enum.Tz.html>
     #[doku(example = "America/Phoenix")]
     pub display_timezone: ConfigTimeZone,
 
@@ -146,14 +146,14 @@ pub struct Config {
 
     /// The format for the start date of calendar events
     ///
-    /// Available format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+    /// Available format options: <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     #[doku(example = "%I:%M%P")]
     pub event_start_format: String,
 
     /// The format for the end date of calendar events
     ///
-    /// Available format options: https://docs.rs/chrono/latest/chrono/format/strftime/index.html
+    /// Available format options: <https://docs.rs/chrono/latest/chrono/format/strftime/index.html>
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     #[doku(example = "%I:%M%P")]
     pub event_end_format: String,
