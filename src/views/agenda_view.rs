@@ -1,12 +1,6 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
-use std::{
-    collections::BTreeMap,
-    isize, iter,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
-use tera::{Context, Tera};
+use std::{collections::BTreeMap, isize, iter, path::PathBuf, rc::Rc};
 
 use crate::{
     config::{CalendarView, Config},
@@ -42,11 +36,15 @@ impl AgendaView<'_> {
         }
     }
 
+    fn config(&self) -> &Config {
+        &self.calendars.config
+    }
+
     fn event_list(&self) -> impl Iterator<Item = &Rc<Event>> {
         self.calendars.events()
     }
 
-    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
         let mut index_written = false;
 
         // partition events into past and future events
@@ -120,13 +118,7 @@ impl AgendaView<'_> {
                 }
             }
 
-            self.write_view(
-                config,
-                tera,
-                &window,
-                &self.output_dir,
-                index_paths.as_slice(),
-            )?;
+            self.write_view(&window, index_paths.as_slice())?;
         }
 
         Ok(())
@@ -141,14 +133,7 @@ impl AgendaView<'_> {
     /// # Errors
     ///
     /// This function will return an error if the file cannot be written to disk.
-    fn write_view(
-        &self,
-        config: &Config,
-        tera: &Tera,
-        agenda_slice: &AgendaSlice,
-        output_dir: &Path,
-        index_paths: &[PathBuf],
-    ) -> Result<()> {
+    fn write_view(&self, agenda_slice: &AgendaSlice, index_paths: &[PathBuf]) -> Result<()> {
         let previous_page = agenda_slice[0];
         let current_page =
             agenda_slice[1].expect("Current agenda page is None. This should never happen.");
@@ -168,7 +153,7 @@ impl AgendaView<'_> {
             );
         }
 
-        let event_contexts: Vec<_> = events.iter().map(|e| e.context(config)).collect();
+        let event_contexts: Vec<_> = events.iter().map(|e| e.context(self.config())).collect();
 
         let file_name = format!("{}.html", page);
         let previous_file_name = previous_page.map(|(page_num, _)| format!("{}.html", page_num));
@@ -179,12 +164,7 @@ impl AgendaView<'_> {
             previous_file_name, file_name, next_file_name
         );
 
-        let mut context = Context::new();
-        context.insert(
-            "stylesheet_path",
-            &config.base_url_path.join(&*config.stylesheet_path),
-        );
-        context.insert("timezone", config.display_timezone.name());
+        let mut context = self.calendars.template_context();
         // TODO: we need to refactor the way agenda pages are created before we can enable the below
         // context.insert(
         //     "view_date_start",
@@ -208,19 +188,15 @@ impl AgendaView<'_> {
             event_groups
                 .entry(event.start().format("%a, %d %m %Y").to_string())
                 .or_default()
-                .push(event.context(config))
+                .push(event.context(self.config()))
         }
         context.insert("event_groups", &event_groups);
 
         let base_url_path: unix_path::PathBuf =
             self.calendars.config.base_url_path.path_buf().clone();
-        context.insert("month_view_path", &base_url_path.join("month"));
-        context.insert("week_view_path", &base_url_path.join("week"));
-        context.insert("day_view_path", &base_url_path.join("day"));
-        context.insert("agenda_view_path", &base_url_path.join("agenda"));
 
         // create the main file path
-        let binding = output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir.join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);
@@ -238,7 +214,7 @@ impl AgendaView<'_> {
             );
 
             // write the actual template
-            write_template(tera, "agenda.html", &context, file_path)?;
+            write_template(&self.calendars.tera, "agenda.html", &context, file_path)?;
         }
 
         Ok(())

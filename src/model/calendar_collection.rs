@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::{fs, iter};
-use tera::Tera;
+use tera::{Context, Tera};
 
 use super::calendar_source::CalendarSource;
 use super::day::Day;
@@ -31,7 +31,7 @@ pub struct CalendarCollection {
     /// Events grouped by day in the display timezone
     pub(crate) events_by_day: EventsByDay,
 
-    tera: Tera,
+    pub(crate) tera: Tera,
     pub(crate) config: Config,
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
@@ -164,6 +164,30 @@ impl CalendarCollection {
         self.calendars.iter().flat_map(|c| c.events())
     }
 
+    /// Generate the template context with the values to be interpolated
+    ///
+    /// Returns the template context of this [`CalendarCollection`].
+    #[must_use]
+    pub fn template_context(&self) -> Context {
+        let mut context = Context::new();
+        context.insert(
+            "stylesheet_path",
+            &self
+                .config
+                .base_url_path
+                .join(&*self.config.stylesheet_path),
+        );
+        context.insert("timezone", &self.config.display_timezone.name());
+
+        let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
+        context.insert("month_view_path", &base_url_path.join("month"));
+        context.insert("week_view_path", &base_url_path.join("week"));
+        context.insert("day_view_path", &base_url_path.join("day"));
+        context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
+        context
+    }
+
     /// Returns the weeks to show of this [`CalendarCollection`].
     pub fn weeks_to_show(&self) -> Result<Vec<Option<Week>>> {
         // Create a DateRule to iterate over all of the weeks this calendar should display
@@ -246,22 +270,22 @@ impl CalendarCollection {
         // add events to views
         if self.config.render_month {
             MonthView::new(create_subdir(&self.config.output_dir, "month")?, self)
-                .create_html_pages(&self.config, &self.tera)?;
+                .create_html_pages(&self.config)?;
         };
 
         if self.config.render_week {
             WeekView::new(create_subdir(&self.config.output_dir, "week")?, self)
-                .create_html_pages(&self.config, &self.tera)?;
+                .create_html_pages(&self.config)?;
         };
 
         if self.config.render_day {
             DayView::new(create_subdir(&self.config.output_dir, "day")?, self)
-                .create_html_pages(&self.config, &self.tera)?;
+                .create_html_pages(&self.config)?;
         };
 
         if self.config.render_agenda {
             AgendaView::new(create_subdir(&self.config.output_dir, "agenda")?, self)
-                .create_html_pages(&self.config, &self.tera)?;
+                .create_html_pages(&self.config)?;
         };
 
         Ok(())

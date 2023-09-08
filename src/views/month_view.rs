@@ -5,12 +5,7 @@ use chronoutil::DateRule;
 use color_eyre::eyre::{eyre, Result, WrapErr};
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
-use std::{
-    collections::BTreeMap,
-    iter,
-    path::{Path, PathBuf},
-};
-use tera::{Context, Tera};
+use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
 use crate::model::calendar_collection::LocalDay;
@@ -50,6 +45,10 @@ impl MonthView<'_> {
         }
     }
 
+    fn config(&self) -> &Config {
+        &self.calendars.config
+    }
+
     /// Returns the months to show of this [`MonthView`] with a `None` at the beginning and end.
     ///
     /// This makes it easier to iterate over all of the months in the view and place links to the previous and next months.
@@ -82,7 +81,7 @@ impl MonthView<'_> {
         Ok(month_windows)
     }
 
-    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -121,13 +120,7 @@ impl MonthView<'_> {
             }
 
             // write the actual files
-            self.write_view(
-                config,
-                tera,
-                &window,
-                &self.output_dir,
-                index_paths.as_slice(),
-            )?;
+            self.write_view(&window, index_paths.as_slice())?;
         }
 
         Ok(())
@@ -142,14 +135,7 @@ impl MonthView<'_> {
     /// # Errors
     ///
     /// This function will return an error if the file cannot be written to disk.
-    fn write_view(
-        &self,
-        config: &Config,
-        tera: &Tera,
-        month_slice: &MonthSlice,
-        output_dir: &Path,
-        index_paths: &[PathBuf],
-    ) -> Result<()> {
+    fn write_view(&self, month_slice: &MonthSlice, index_paths: &[PathBuf]) -> Result<()> {
         let previous_month = month_slice[0];
         let current_month =
             month_slice[1].expect("Current month is None. This should never happen.");
@@ -170,7 +156,7 @@ impl MonthView<'_> {
                     .events_by_day
                     // TODO: I doubt that we need to adjust the timezone here, probably remove it
                     .get(
-                        &day.with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
+                        &day.with_timezone::<chrono_tz::Tz>(&self.config().display_timezone.into())
                             .date_naive(),
                     );
                 println!(
@@ -201,15 +187,12 @@ impl MonthView<'_> {
         let next_file_name = next_month
             .map(|next_month| format!("{}-{}.html", next_month.year(), next_month.month()));
 
-        let mut context = Context::new();
-        context.insert(
-            "stylesheet_path",
-            &config.base_url_path.join(&*config.stylesheet_path),
-        );
-        context.insert("timezone", &config.display_timezone.name());
+        let mut context = self.calendars.template_context();
         context.insert(
             "view_date",
-            &current_month.format(&config.month_view_format).to_string(),
+            &current_month
+                .format(&self.config().month_view_format)
+                .to_string(),
         );
         context.insert("year", &current_month.year());
         context.insert("month", &current_month.month());
@@ -221,18 +204,14 @@ impl MonthView<'_> {
         );
         context.insert("weeks", &week_list);
 
-        let base_url_path: unix_path::PathBuf =
-            self.calendars.config.base_url_path.path_buf().clone();
-        context.insert("month_view_path", &base_url_path.join("month"));
-        context.insert("week_view_path", &base_url_path.join("week"));
-        context.insert("day_view_path", &base_url_path.join("day"));
-        context.insert("agenda_view_path", &base_url_path.join("agenda"));
-
         // create the main file path
-        let binding = output_dir.join(PathBuf::from(&file_name));
+        let binding = self.config().output_dir.join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);
+
+        let base_url_path: unix_path::PathBuf =
+            self.calendars.config.base_url_path.path_buf().clone();
 
         // write the template to all specified paths
         for file_path in file_paths {
@@ -247,7 +226,7 @@ impl MonthView<'_> {
             );
 
             // write the actual template
-            write_template(tera, "month.html", &context, file_path)?;
+            write_template(&self.calendars.tera, "month.html", &context, file_path)?;
         }
 
         Ok(())

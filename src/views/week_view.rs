@@ -1,11 +1,7 @@
 use color_eyre::eyre::Result;
 use itertools::Itertools;
 use log::debug;
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-};
-use tera::{Context, Tera};
+use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
@@ -41,6 +37,10 @@ impl WeekView<'_> {
         }
     }
 
+    fn config(&self) -> &Config {
+        &self.calendars.config
+    }
+
     /// Loops through all of the weeks in this view's collection.
     ///
     /// None values are prepended and appended to the list to properly handle the first and last intervals.
@@ -48,7 +48,7 @@ impl WeekView<'_> {
     /// # Errors
     ///
     /// This function will return an error if templates cannot be written.
-    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
+    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
         let mut index_written = false;
 
         // let week_windows = self.fun_name();
@@ -96,14 +96,7 @@ impl WeekView<'_> {
             }
 
             // write the actual files
-            self.write_view(
-                config,
-                tera,
-                &window,
-                &self.output_dir,
-                write_view_index,
-                write_main_index,
-            )?;
+            self.write_view(&window, write_view_index, write_main_index)?;
         }
 
         Ok(())
@@ -120,10 +113,7 @@ impl WeekView<'_> {
     /// This function will return an error if the file cannot be written to disk.
     fn write_view(
         &self,
-        config: &Config,
-        tera: &Tera,
         week_slice: &WeekSlice,
-        output_dir: &Path,
         write_view_index: bool,
         write_main_index: bool,
     ) -> Result<()> {
@@ -173,15 +163,12 @@ impl WeekView<'_> {
         // let week_dates = week_day_map.context(year, week, config)?;
 
         // setup the tera context
-        let mut context = Context::new();
-        context.insert(
-            "stylesheet_path",
-            &config.base_url_path.join(&*config.stylesheet_path),
-        );
-        context.insert("timezone", &config.display_timezone.name());
+        let mut context = self.calendars.template_context();
         context.insert(
             "view_date",
-            &current_week.format(&config.week_view_format).to_string(),
+            &current_week
+                .format(&self.config().week_view_format)
+                .to_string(),
         );
         context.insert("year", &year);
         // TODO add month numbers
@@ -190,7 +177,7 @@ impl WeekView<'_> {
         context.insert("week_dates", &week_dates);
 
         // create the main file path
-        let binding = output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir.join(PathBuf::from(&file_name));
         // the first item in this tuple is a flag indicating whether to prepend the view path
         let mut file_paths = vec![(true, binding)];
 
@@ -198,7 +185,10 @@ impl WeekView<'_> {
             file_paths.push((true, self.output_dir.join(PathBuf::from("index.html"))));
         }
         if write_main_index {
-            file_paths.push((true, config.output_dir.join(PathBuf::from("index.html"))));
+            file_paths.push((
+                true,
+                self.config().output_dir.join(PathBuf::from("index.html")),
+            ));
         }
 
         // write the template to all specified paths
@@ -208,10 +198,6 @@ impl WeekView<'_> {
 
             let mut base_url_path: unix_path::PathBuf =
                 self.calendars.config.base_url_path.path_buf().clone();
-            context.insert("month_view_path", &base_url_path.join("month"));
-            context.insert("week_view_path", &base_url_path.join("week"));
-            context.insert("day_view_path", &base_url_path.join("day"));
-            context.insert("agenda_view_path", &base_url_path.join("agenda"));
 
             // TODO: need to clean up the prepending logic, we're always taking the same code path at the moment
             // TODO: need to decide whether to support relative paths where that logic was necessary
@@ -256,7 +242,7 @@ impl WeekView<'_> {
             // }
 
             // write the actual template
-            write_template(tera, "week.html", &context, &file_path)?;
+            write_template(&self.calendars.tera, "week.html", &context, &file_path)?;
         }
 
         Ok(())

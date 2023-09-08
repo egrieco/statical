@@ -1,17 +1,12 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
-use itertools::Itertools;
-use std::{
-    path::{Path, PathBuf},
-    rc::Rc,
-};
-use tera::{Context, Tera};
+use std::{path::PathBuf, rc::Rc};
 
 use crate::{
     config::{CalendarView, Config},
     model::{
         calendar_collection::CalendarCollection,
-        day::{Day, DayContext},
+        day::Day,
         event::{Event, EventContext},
     },
     util::write_template,
@@ -39,7 +34,11 @@ impl DayView<'_> {
         }
     }
 
-    pub fn create_html_pages(&self, config: &Config, tera: &Tera) -> Result<()> {
+    fn config(&self) -> &Config {
+        &self.calendars.config
+    }
+
+    pub fn create_html_pages(&self, config: &Config) -> Result<()> {
         let mut index_written = false;
 
         // iterate through all windows
@@ -73,26 +72,13 @@ impl DayView<'_> {
                 }
             }
 
-            self.write_view(
-                config,
-                tera,
-                &window,
-                &self.output_dir,
-                index_paths.as_slice(),
-            )?;
+            self.write_view(&window, index_paths.as_slice())?;
         }
 
         Ok(())
     }
 
-    fn write_view(
-        &self,
-        config: &Config,
-        tera: &Tera,
-        day_slice: &DaySlice,
-        output_dir: &Path,
-        index_paths: &[PathBuf],
-    ) -> Result<()> {
+    fn write_view(&self, day_slice: &DaySlice, index_paths: &[PathBuf]) -> Result<()> {
         let previous_day = &day_slice[0].as_ref();
         let current_day = day_slice[1]
             .as_ref()
@@ -115,15 +101,6 @@ impl DayView<'_> {
             );
         }
 
-        DayContext::new(
-            day,
-            events
-                .iter()
-                .sorted()
-                .map(|e| e.context(&self.calendars.config))
-                .collect::<Vec<_>>(),
-        );
-
         let file_name = format!("{}.html", day.format(YMD_FORMAT));
         // TODO should we raise the error on format() failing?
         let previous_file_name =
@@ -131,15 +108,12 @@ impl DayView<'_> {
         let next_file_name =
             next_day.map(|next_day| format!("{}.html", next_day.format(YMD_FORMAT)));
 
-        let mut context = Context::new();
-        context.insert(
-            "stylesheet_path",
-            &config.base_url_path.join(&*config.stylesheet_path),
-        );
-        context.insert("timezone", config.display_timezone.name());
+        let mut context = self.calendars.template_context();
         context.insert(
             "view_date",
-            &current_day.format(&config.day_view_format).to_string(),
+            &current_day
+                .format(&self.config().day_view_format)
+                .to_string(),
         );
         context.insert("year", &day.year());
         context.insert("month", &day.month());
@@ -150,19 +124,15 @@ impl DayView<'_> {
             "events",
             &events
                 .iter()
-                .map(|e| e.context(config))
+                .map(|e| e.context(self.config()))
                 .collect::<Vec<EventContext>>(),
         );
 
         let base_url_path: unix_path::PathBuf =
             self.calendars.config.base_url_path.path_buf().clone();
-        context.insert("month_view_path", &base_url_path.join("month"));
-        context.insert("week_view_path", &base_url_path.join("week"));
-        context.insert("day_view_path", &base_url_path.join("day"));
-        context.insert("agenda_view_path", &base_url_path.join("agenda"));
 
         // create the main file path
-        let binding = output_dir.join(PathBuf::from(&file_name));
+        let binding = self.output_dir.join(PathBuf::from(&file_name));
         let mut file_paths = vec![&binding];
         // then add any additional index paths
         file_paths.extend(index_paths);
@@ -180,7 +150,7 @@ impl DayView<'_> {
             );
 
             // write the actual template
-            write_template(tera, "day.html", &context, file_path)?;
+            write_template(&self.calendars.tera, "day.html", &context, file_path)?;
         }
 
         Ok(())
