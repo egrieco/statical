@@ -5,13 +5,13 @@ use chronoutil::DateRule;
 use color_eyre::eyre::{eyre, Result, WrapErr};
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
+use std::fs::create_dir_all;
 use std::path::Path;
 use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
 use crate::model::calendar_collection::LocalDay;
 use crate::model::day::DayContext;
-use crate::util::create_subdir;
 use crate::{
     config::{CalendarView, Config},
     model::{calendar_collection::CalendarCollection, event::Year},
@@ -35,11 +35,16 @@ pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 #[derive(Debug)]
 pub struct MonthView<'a> {
     calendars: &'a CalendarCollection,
+    output_dir: PathBuf,
 }
 
 impl MonthView<'_> {
     pub fn new(calendars: &CalendarCollection) -> MonthView<'_> {
-        MonthView { calendars }
+        let output_dir = calendars.config.output_dir.join("month");
+        MonthView {
+            calendars,
+            output_dir,
+        }
     }
 
     fn config(&self) -> &Config {
@@ -47,7 +52,7 @@ impl MonthView<'_> {
     }
 
     fn output_dir(&self) -> &Path {
-        &self.config().output_dir
+        &self.output_dir
     }
 
     /// Returns the months to show of this [`MonthView`] with a `None` at the beginning and end.
@@ -84,7 +89,7 @@ impl MonthView<'_> {
 
     pub fn create_html_pages(&self) -> Result<()> {
         // create the subdirectory to hold the files
-        create_subdir(self.output_dir(), "month")?;
+        create_dir_all(self.output_dir())?;
 
         let mut index_written = false;
 

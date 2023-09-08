@@ -3,6 +3,7 @@ use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
 use std::collections::{BTreeMap, HashSet};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::{fs, iter};
@@ -14,7 +15,6 @@ use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
 use crate::config::Config;
 use crate::model::calendar::Calendar;
-use crate::util::create_subdir;
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
@@ -250,7 +250,9 @@ impl CalendarCollection {
         fs::create_dir_all(output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
 
-        let styles_dir = create_subdir(output_dir, "styles")?;
+        // create the styles dir
+        let styles_dir = output_dir.join("styles");
+        create_dir_all(&styles_dir)?;
 
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));

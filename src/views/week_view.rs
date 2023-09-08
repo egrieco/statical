@@ -1,12 +1,12 @@
 use color_eyre::eyre::Result;
 use itertools::Itertools;
 use log::debug;
+use std::fs::create_dir_all;
 use std::path::Path;
 use std::{collections::BTreeMap, path::PathBuf};
 
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
-use crate::util::create_subdir;
 use crate::{
     config::{CalendarView, Config},
     model::{day::DayContext, event::EventList},
@@ -27,11 +27,16 @@ pub type WeekSlice<'a> = &'a [Option<Week>];
 #[derive(Debug)]
 pub struct WeekView<'a> {
     calendars: &'a CalendarCollection,
+    output_dir: PathBuf,
 }
 
 impl WeekView<'_> {
     pub fn new(calendars: &CalendarCollection) -> WeekView<'_> {
-        WeekView { calendars }
+        let output_dir = calendars.config.output_dir.join("week");
+        WeekView {
+            calendars,
+            output_dir,
+        }
     }
 
     fn config(&self) -> &Config {
@@ -39,7 +44,7 @@ impl WeekView<'_> {
     }
 
     fn output_dir(&self) -> &Path {
-        &self.config().output_dir
+        &self.output_dir
     }
 
     /// Loops through all of the weeks in this view's collection.
@@ -51,7 +56,7 @@ impl WeekView<'_> {
     /// This function will return an error if templates cannot be written.
     pub fn create_html_pages(&self) -> Result<()> {
         // create the subdirectory to hold the files
-        create_subdir(self.output_dir(), "week")?;
+        create_dir_all(self.output_dir())?;
 
         let mut index_written = false;
 

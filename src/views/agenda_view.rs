@@ -2,6 +2,7 @@ use chrono::Datelike;
 use color_eyre::eyre::Result;
 use std::{
     collections::BTreeMap,
+    fs::create_dir_all,
     isize, iter,
     path::{Path, PathBuf},
     rc::Rc,
@@ -13,7 +14,7 @@ use crate::{
         calendar_collection::CalendarCollection,
         event::{Event, EventContext},
     },
-    util::{create_subdir, write_template},
+    util::write_template,
 };
 
 type AgendaPageId = isize;
@@ -29,11 +30,16 @@ type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 #[derive(Debug)]
 pub(crate) struct AgendaView<'a> {
     calendars: &'a CalendarCollection,
+    output_dir: PathBuf,
 }
 
 impl AgendaView<'_> {
     pub fn new(calendars: &CalendarCollection) -> AgendaView<'_> {
-        AgendaView { calendars }
+        let output_dir = calendars.config.output_dir.join("agenda");
+        AgendaView {
+            calendars,
+            output_dir,
+        }
     }
 
     fn config(&self) -> &Config {
@@ -41,7 +47,7 @@ impl AgendaView<'_> {
     }
 
     fn output_dir(&self) -> &Path {
-        &self.config().output_dir
+        &self.output_dir
     }
 
     fn event_list(&self) -> impl Iterator<Item = &Rc<Event>> {
@@ -50,7 +56,7 @@ impl AgendaView<'_> {
 
     pub fn create_html_pages(&self) -> Result<()> {
         // create the subdirectory to hold the files
-        create_subdir(self.output_dir(), "agenda")?;
+        create_dir_all(self.output_dir())?;
 
         let mut index_written = false;
 

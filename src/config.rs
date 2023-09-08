@@ -81,6 +81,7 @@ pub struct Config {
     pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
 
     /// The path to the output directory where files will be written.
+    // TODO: need to make this relative to the config file
     #[doku(example = "output")]
     pub output_dir: PathBuf,
 

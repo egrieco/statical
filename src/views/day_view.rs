@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
 use std::{
+    fs::create_dir_all,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -12,7 +13,7 @@ use crate::{
         day::Day,
         event::{Event, EventContext},
     },
-    util::{create_subdir, write_template},
+    util::write_template,
 };
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
@@ -25,11 +26,16 @@ pub type DaySlice<'a> = &'a [Option<Day>];
 #[derive(Debug)]
 pub struct DayView<'a> {
     calendars: &'a CalendarCollection,
+    output_dir: PathBuf,
 }
 
 impl DayView<'_> {
     pub fn new(calendars: &CalendarCollection) -> DayView<'_> {
-        DayView { calendars }
+        let output_dir = calendars.config.output_dir.join("day");
+        DayView {
+            calendars,
+            output_dir,
+        }
     }
 
     fn config(&self) -> &Config {
@@ -37,12 +43,12 @@ impl DayView<'_> {
     }
 
     fn output_dir(&self) -> &Path {
-        &self.config().output_dir
+        &self.output_dir
     }
 
     pub fn create_html_pages(&self) -> Result<()> {
         // create the subdirectory to hold the files
-        create_subdir(self.output_dir(), "day")?;
+        create_dir_all(self.output_dir())?;
 
         let mut index_written = false;
 
