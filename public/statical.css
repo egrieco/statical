@@ -51,9 +51,13 @@ h1 {
   text-align: center;
 }
 
-.calendar .week .header {
+.calendar > .week > .day > p.header {
   display: flex;
   justify-content: space-between;
+}
+
+.calendar .event .header > p {
+  margin: 0;
 }
 
 .day .date {
@@ -123,7 +127,7 @@ ul li {
   margin-bottom: 0;
 }
 
-.event p.header {
+.event div.header {
   background-color: grey;
   border-top-left-radius: 1em;
   border-top-right-radius: 1em;

@@ -109,7 +109,7 @@ The **templates must be in** `./templates/`.
   - [ ] decide on url naming, probably not date based, maybe including calendar name
   - [ ] use unexpanded events
 - [ ] Add ics feed generation
-- [ ] Add summary to event header
+- [x] ~~_Add summary to event header_~~ (2023-09-08)
 - [x] ~~_Store templates internally but use external versions if provided._~~ (2023-09-08)
 - [ ] Clean up pagination and views
 - [ ] Align pagination with grid
