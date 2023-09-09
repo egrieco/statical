@@ -59,14 +59,14 @@ The **templates must be in** `./templates/`.
 - [x] ~~_add baseurl support_~~ (2023-09-08)
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
 - [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
-- [ ] Allow template path config.
 - [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
+- [ ] Add `--generate-default-stylesheet` option
 
 ### Setup and Configuration (Future Work)
 
-- [ ] top level config object should be a site
-- [ ] paths for time interval pages should be configurable?
+- [ ] Allow template path config.
 - [ ] calendar colors and CSS classes
+- [ ] paths for time interval pages should be configurable?
 
 ### Calendar Generation (1.0 Milestone)
 
@@ -81,16 +81,19 @@ The **templates must be in** `./templates/`.
 ### Styling (1.0 Milestone)
 
 - [x] ~~_Add styling to hide event descriptions in the calendar view and show them on hover_~~ (2023-09-01)
+- [x] ~~_Add weekday vs weekend classes_~~ (2023-09-08)
+- [ ] highlight current day
+- [ ] Clean up pagination and views
+- [ ] Align pagination with grid
+- [ ] Center header
+- [ ] cleanup css
 
 ### Styling (Future Work)
 
-- [x] ~~_Add weekday vs weekend classes_~~ (2023-09-08)
-- [ ] highlight current day
+- [ ] scss processing
 - [ ] add event classes
 - [ ] add source calendar
 - [ ] add event categories
-- [ ] cleanup css
-- [ ] scss processing
 - [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
 - [ ] Make overlapping events stack horizontally in the Day view on desktop (maybe week and month if space allows)
 - [ ] Add times on left side and align events in week and day view
@@ -105,15 +108,12 @@ The **templates must be in** `./templates/`.
 - [x] ~~_link pages with forward and back links_~~ (2022-05-19)
 - [x] ~~_add default CSS_~~ (2022-05-19)
 - [x] ~~_add links to switch between intervals_~~ (2022-09-15)
+- [x] ~~_Add summary to event header_~~ (2023-09-08)
+- [x] ~~_Store templates internally but use external versions if provided._~~ (2023-09-08)
 - [ ] event detail
   - [ ] decide on url naming, probably not date based, maybe including calendar name
   - [ ] use unexpanded events
 - [ ] Add ics feed generation
-- [x] ~~_Add summary to event header_~~ (2023-09-08)
-- [x] ~~_Store templates internally but use external versions if provided._~~ (2023-09-08)
-- [ ] Clean up pagination and views
-- [ ] Align pagination with grid
-- [ ] Center header
 - [ ] Add month name on fist day of month in week view (just like month view)
 - [ ] Add day strftime format?
 - [ ] Add strftime format for agenda dates?
