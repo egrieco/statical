@@ -85,6 +85,10 @@ pub struct Config {
     #[doku(example = "output")]
     pub output_dir: PathBuf,
 
+    /// Do not delete files in the output directory
+    #[doku(example = "false")]
+    pub no_delete: bool,
+
     /// The base url at which the site will be served
     #[doku(example = "/")]
     pub base_url_path: ConfigUrl,
@@ -219,6 +223,7 @@ impl Default for Config {
             agenda_view_format_start: "%B %-d, %Y".into(),
             agenda_view_format_end: "%B %-d, %Y".into(),
             base_url_path: "/".into(),
+            no_delete: false,
         }
     }
 }

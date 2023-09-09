@@ -16,4 +16,8 @@ pub struct Opt {
     /// Generate the example config template
     #[clap(long, default_value_t = false)]
     pub generate_default_config: bool,
+
+    /// Do not delete files in the output directory
+    #[clap(long, default_value_t = false)]
+    pub no_delete: bool,
 }

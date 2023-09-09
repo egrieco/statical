@@ -284,12 +284,16 @@ impl CalendarCollection {
         fs::create_dir_all(output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
 
-        // remove any files present
-        info!(
-            "removing contents of the output directory: {:?}",
-            output_dir
-        );
-        delete_dir_contents(output_dir);
+        if self.config.no_delete {
+            info!("skipping delete of output directory as instructed...")
+        } else {
+            // remove any files present
+            info!(
+                "removing contents of the output directory: {:?}",
+                output_dir
+            );
+            delete_dir_contents(output_dir);
+        }
 
         // create the styles dir
         let styles_dir = output_dir.join("styles");
