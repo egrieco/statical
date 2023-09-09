@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 #[clap(author, version, about)]
 pub struct Opt {
     /// The config file to read
+    ///
+    /// The base_dir for the CalendarCollection is also set from this file
+    /// so that all files mentioned in the config are relative to the directory containing the config file.
+    // TODO: make this a vec so we can run multiple sites at once
     #[clap(short, long, default_value_t = String::from("statical.toml"))]
     pub config: String,
 

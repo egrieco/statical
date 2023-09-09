@@ -39,6 +39,8 @@ static TEMPLATE_DIR: Dir = include_dir!("templates");
 
 #[derive(Debug)]
 pub struct CalendarCollection {
+    /// All paths in the calendar collection should be relative to this directory
+    pub(crate) base_dir: PathBuf,
     calendars: Vec<Calendar>,
     /// Events grouped by day in the display timezone
     pub(crate) events_by_day: EventsByDay,
@@ -51,12 +53,20 @@ pub struct CalendarCollection {
 }
 
 impl CalendarCollection {
-    pub fn new(args: Opt) -> eyre::Result<CalendarCollection> {
+    pub fn new(args: &Opt) -> eyre::Result<CalendarCollection> {
         log::info!("reading configuration...");
         let config: Config = Figment::from(Serialized::defaults(Config::default()))
             .merge(Toml::file("statical.toml"))
             .admerge(Serialized::defaults(args))
             .extract()?;
+
+        // ensure that output_dir is relative to the config file
+        let config_file = PathBuf::from(&args.config)
+            .canonicalize()
+            .wrap_err("could not canonicalize config file path")?;
+        let base_dir = config_file
+            .parent()
+            .ok_or(eyre!("could not get parent directory of the config file"))?;
 
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
@@ -185,6 +195,7 @@ impl CalendarCollection {
             unparsed_properties,
             cal_start,
             cal_end,
+            base_dir: base_dir.to_path_buf(),
         })
     }
 

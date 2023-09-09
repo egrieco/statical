@@ -23,7 +23,7 @@ fn main() -> eyre::Result<()> {
     Logger::try_with_env_or_str("debug")?.start()?;
 
     log::info!("creating calendar collection...");
-    let calendar_collection = CalendarCollection::new(args)?;
+    let calendar_collection = CalendarCollection::new(&args)?;
 
     log::info!("writing html pages");
     calendar_collection.create_html_pages()?;
