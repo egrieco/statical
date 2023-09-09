@@ -1,9 +1,5 @@
 use clap::Parser;
 use color_eyre::eyre::{self};
-use figment::{
-    providers::{Format, Serialized, Toml},
-    Figment,
-};
 use flexi_logger::Logger;
 use std::process::exit;
 
@@ -26,14 +22,8 @@ fn main() -> eyre::Result<()> {
     // setup logging
     Logger::try_with_env_or_str("debug")?.start()?;
 
-    log::info!("reading configuration...");
-    let config: Config = Figment::from(Serialized::defaults(Config::default()))
-        .merge(Toml::file("statical.toml"))
-        .admerge(Serialized::defaults(args))
-        .extract()?;
-
     log::info!("creating calendar collection...");
-    let calendar_collection = CalendarCollection::new(config)?;
+    let calendar_collection = CalendarCollection::new(args)?;
 
     log::info!("writing html pages");
     calendar_collection.create_html_pages()?;

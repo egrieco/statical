@@ -2,6 +2,10 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
+use figment::{
+    providers::{Format, Serialized, Toml},
+    Figment,
+};
 use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
@@ -18,7 +22,7 @@ use super::calendar_source::CalendarSource;
 use super::day::Day;
 use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
-use crate::configuration::config::Config;
+use crate::configuration::{config::Config, options::Opt};
 use crate::model::calendar::Calendar;
 use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;
@@ -47,7 +51,13 @@ pub struct CalendarCollection {
 }
 
 impl CalendarCollection {
-    pub fn new(config: Config) -> eyre::Result<CalendarCollection> {
+    pub fn new(args: Opt) -> eyre::Result<CalendarCollection> {
+        log::info!("reading configuration...");
+        let config: Config = Figment::from(Serialized::defaults(Config::default()))
+            .merge(Toml::file("statical.toml"))
+            .admerge(Serialized::defaults(args))
+            .extract()?;
+
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
 
