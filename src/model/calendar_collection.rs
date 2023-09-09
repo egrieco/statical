@@ -259,6 +259,11 @@ impl CalendarCollection {
         );
         context.insert("timezone", &self.config.display_timezone.name());
 
+        context.insert("render_month", &self.config.render_month);
+        context.insert("render_week", &self.config.render_week);
+        context.insert("render_day", &self.config.render_day);
+        context.insert("render_agenda", &self.config.render_agenda);
+
         let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
         context.insert("month_view_path", &base_url_path.join("month"));
         context.insert("week_view_path", &base_url_path.join("week"));
