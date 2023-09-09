@@ -23,6 +23,8 @@ const YMD_FORMAT: &str = "%Y-%m-%d";
 /// Note that the previous and next days may be None
 pub type DaySlice<'a> = &'a [Option<Day>];
 
+const VIEW_PATH: &str = "day";
+
 #[derive(Debug)]
 pub struct DayView<'a> {
     calendars: &'a CalendarCollection,
@@ -31,7 +33,10 @@ pub struct DayView<'a> {
 
 impl DayView<'_> {
     pub fn new(calendars: &CalendarCollection) -> DayView<'_> {
-        let output_dir = calendars.config.output_dir.join("day");
+        let output_dir = calendars
+            .base_dir
+            .join(&calendars.config.output_dir)
+            .join(VIEW_PATH);
         DayView {
             calendars,
             output_dir,
@@ -163,7 +168,12 @@ impl DayView<'_> {
             );
 
             // write the actual template
-            write_template(&self.calendars.tera, "day.html", &context, file_path)?;
+            write_template(
+                &self.calendars.tera,
+                "day.html",
+                &context,
+                &self.calendars.base_dir.join(file_path),
+            )?;
         }
 
         Ok(())

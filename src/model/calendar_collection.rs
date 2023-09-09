@@ -54,12 +54,6 @@ pub struct CalendarCollection {
 
 impl CalendarCollection {
     pub fn new(args: &Opt) -> eyre::Result<CalendarCollection> {
-        log::info!("reading configuration...");
-        let config: Config = Figment::from(Serialized::defaults(Config::default()))
-            .merge(Toml::file("statical.toml"))
-            .admerge(Serialized::defaults(args))
-            .extract()?;
-
         // ensure that output_dir is relative to the config file
         let config_file = PathBuf::from(&args.config)
             .canonicalize()
@@ -67,18 +61,41 @@ impl CalendarCollection {
         let base_dir = config_file
             .parent()
             .ok_or(eyre!("could not get parent directory of the config file"))?;
+        debug!("base directory is set to: {:?}", base_dir);
+
+        debug!("reading configuration...");
+        let config: Config = Figment::from(Serialized::defaults(Config::default()))
+            .merge(Toml::file(&args.config))
+            .admerge(Serialized::defaults(args))
+            .extract()?;
 
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
 
         // convert the CalendarSourceConfigs into Result<CalendarSources>
-        let calendars_sources_configs = config.calendar_sources.iter().map(CalendarSource::new);
+        debug!("configuring calendar sources...");
+        let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
+        for source in &config.calendar_sources {
+            debug!("creating calendar source: {:?}", &source);
+            calendars_sources_configs.push(CalendarSource::new(base_dir, source));
+        }
 
         // sort properly configured calendars and errors
         let (calendar_sources, calendar_errors): (
             Vec<Result<CalendarSource>>,
             Vec<Result<CalendarSource>>,
-        ) = calendars_sources_configs.partition(|s| s.is_ok());
+        ) = calendars_sources_configs
+            .into_iter()
+            .partition(|s| s.is_ok());
+        debug!(
+            "{} valid and {} erroneous calendar sources",
+            calendar_sources.len(),
+            calendar_errors.len()
+        );
+
+        if calendar_sources.is_empty() {
+            bail!("no valid calendar sources found");
+        }
 
         // bail if any of them failed
         if !calendar_errors.is_empty() {
@@ -87,8 +104,10 @@ impl CalendarCollection {
         }
 
         // parse calendar sources that are ok
+        debug!("parsing calendars...");
         for source in calendar_sources {
-            match source?.parse_calendars() {
+            debug!("parsing calendar source: {:?}", source);
+            match source?.parse_calendars(base_dir) {
                 Ok((mut parsed_calendars, calendar_unparsed_properties)) => {
                     unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
                     calendars.append(&mut parsed_calendars);
@@ -165,7 +184,13 @@ impl CalendarCollection {
 
         // load custom tera templates
         info!("loading custom templates...");
-        let mut tera = Tera::new("templates/**/*.html")?;
+        // we're joining with base_dir here to ensure that the templates are found relative to the config file
+        let mut tera = Tera::new(
+            base_dir
+                .join("templates/**/*.html")
+                .to_str()
+                .ok_or(eyre!("could not convert template path into str"))?,
+        )?;
 
         // load default tera templates
         info!("loading default templates...");
@@ -299,10 +324,15 @@ impl CalendarCollection {
     }
 
     pub fn setup_output_dir(&self) -> Result<()> {
-        let output_dir = &PathBuf::from(&self.config.output_dir);
+        debug!("setting up output directory...");
+
+        // join the output_dir to the base_dir
+        // note that if the output_dir is specified as an absolute path, it will override the base_dir
+        let output_dir = self.base_dir.join(&self.config.output_dir);
+        debug!("output_dir: {:?}", output_dir);
 
         // make the output dir if it doesn't exist
-        fs::create_dir_all(output_dir)
+        fs::create_dir_all(&output_dir)
             .context(format!("could not create output dir: {:?}", output_dir))?;
 
         if self.config.no_delete {
@@ -313,17 +343,18 @@ impl CalendarCollection {
                 "removing contents of the output directory: {:?}",
                 output_dir
             );
-            delete_dir_contents(output_dir);
+            delete_dir_contents(&output_dir);
         }
 
         // create the styles dir
         let styles_dir = output_dir.join("styles");
+        debug!("styles_dir: {:?}", styles_dir);
         create_dir_all(&styles_dir)?;
 
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
-            let source_stylesheet = &&self.config.copy_stylesheet_from;
-            fs::copy(source_stylesheet, &stylesheet_destination).context(format!(
+            let source_stylesheet = self.base_dir.join(&self.config.copy_stylesheet_from);
+            fs::copy(&source_stylesheet, &stylesheet_destination).context(format!(
                 "could not copy stylesheet {:?} to destination: {:?}",
                 source_stylesheet, stylesheet_destination
             ))?;

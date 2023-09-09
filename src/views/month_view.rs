@@ -35,6 +35,8 @@ pub type MonthMap = BTreeMap<Month, WeekMap>;
 /// Note that the previous and next weeks may be None
 pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 
+const VIEW_PATH: &str = "month";
+
 #[derive(Debug)]
 pub struct MonthView<'a> {
     calendars: &'a CalendarCollection,
@@ -43,7 +45,10 @@ pub struct MonthView<'a> {
 
 impl MonthView<'_> {
     pub fn new(calendars: &CalendarCollection) -> MonthView<'_> {
-        let output_dir = calendars.config.output_dir.join("month");
+        let output_dir = calendars
+            .base_dir
+            .join(&calendars.config.output_dir)
+            .join(VIEW_PATH);
         MonthView {
             calendars,
             output_dir,
@@ -240,7 +245,12 @@ impl MonthView<'_> {
             );
 
             // write the actual template
-            write_template(&self.calendars.tera, "month.html", &context, file_path)?;
+            write_template(
+                &self.calendars.tera,
+                "month.html",
+                &context,
+                &self.calendars.base_dir.join(file_path),
+            )?;
         }
 
         Ok(())

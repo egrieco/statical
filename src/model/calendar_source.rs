@@ -1,5 +1,10 @@
-use color_eyre::eyre::{bail, Result};
-use std::{collections::HashSet, fs::File, io::BufReader, path::PathBuf};
+use color_eyre::eyre::{bail, Context, Result};
+use std::{
+    collections::HashSet,
+    fs::File,
+    io::BufReader,
+    path::{Path, PathBuf},
+};
 use url::Url;
 
 use crate::{configuration::config::CalendarSourceConfig, model::calendar::Calendar};
@@ -11,13 +16,16 @@ pub(crate) enum CalendarSource {
 }
 
 impl CalendarSource {
-    pub(crate) fn new(source: &CalendarSourceConfig) -> Result<CalendarSource> {
+    pub(crate) fn new(base_dir: &Path, source: &CalendarSourceConfig) -> Result<CalendarSource> {
         log::debug!("creating calendar source: {}", source);
         if let Ok(url) = Url::parse(source.into()) {
             log::debug!("calendar source is a url");
             return Ok(CalendarSource::CalendarUrl(url));
         };
-        let path = PathBuf::try_from(source)?;
+
+        let path = base_dir
+            .join(PathBuf::try_from(source).wrap_err("calendar source is not a valid file path")?);
+
         if path.exists() {
             log::debug!("calendar source is a file that exists");
             Ok(CalendarSource::CalendarFile(path))
@@ -29,11 +37,14 @@ impl CalendarSource {
     /// Returns the parsed calendars of this [`CalendarSource`].
     ///
     /// Listed as plural because a single source may contain multiple calendars as per the ical/ics standard.
-    pub(crate) fn parse_calendars(&self) -> Result<(Vec<Calendar>, HashSet<String>)> {
+    pub(crate) fn parse_calendars(
+        &self,
+        base_dir: &Path,
+    ) -> Result<(Vec<Calendar>, HashSet<String>)> {
         let (parsed_calendars, calendar_unparsed_properties) = match self {
             Self::CalendarFile(file) => {
                 log::info!("reading calendar file: {:?}", file);
-                let buf = BufReader::new(File::open(file)?);
+                let buf = BufReader::new(File::open(base_dir.join(file))?);
                 Calendar::parse_calendars(buf)?
             }
             Self::CalendarUrl(url) => {

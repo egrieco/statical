@@ -58,7 +58,7 @@ The **templates must be in** `./templates/`.
 - [x] ~~_Add [tera](https://lib.rs/crates/tera) templates_~~ (2022-05-17)
 - [x] ~~_add baseurl support_~~ (2023-09-08)
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
-- [ ] Make all paths relative to the config file
+- [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
 - [ ] Allow template path config.
 - [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
 

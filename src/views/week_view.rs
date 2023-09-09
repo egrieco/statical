@@ -25,6 +25,8 @@ pub type WeekDayMap = BTreeMap<u8, EventList>;
 /// Note that the previous and next weeks may be None
 pub type WeekSlice<'a> = &'a [Option<Week>];
 
+const VIEW_PATH: &str = "week";
+
 #[derive(Debug)]
 pub struct WeekView<'a> {
     calendars: &'a CalendarCollection,
@@ -33,7 +35,10 @@ pub struct WeekView<'a> {
 
 impl WeekView<'_> {
     pub fn new(calendars: &CalendarCollection) -> WeekView<'_> {
-        let output_dir = calendars.config.output_dir.join("week");
+        let output_dir = calendars
+            .base_dir
+            .join(&calendars.config.output_dir)
+            .join(VIEW_PATH);
         WeekView {
             calendars,
             output_dir,
@@ -250,7 +255,12 @@ impl WeekView<'_> {
             // }
 
             // write the actual template
-            write_template(&self.calendars.tera, "week.html", &context, &file_path)?;
+            write_template(
+                &self.calendars.tera,
+                "week.html",
+                &context,
+                &self.calendars.base_dir.join(file_path),
+            )?;
         }
 
         Ok(())

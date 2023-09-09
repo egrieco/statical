@@ -27,6 +27,8 @@ pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
 
 type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
+const VIEW_PATH: &str = "agenda";
+
 #[derive(Debug)]
 pub(crate) struct AgendaView<'a> {
     calendars: &'a CalendarCollection,
@@ -35,7 +37,10 @@ pub(crate) struct AgendaView<'a> {
 
 impl AgendaView<'_> {
     pub fn new(calendars: &CalendarCollection) -> AgendaView<'_> {
-        let output_dir = calendars.config.output_dir.join("agenda");
+        let output_dir = calendars
+            .base_dir
+            .join(&calendars.config.output_dir)
+            .join(VIEW_PATH);
         AgendaView {
             calendars,
             output_dir,
@@ -231,7 +236,12 @@ impl AgendaView<'_> {
             );
 
             // write the actual template
-            write_template(&self.calendars.tera, "agenda.html", &context, file_path)?;
+            write_template(
+                &self.calendars.tera,
+                "agenda.html",
+                &context,
+                &self.calendars.base_dir.join(file_path),
+            )?;
         }
 
         Ok(())

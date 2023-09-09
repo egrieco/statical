@@ -31,7 +31,8 @@ pub struct Config {
     pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
 
     /// The path to the output directory where files will be written.
-    // TODO: need to make this relative to the config file
+    ///
+    /// NOTE: This is relative to the config file
     #[doku(example = "output")]
     pub output_dir: PathBuf,
 
@@ -53,6 +54,8 @@ pub struct Config {
     /// The stylesheet to copy to the output dir
     ///
     /// This is mostly useful for local testing, unless you want to use a separate stylesheet for the calendar
+    ///
+    /// NOTE: This is relative to the config file
     #[doku(example = "public/statical.css")]
     pub copy_stylesheet_from: PathBuf,
 
@@ -117,6 +120,8 @@ pub struct Config {
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct CalendarSourceConfig {
     /// The url or file path of the calendar
+    ///
+    /// NOTE: File paths are relative to the config file
     #[doku(
         example = "calendars/mycalendar_file.ics",
         example = "https://example.com/my/calendar/url/ical/"
