@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    configuration::config::{CalendarView, Config},
+    configuration::{config::Config, types::CalendarView},
     model::{
         calendar_collection::CalendarCollection,
         day::Day,

@@ -5,10 +5,11 @@ use std::fs::create_dir_all;
 use std::path::Path;
 use std::{collections::BTreeMap, path::PathBuf};
 
+use crate::configuration::types::CalendarView;
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
 use crate::{
-    configuration::config::{CalendarView, Config},
+    configuration::config::Config,
     model::{day::DayContext, event::EventList},
     util::write_template,
 };
