@@ -10,11 +10,13 @@ use std::path::Path;
 use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
-use crate::model::calendar_collection::LocalDay;
-use crate::model::day::DayContext;
 use crate::{
-    config::{CalendarView, Config},
-    model::{calendar_collection::CalendarCollection, event::Year},
+    configuration::config::{CalendarView, Config},
+    model::{
+        calendar_collection::{CalendarCollection, LocalDay},
+        day::DayContext,
+        event::Year,
+    },
     util::write_template,
     views::week_view::WeekDayMap,
 };

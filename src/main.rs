@@ -7,7 +7,10 @@ use figment::{
 use flexi_logger::Logger;
 use std::process::exit;
 
-use statical::{config::Config, model::calendar_collection::CalendarCollection, options::Opt};
+use statical::{
+    configuration::{config::Config, options::Opt},
+    model::calendar_collection::CalendarCollection,
+};
 
 fn main() -> eyre::Result<()> {
     let args = Opt::parse();

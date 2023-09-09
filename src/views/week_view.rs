@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, path::PathBuf};
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
 use crate::{
-    config::{CalendarView, Config},
+    configuration::config::{CalendarView, Config},
     model::{day::DayContext, event::EventList},
     util::write_template,
 };

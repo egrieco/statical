@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
 use unescaper::unescape;
 
-use crate::config::Config;
+use crate::configuration::config::Config;
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {

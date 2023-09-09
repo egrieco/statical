@@ -4,9 +4,8 @@
 //!
 //! It reads a collection of `*.ics` files or calendar feeds and creates a collection of `html` files containing all of the events found in the source files and feeds.
 
-pub mod config;
+pub mod configuration;
 pub mod model;
-pub mod options;
 pub mod util;
 pub mod views;
 

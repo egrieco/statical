@@ -2,7 +2,7 @@ use color_eyre::eyre::{bail, Result};
 use std::{collections::HashSet, fs::File, io::BufReader, path::PathBuf};
 use url::Url;
 
-use crate::{config::CalendarSourceConfig, model::calendar::Calendar};
+use crate::{configuration::config::CalendarSourceConfig, model::calendar::Calendar};
 
 #[derive(Debug)]
 pub(crate) enum CalendarSource {
