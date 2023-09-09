@@ -22,7 +22,7 @@ use super::calendar_source::CalendarSource;
 use super::day::Day;
 use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
-use crate::configuration::{config::Config, options::Opt};
+use crate::configuration::{config::Config, options::Opt, types::CalendarView};
 use crate::model::calendar::Calendar;
 use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;
@@ -68,6 +68,22 @@ impl CalendarCollection {
             .merge(Toml::file(&args.config))
             .admerge(Serialized::defaults(args))
             .extract()?;
+
+        // throw an error if the default view is not enabled
+        let view_and_name = match config.default_calendar_view {
+            CalendarView::Month => (config.render_month, "month"),
+            CalendarView::Week => (config.render_week, "week"),
+            CalendarView::Day => (config.render_day, "day"),
+            CalendarView::Agenda => (config.render_agenda, "agenda"),
+        };
+        match view_and_name {
+            (false, view_name) => bail!(
+                "default_view is set to {} and render_{} is set to false",
+                view_name,
+                view_name
+            ),
+            (true, _) => (),
+        }
 
         let mut calendars = Vec::new();
         let mut unparsed_properties = HashSet::new();
