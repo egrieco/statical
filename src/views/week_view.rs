@@ -78,7 +78,13 @@ impl WeekView<'_> {
             if !index_written {
                 if let Some(next_week) = next_week_opt {
                     // write the index file if the next month is after the current date
-                    if next_week.start_datetime >= self.config().calendar_today_date {
+                    if next_week.first_day()
+                        >= self
+                            .config()
+                            .calendar_today_date
+                            .with_timezone(self.calendars.display_timezone())
+                            .date_naive()
+                    {
                         index_written = true;
                         write_view_index = true;
                         // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));
@@ -131,16 +137,10 @@ impl WeekView<'_> {
             .expect("Current week is None. This should never happen.");
         let next_week = &week_slice[2].as_ref();
 
-        let year = current_week.year();
-        let week = current_week.week();
-
         // setup file names
-        // TODO make the file format a module constant
-        let file_name = format!("{}-{}.html", year, week);
-        let previous_file_name = previous_week
-            .map(|previous_week| format!("{}-{}.html", previous_week.year(), previous_week.week()));
-        let next_file_name =
-            next_week.map(|next_week| format!("{}-{}.html", next_week.year(), next_week.week()));
+        let file_name = current_week.file_name();
+        let previous_file_name = previous_week.map(|previous_week| previous_week.file_name());
+        let next_file_name = next_week.map(|next_week| next_week.file_name());
 
         // setup the tera context
         let mut context = self.calendars.template_context();
@@ -150,21 +150,23 @@ impl WeekView<'_> {
                 .format(&self.config().week_view_format)
                 .to_string(),
         );
-        context.insert("year", &year);
+        context.insert("year", &current_week.year());
+        context.insert("year_start", &current_week.year_start());
+        context.insert("year_end", &current_week.year_end());
         // TODO add month numbers
         context.insert("month", &current_week.month().number_from_month());
         context.insert("month_name", &current_week.month().name());
         context.insert(
-            "month_by_majority",
-            &current_week.month_by_majority().number_from_month(),
+            "month_start",
+            &current_week.month_start().number_from_month(),
         );
-        context.insert(
-            "month_name_by_majority",
-            &current_week.month_by_majority().name(),
-        );
-        context.insert("week", &week);
+        context.insert("month_start_name", &current_week.month_start().name());
+        context.insert("month_end", &current_week.month_end().number_from_month());
+        context.insert("month_end_name", &current_week.month_end().name());
+        context.insert("iso_week", &current_week.iso_week());
         context.insert("week_dates", &current_week.week_dates());
         context.insert("week_switches_months", &current_week.week_switches_months());
+        context.insert("week_switches_years", &current_week.week_switches_years());
 
         // create the main file path
         let binding = self.output_dir().join(PathBuf::from(&file_name));

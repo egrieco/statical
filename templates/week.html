@@ -11,11 +11,11 @@
 
 <body>
   <div class="calendar">
-    <h1>Events for week {{ week }} of {{ month_name_by_majority }} {{ year }}</h1>
+    <h1>Events for week {{ iso_week }} of {{ month_name }} {{ year }}</h1>
     {% include "pagination_with_views.html" %}
     <div class="week">
       {% for day in week_dates %}
-      <div class="day {% if day.month | int == month_by_majority | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
+      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
         <p class="header">
           <span class="wday">{{ day.wday }}</span>
           <span class="date">

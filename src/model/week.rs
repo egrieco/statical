@@ -2,22 +2,22 @@ use crate::model::event::WeekNum;
 use crate::model::event::Year;
 use chrono::format::{DelayedFormat, StrftimeItems};
 use chrono::Month;
-use chrono::{DateTime, Datelike, Days, NaiveDate};
+use chrono::NaiveWeek;
+use chrono::Weekday;
+use chrono::{DateTime, Datelike, NaiveDate};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use itertools::Itertools;
 
 use super::calendar_collection::CalendarCollection;
 use super::day::DayContext;
 
-#[derive(Copy, Clone, Debug)]
+/// Represents a week and generates the week context for [crate::views::week_view::WeekView]
+#[derive(Debug)]
 pub struct Week<'a> {
     parent_collection: &'a CalendarCollection,
-    pub(crate) start_datetime: DateTime<ChronoTz>,
-    // TODO: switch this to use chrono::NaiveWeek
-    pub(crate) start: NaiveDate,
-    inner_iter: DateRule<NaiveDate>,
+    pub(crate) week: NaiveWeek,
 }
 
 impl Week<'_> {
@@ -25,20 +25,14 @@ impl Week<'_> {
         start: DateTime<ChronoTz>,
         parent_collection: &CalendarCollection,
     ) -> Result<Week<'_>> {
-        let start_naive = start
+        let week = start
             .with_timezone(parent_collection.display_timezone())
-            .date_naive();
-        let aligned_week_start = start_naive
-            .checked_sub_days(Days::new(
-                start_naive.weekday().num_days_from_sunday().into(),
-            ))
-            .ok_or(eyre!("could not create the aligned week start"))?;
+            .date_naive()
+            .week(Weekday::Sun);
 
         Ok(Week {
             parent_collection,
-            start_datetime: start,
-            start: aligned_week_start,
-            inner_iter: DateRule::daily(aligned_week_start).with_count(7),
+            week,
         })
     }
 
@@ -71,30 +65,40 @@ impl Week<'_> {
         week_dates
     }
 
+    pub(crate) fn first_day(&self) -> NaiveDate {
+        self.week.first_day()
+    }
+
+    pub(crate) fn last_day(&self) -> NaiveDate {
+        self.week.last_day()
+    }
+
     pub(crate) fn week_switches_months(&self) -> bool {
-        // TODO: we could also just check if the month of the first and last day are the same
-        self.inner_iter
-            .into_iter()
-            .group_by(|d| d.month())
-            .into_iter()
-            .count()
-            > 1
+        let first_day = self.week.first_day();
+        let last_day = self.week.last_day();
+        first_day.month() != last_day.month()
     }
 
-    pub(crate) fn year(&self) -> Year {
-        self.start.year()
+    pub(crate) fn week_switches_years(&self) -> bool {
+        let first_day = self.week.first_day();
+        let last_day = self.week.last_day();
+        first_day.year() != last_day.year()
     }
 
-    pub(crate) fn week(&self) -> WeekNum {
-        self.start.iso_week().week() as u8
+    /// This function returns the first or last day of the week based on which month/year covers more of the week
+    fn first_or_last_by_majority(&self) -> NaiveDate {
+        let first_day = self.week.first_day();
+        let last_day = self.week.last_day();
+
+        if last_day.day() > 3 {
+            last_day
+        } else {
+            first_day
+        }
     }
 
-    pub(crate) fn month(&self) -> Month {
-        let mut iter_copy = self.inner_iter;
-        let first_date_of_week = iter_copy.next().unwrap();
-
-        Month::try_from(first_date_of_week.month() as u8)
-            .expect("month of week out of range, this should never happen")
+    pub(crate) fn iso_week(&self) -> WeekNum {
+        self.first_day().iso_week().week() as u8
     }
 
     /// Returns the month based on which month has the majority of days in this [`Week`].
@@ -102,36 +106,44 @@ impl Week<'_> {
     /// # Panics
     ///
     /// Panics if [`Month::try_from`] receives a number it cannot handle.
-    pub(crate) fn month_by_majority(&self) -> Month {
-        let mut iter_copy = self.inner_iter;
-        let first_date_of_week = iter_copy.next().unwrap();
-        let last_date_of_week = iter_copy.last().unwrap();
-        if last_date_of_week.day() > 3 {
-            Month::try_from(last_date_of_week.month() as u8)
-                .expect("month of week out of range, this should never happen")
-        } else {
-            // TODO: do we want to return an error or just default to the below value?
-            Month::try_from(first_date_of_week.month() as u8)
-                .expect("month of week out of range, this should never happen")
-        }
+    pub(crate) fn month(&self) -> Month {
+        Month::try_from(self.first_or_last_by_majority().month() as u8)
+            .expect("month of week out of range, this should never happen")
     }
 
+    pub(crate) fn month_start(&self) -> Month {
+        Month::try_from(self.first_day().month() as u8)
+            .expect("month of week out of range, this should never happen")
+    }
+
+    pub(crate) fn month_end(&self) -> Month {
+        Month::try_from(self.last_day().month() as u8)
+            .expect("month of week out of range, this should never happen")
+    }
+
+    pub(crate) fn year(&self) -> Year {
+        self.first_or_last_by_majority().year()
+    }
+
+    pub(crate) fn year_start(&self) -> Year {
+        self.first_day().year()
+    }
+
+    pub(crate) fn year_end(&self) -> Year {
+        self.last_day().year()
+    }
+
+    /// Creates an iterator to cycle through the week
+    // NOTE: we are using this instead of NaieveWeek::days() since that range doesn't seem to want to behave as an iterator
     pub(crate) fn days(&self) -> impl Iterator<Item = NaiveDate> {
-        DateRule::daily(self.start_datetime)
-            .with_count(7)
-            .map(|d| d.naive_local().date())
+        DateRule::daily(self.first_day()).with_count(7)
     }
 
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'_>> {
-        self.start.format(fmt)
+        self.first_day().format(fmt)
     }
-}
 
-impl Iterator for Week<'_> {
-    type Item = NaiveDate;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // start.checked_add_days
-        self.inner_iter.next()
+    pub(crate) fn file_name(&self) -> String {
+        format!("{}-{}.html", self.year_start(), self.iso_week())
     }
 }
