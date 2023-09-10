@@ -49,6 +49,20 @@ Now edit the config file as necessary with your favorite text editor.
 
 The **templates must be in** `./templates/`.
 
+### Customization
+
+Statical uses [Tera](https://keats.github.io/tera/) templates to allow customization of calendar views. Default templates are built into statical, but can be overridden by creating a `templates` directory beside the `statical.toml` config file.
+
+For detailed information about Tera its capabilities see the [Tera Documentation](https://keats.github.io/tera/docs/).
+
+To see what data is available for use within a given template, add the following code somewhere in your template:
+
+```html
+<pre>
+  {{ __tera_context }}
+</pre>
+```
+
 ## Road map and TODOs
 
 ### Setup and Configuration (1.0 Milestone)
