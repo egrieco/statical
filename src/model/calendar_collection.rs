@@ -250,6 +250,10 @@ impl CalendarCollection {
         }
     }
 
+    pub(crate) fn display_timezone(&self) -> &ChronoTz {
+        &self.config.display_timezone
+    }
+
     /// Get a reference to the calendar collection's calendars.
     #[must_use]
     pub fn calendars(&self) -> &[Calendar] {
@@ -313,7 +317,7 @@ impl CalendarCollection {
         let weeks_iterator = DateRule::weekly(aligned_week_start).with_end(aligned_week_end);
         let mut weeks_to_show: Vec<Option<Week>> = vec![];
         for day in weeks_iterator.into_iter() {
-            weeks_to_show.push(Some(Week::new(day, &self.config.display_timezone)?))
+            weeks_to_show.push(Some(Week::new(day, self)?))
         }
         let chained_iter = iter::once(None)
             .chain(weeks_to_show)

@@ -28,7 +28,7 @@ type InternalDate = NaiveDate;
 type Month = (Year, u8);
 
 /// A BTreeMap of Vecs grouped by specific months
-pub type MonthMap = BTreeMap<Month, WeekMap>;
+pub type MonthMap<'a> = BTreeMap<Month, WeekMap<'a>>;
 
 /// A triple with the previous, current, and next weeks present
 ///

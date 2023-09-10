@@ -128,7 +128,9 @@ To see what data is available for use within a given template, add the following
   - [ ] decide on url naming, probably not date based, maybe including calendar name
   - [ ] use unexpanded events
 - [ ] Add ics feed generation
-- [ ] Add month name on fist day of month in week view (just like month view)
+- [x] ~~_Add month name on fist day of month in week view (just like month view)_~~ (2023-09-09)
+- [x] ~~_Determine which month a week "belongs to" based on which month has the most days in that week?_~~ (2023-09-09)
+- [ ] Clean up the HTML class logic in the week template, move it into the Week class when generating contexts
 - [ ] Add day strftime format?
 - [ ] Add strftime format for agenda dates?
 - [ ] Add keybindings to allow keyboard navigation of calendar

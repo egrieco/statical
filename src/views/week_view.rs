@@ -1,5 +1,4 @@
 use color_eyre::eyre::Result;
-use itertools::Itertools;
 use log::debug;
 use std::fs::create_dir_all;
 use std::path::Path;
@@ -8,14 +7,10 @@ use std::{collections::BTreeMap, path::PathBuf};
 use crate::configuration::types::CalendarView;
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
-use crate::{
-    configuration::config::Config,
-    model::{day::DayContext, event::EventList},
-    util::write_template,
-};
+use crate::{configuration::config::Config, model::event::EventList, util::write_template};
 
 /// A BTreeMap of Vecs grouped by specific weeks
-pub type WeekMap = BTreeMap<Week, EventList>;
+pub type WeekMap<'a> = BTreeMap<Week<'a>, EventList>;
 
 /// A BTreeMap of Vecs grouped by specific weekday
 pub type WeekDayMap = BTreeMap<u8, EventList>;
@@ -23,7 +18,7 @@ pub type WeekDayMap = BTreeMap<u8, EventList>;
 /// A triple with the previous, current, and next weeks present
 ///
 /// Note that the previous and next weeks may be None
-pub type WeekSlice<'a> = &'a [Option<Week>];
+pub type WeekSlice<'a> = &'a [Option<Week<'a>>];
 
 const VIEW_PATH: &str = "week";
 
@@ -136,31 +131,6 @@ impl WeekView<'_> {
             .expect("Current week is None. This should never happen.");
         let next_week = &week_slice[2].as_ref();
 
-        let mut week_dates = Vec::new();
-        for day in current_week.days() {
-            let events = self
-                .calendars
-                .events_by_day
-                // TODO: I doubt that we need to adjust the timezone here, probably remove it
-                .get(&day);
-            println!(
-                "  For day {}: there are {} events",
-                day,
-                events.map(|e| e.len()).unwrap_or(0)
-            );
-            week_dates.push(DayContext::new(
-                day,
-                events
-                    .map(|l| {
-                        l.iter()
-                            .sorted()
-                            .map(|e| e.context(&self.calendars.config))
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-            ));
-        }
-
         let year = current_week.year();
         let week = current_week.week();
 
@@ -172,9 +142,6 @@ impl WeekView<'_> {
         let next_file_name =
             next_week.map(|next_week| format!("{}-{}.html", next_week.year(), next_week.week()));
 
-        // get the events grouped by day
-        // let week_dates = week_day_map.context(year, week, config)?;
-
         // setup the tera context
         let mut context = self.calendars.template_context();
         context.insert(
@@ -185,9 +152,19 @@ impl WeekView<'_> {
         );
         context.insert("year", &year);
         // TODO add month numbers
-        context.insert("month_name", &current_week.month());
+        context.insert("month", &current_week.month().number_from_month());
+        context.insert("month_name", &current_week.month().name());
+        context.insert(
+            "month_by_majority",
+            &current_week.month_by_majority().number_from_month(),
+        );
+        context.insert(
+            "month_name_by_majority",
+            &current_week.month_by_majority().name(),
+        );
         context.insert("week", &week);
-        context.insert("week_dates", &week_dates);
+        context.insert("week_dates", &current_week.week_dates());
+        context.insert("week_switches_months", &current_week.week_switches_months());
 
         // create the main file path
         let binding = self.output_dir().join(PathBuf::from(&file_name));
