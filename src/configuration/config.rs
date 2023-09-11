@@ -1,4 +1,3 @@
-use chrono::{DateTime, Local};
 use chrono_tz::Tz;
 use doku::Document;
 use serde::{Deserialize, Serialize};
@@ -8,7 +7,7 @@ use std::{
     path::PathBuf,
 };
 
-use super::types::{CalendarView, ConfigTimeZone, ConfigUrl};
+use super::types::{CalendarView, ConfigDate, ConfigTimeZone, ConfigUrl};
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
@@ -18,8 +17,9 @@ pub struct Config {
     /// This corresponds to page 0 on the Agenda view
     // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
     // TODO: should this be Local or Tz?
-    #[doku(example = "today", example = "yyyy-mm-ddd")]
-    pub calendar_today_date: DateTime<Local>,
+    #[doku(example = "today")]
+    #[serde(deserialize_with = "super::types::deserialize_config_date")]
+    pub calendar_today_date: ConfigDate,
 
     /// Name of the timezone in which to display rendered times
     ///
@@ -164,7 +164,7 @@ impl Default for Config {
             output_dir: "output".into(),
             display_timezone: ConfigTimeZone(Tz::GMT),
             agenda_events_per_page: 5,
-            calendar_today_date: Local::now(),
+            calendar_today_date: ConfigDate::now(),
             default_calendar_view: CalendarView::Month,
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,

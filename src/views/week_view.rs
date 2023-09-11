@@ -78,13 +78,7 @@ impl WeekView<'_> {
             if !index_written {
                 if let Some(next_week) = next_week_opt {
                     // write the index file if the next month is after the current date
-                    if next_week.first_day()
-                        >= self
-                            .config()
-                            .calendar_today_date
-                            .with_timezone(self.calendars.display_timezone())
-                            .date_naive()
-                    {
+                    if next_week.first_day() >= self.config().calendar_today_date.date() {
                         index_written = true;
                         write_view_index = true;
                         // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));

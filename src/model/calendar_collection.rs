@@ -69,6 +69,8 @@ impl CalendarCollection {
             .admerge(Serialized::defaults(args))
             .extract()?;
 
+        eprint!("config is: {:#?}", config);
+
         // throw an error if the default view is not enabled
         let view_and_name = match config.default_calendar_view {
             CalendarView::Month => (config.render_month, "month"),

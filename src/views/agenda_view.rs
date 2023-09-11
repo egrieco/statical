@@ -66,9 +66,10 @@ impl AgendaView<'_> {
         let mut index_written = false;
 
         // partition events into past and future events
+        // TODO: might want to convert timezone on events before making the naive
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list()
-            .partition(|e| e.start() < self.config().calendar_today_date);
+            .partition(|e| e.start().date_naive() < self.config().calendar_today_date.date());
 
         // process past events
         past_events.sort_by_key(|e| e.start());

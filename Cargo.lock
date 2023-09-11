@@ -673,6 +673,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuzzydate"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10cc638ce39f54e307c2648a5cf89fb549a0b66bc59f9de933b51b1dfe53c813"
+dependencies = [
+ "chrono",
+ "lazy_static",
+ "thiserror",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1544,6 +1555,7 @@ dependencies = [
  "doku",
  "figment",
  "flexi_logger",
+ "fuzzydate",
  "ical",
  "include_dir",
  "indent",
