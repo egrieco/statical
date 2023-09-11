@@ -80,6 +80,9 @@ pub struct Config {
     /// Whether to render the agenda pages.
     pub render_agenda: bool,
 
+    /// Whether to render the calendar feed.
+    pub render_feed: bool,
+
     /// The strftime format for the Month `view_date` template variable
     #[doku(example = "%B %Y")]
     pub month_view_format: String,
@@ -160,28 +163,29 @@ impl AsRef<OsStr> for CalendarSourceConfig {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            render_agenda: true,
-            render_day: true,
-            render_month: true,
-            render_week: true,
-            output_dir: "output".into(),
-            display_timezone: ConfigTimeZone(Tz::GMT),
-            agenda_events_per_page: 5,
             calendar_today_date: ConfigDate::now(),
-            default_calendar_view: CalendarView::Month,
+            display_timezone: ConfigTimeZone(Tz::America__Phoenix),
+            calendar_sources: Vec::new(),
+            output_dir: "output".into(),
+            no_delete: false,
+            base_url_path: "/".into(),
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: false,
             copy_stylesheet_from: "public/statical.css".into(),
-            event_start_format: "%I:%M%P".into(),
-            event_end_format: "%I:%M%P".into(),
-            calendar_sources: Vec::new(),
+            default_calendar_view: CalendarView::Month,
+            render_month: true,
+            render_week: true,
+            render_day: true,
+            render_agenda: true,
+            render_feed: true,
             month_view_format: "%B %Y".into(),
             week_view_format: "%B %Y".into(),
             day_view_format: "%A, %B %-d, %Y".into(),
             agenda_view_format_start: "%B %-d, %Y".into(),
             agenda_view_format_end: "%B %-d, %Y".into(),
-            base_url_path: "/".into(),
-            no_delete: false,
+            agenda_events_per_page: 10,
+            event_start_format: "%I:%M%P".into(),
+            event_end_format: "%I:%M%P".into(),
         }
     }
 }
