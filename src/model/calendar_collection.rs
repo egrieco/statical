@@ -22,7 +22,7 @@ use super::calendar_source::CalendarSource;
 use super::day::Day;
 use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
-use crate::configuration::{config::Config, options::Opt, types::CalendarView};
+use crate::configuration::{config::Config, options::Opt, types::calendar_view::CalendarView};
 use crate::model::calendar::Calendar;
 use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;

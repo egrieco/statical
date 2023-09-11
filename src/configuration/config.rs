@@ -7,7 +7,10 @@ use std::{
     path::PathBuf,
 };
 
-use super::types::{CalendarView, ConfigDate, ConfigTimeZone, ConfigUrl};
+use super::types::{
+    calendar_view::CalendarView, config_date::ConfigDate, config_time_zone::ConfigTimeZone,
+    config_url::ConfigUrl,
+};
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
@@ -18,7 +21,7 @@ pub struct Config {
     // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
     // TODO: should this be Local or Tz?
     #[doku(example = "today")]
-    #[serde(deserialize_with = "super::types::deserialize_config_date")]
+    #[serde(deserialize_with = "super::types::config_date::deserialize_config_date")]
     pub calendar_today_date: ConfigDate,
 
     /// Name of the timezone in which to display rendered times

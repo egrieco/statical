@@ -9,7 +9,7 @@ use std::{
 };
 
 use crate::{
-    configuration::{config::Config, types::CalendarView},
+    configuration::{config::Config, types::calendar_view::CalendarView},
     model::{
         calendar_collection::CalendarCollection,
         event::{Event, EventContext},

@@ -10,7 +10,7 @@ use std::path::Path;
 use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
-use crate::configuration::types::CalendarView;
+use crate::configuration::types::calendar_view::CalendarView;
 use crate::{
     configuration::config::Config,
     model::{
