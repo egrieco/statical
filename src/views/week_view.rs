@@ -153,7 +153,6 @@ impl WeekView<'_> {
         context.insert("year", &current_week.year());
         context.insert("year_start", &current_week.year_start());
         context.insert("year_end", &current_week.year_end());
-        // TODO add month numbers
         context.insert("month", &current_week.month().number_from_month());
         context.insert("month_name", &current_week.month().name());
         context.insert(
@@ -169,57 +168,43 @@ impl WeekView<'_> {
         context.insert("week_switches_years", &current_week.week_switches_years());
 
         // create the main file path
-        let binding = self.output_dir().join(PathBuf::from(&file_name));
+        let current_file_name = self.output_dir().join(PathBuf::from(&file_name));
         // the first item in this tuple is a flag indicating whether to prepend the view path
-        let mut file_paths = vec![(true, binding)];
+        let mut file_paths = vec![current_file_name];
 
         if write_view_index {
-            file_paths.push((true, self.output_dir().join(PathBuf::from("index.html"))));
+            file_paths.push(self.output_dir().join(PathBuf::from("index.html")));
         }
         if write_main_index {
-            file_paths.push((
-                true,
-                self.config().output_dir.join(PathBuf::from("index.html")),
-            ));
+            file_paths.push(self.config().output_dir.join(PathBuf::from("index.html")));
         }
 
         // write the template to all specified paths
         debug!("{} file paths to write", file_paths.len());
-        for (prepend_view_path, file_path) in file_paths {
-            // if the path matches the root path, prepend the default view to the next and previous links
-
+        for file_path in file_paths {
+            // we're cloning this since we're going to be modifying it directly
             let mut base_url_path: unix_path::PathBuf =
                 self.calendars.config.base_url_path.path_buf().clone();
 
-            // TODO: need to clean up the prepending logic, we're always taking the same code path at the moment
-            // TODO: need to decide whether to support relative paths where that logic was necessary
-
             // we're prepending the view path here
-            if prepend_view_path {
-                base_url_path.push("week")
-            };
-
-            let prepend_base_path = true;
+            base_url_path.push("week");
 
             // and we're prepending the base path here
-            let previous_file_path = match (&previous_file_name, prepend_base_path) {
-                (Some(prev_file), true) => base_url_path
+            let previous_file_path = previous_file_name.as_ref().and_then(|prev_file| {
+                base_url_path
                     .as_path()
                     .join(prev_file)
                     .to_str()
-                    .map(String::from),
-                (Some(prev_file), false) => Some(prev_file).cloned(),
-                (None, _) => None,
-            };
-            let next_file_path = match (&next_file_name, prepend_base_path) {
-                (Some(next_file), true) => base_url_path
+                    .map(String::from)
+            });
+            let next_file_path = next_file_name.as_ref().and_then(|next_file| {
+                base_url_path
                     .as_path()
                     .join(next_file)
                     .to_str()
-                    .map(String::from),
-                (Some(next_file), false) => Some(next_file).cloned(),
-                (None, _) => None,
-            };
+                    .map(String::from)
+            });
+
             context.insert("previous_file_name", &previous_file_path);
             context.insert("next_file_name", &next_file_path);
             debug!("writing file path: {:?}", file_path);
