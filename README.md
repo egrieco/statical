@@ -21,6 +21,23 @@ The documentation needs to be completed as well as adding a setup guide. The cod
 
 The default templates are starting to look acceptable and we are planning a final design pass shortly. While the templates and CSS are fully customizable, the defaults should produce a calendar with good user experience, interface and aesthetics.
 
+## Features
+
+- Reads `*.ics` files or live calendar feeds
+- Does NOT require contributors to create a new login. Just add their calendar feed to the config file.
+- Can be run manually on your personal machine or setup on a Cron job, Git hook, or Continuous Integration (CI) pipeline
+- Generates static HTML views
+  - Month
+  - Week
+  - Day
+  - Agenda
+- View customization
+  - Views are embedded in the app
+  - Alternately, views can also be individually overridden and fully customized via Tera templates
+  - Views are completely HTML and CSS based, no JavaScript is present
+- CSS is provided but can be edited or completely overridden
+- Generates calendar feeds in ICS format
+
 ## Usage
 
 Statical is intended to be used in a "Static Site Generator chain" ([credit to CloudCannon for the term](https://cloudcannon.com/blog/introducing-pagefind/)). Statical should run before tools like Pagefind and Jampack as its output pages will need to be indexed and optimized.
@@ -62,6 +79,14 @@ To see what data is available for use within a given template, add the following
   {{ __tera_context }}
 </pre>
 ```
+
+## Related Projects
+
+If statical does not do exactly what you need, check out these projects instead.
+
+- [ical-merger](https://lib.rs/crates/ical-merger): Merges multiple iCalendar files into one, as a web service.
+- [ical-filter](https://lib.rs/crates/ical-filter): HTTP daemon to normalize and filter iCalendar files
+- [zerocal](https://endler.dev/2022/zerocal/): A Serverless Calendar App in Rust Running on shuttle.rs by Matthias Endler
 
 ## Road map and TODOs
 
@@ -181,10 +206,3 @@ To see what data is available for use within a given template, add the following
 
 - [ ] pagefind integration (add indexing hints templates)
 - [ ] jampack integration?
-
-## Related Projects
-
-If statical does not do exactly what you need, check out these projects instead.
-
-- [zerocal](https://endler.dev/2022/zerocal/): A Serverless Calendar App in Rust Running on shuttle.rs by Matthias Endler
-- [ical-merger](https://lib.rs/crates/ical-merger): Merges multiple iCalendar files into one, as a web service.
