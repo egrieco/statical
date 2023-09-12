@@ -1,5 +1,5 @@
 use color_eyre::eyre::{Context, Result};
-use icalendar::{Calendar, Component, Event};
+use icalendar::{Calendar, Component, Event, EventLike, Property};
 use std::{
     fs::{create_dir_all, File},
     io::Write,
@@ -38,6 +38,11 @@ impl FeedView<'_> {
 
         // create a calendar
         let mut calendar = Calendar::new();
+        calendar
+            .name("statical feed")
+            .description("a concatenation of all of the calendars provided to statical")
+            .timezone(&self.calendars.display_timezone().to_string())
+            .append_property(Property::new("METHOD", "PUBLISH"));
 
         // loop through all of the events (probably skip the expanded ones)
         // TODO: write original events with RRules rather than the expanded event recurrences
@@ -45,6 +50,9 @@ impl FeedView<'_> {
             let ical_event = Event::new()
                 .summary(event.summary())
                 .description(event.description())
+                .add_property("CLASS", "PUBLIC")
+                .starts(event.start())
+                .ends(event.end())
                 .done();
 
             // add the event to the calendar
