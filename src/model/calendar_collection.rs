@@ -22,13 +22,16 @@ use super::calendar_source::CalendarSource;
 use super::day::Day;
 use super::event::{Event, EventList, UnparsedProperties};
 use super::week::Week;
-use crate::configuration::{config::Config, options::Opt, types::calendar_view::CalendarView};
-use crate::model::calendar::Calendar;
 use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
 use crate::views::week_view::WeekView;
+use crate::{
+    configuration::{config::Config, options::Opt, types::calendar_view::CalendarView},
+    views::feed_view::FeedView,
+};
+use crate::{model::calendar::Calendar, views::feed_view};
 
 /// Type alias representing a specific day in time
 pub(crate) type LocalDay = DateTime<ChronoTz>;
@@ -285,12 +288,14 @@ impl CalendarCollection {
         context.insert("render_week", &self.config.render_week);
         context.insert("render_day", &self.config.render_day);
         context.insert("render_agenda", &self.config.render_agenda);
+        context.insert("render_feed", &self.config.render_feed);
 
         let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
         context.insert("month_view_path", &base_url_path.join("month"));
         context.insert("week_view_path", &base_url_path.join("week"));
         context.insert("day_view_path", &base_url_path.join("day"));
         context.insert("agenda_view_path", &base_url_path.join("agenda"));
+        context.insert("feed_view_path", &base_url_path.join(feed_view::VIEW_PATH));
 
         context
     }
@@ -390,7 +395,7 @@ impl CalendarCollection {
         Ok(())
     }
 
-    pub fn create_html_pages(&self) -> Result<()> {
+    pub fn create_view_files(&self) -> Result<()> {
         self.setup_output_dir()?;
 
         // add events to views
@@ -408,6 +413,10 @@ impl CalendarCollection {
 
         if self.config.render_agenda {
             AgendaView::new(self).create_html_pages()?;
+        };
+
+        if self.config.render_feed {
+            FeedView::new(self).create_view_files()?;
         };
 
         Ok(())

@@ -26,7 +26,7 @@ fn main() -> eyre::Result<()> {
     let calendar_collection = CalendarCollection::new(&args)?;
 
     log::info!("writing html pages");
-    calendar_collection.create_html_pages()?;
+    calendar_collection.create_view_files()?;
 
     log::info!("final debug output");
     calendar_collection.print_unparsed_properties();

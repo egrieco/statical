@@ -20,6 +20,7 @@ enum ParseType {
 }
 
 const MISSING_SUMMARY: &str = "None";
+const MISSING_DESCRIPTION: &str = "None";
 
 // const START_DATETIME_FORMAT = format_description!(
 //     "[weekday] [month repr:long] [day], [year] at [hour repr:12]:[minute][period case:lower]"
@@ -137,6 +138,9 @@ impl Event {
         self.summary.as_deref().unwrap_or(MISSING_SUMMARY)
     }
 
+    pub fn description(&self) -> &str {
+        self.description.as_deref().unwrap_or(MISSING_DESCRIPTION)
+    }
     pub fn start(&self) -> DateTime<Utc> {
         self.start
     }

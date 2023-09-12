@@ -29,6 +29,7 @@ figment = { version = "0.10.10", features = ["toml"] }
 flexi_logger = "0.26.0"
 fuzzydate = "0.2.1"
 ical = "0.8.0"
+icalendar = "0.15.7"
 include_dir = { version = "0.7.3", features = ["glob"] }
 indent = "0.1.1"
 itertools = "0.11.0"
