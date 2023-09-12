@@ -18,7 +18,6 @@ use crate::{
         day::DayContext,
         event::Year,
     },
-    util::write_template,
     views::week_view::WeekDayMap,
 };
 
@@ -245,12 +244,8 @@ impl MonthView<'_> {
             );
 
             // write the actual template
-            write_template(
-                &self.calendars.tera,
-                "month.html",
-                &context,
-                &self.calendars.base_dir.join(file_path),
-            )?;
+            self.calendars
+                .write_template("month.html", &context, file_path)?;
         }
 
         Ok(())

@@ -11,10 +11,13 @@ use include_dir::{
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
 use log::{debug, info};
-use std::collections::{BTreeMap, HashSet};
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{
+    collections::{BTreeMap, HashSet},
+    path::Path,
+};
 use std::{fs, iter};
 use tera::{Context, Tera};
 
@@ -61,6 +64,7 @@ impl CalendarCollection {
         let config_file = PathBuf::from(&args.config)
             .canonicalize()
             .wrap_err("could not canonicalize config file path")?;
+        // TODO: also look into RelativePathBuf in figment::value::magic https://docs.rs/figment/0.10.10/figment/value/magic/struct.RelativePathBuf.html
         let base_dir = config_file
             .parent()
             .ok_or(eyre!("could not get parent directory of the config file"))?;
@@ -420,5 +424,23 @@ impl CalendarCollection {
         };
 
         Ok(())
+    }
+
+    /// Writes the selected template, with the provided context, to the provided relative file path.
+    ///
+    /// Note that the provided file path is appended to the base directory of this [`CalendarCollection`].
+    pub fn write_template(
+        &self,
+        template_name: &str,
+        context: &tera::Context,
+        relative_file_path: &Path,
+    ) -> eyre::Result<()> {
+        // adjust the file path with regard to the base_directory
+        let file_path = &self.base_dir.join(relative_file_path);
+
+        // TODO replace this with a debug or log message
+        eprintln!("Writing template to file: {:?}", file_path);
+        let output_file = File::create(file_path)?;
+        Ok(self.tera.render_to(template_name, context, output_file)?)
     }
 }

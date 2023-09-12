@@ -14,7 +14,6 @@ use crate::{
         calendar_collection::CalendarCollection,
         event::{Event, EventContext},
     },
-    util::write_template,
 };
 
 type AgendaPageId = isize;
@@ -237,12 +236,8 @@ impl AgendaView<'_> {
             );
 
             // write the actual template
-            write_template(
-                &self.calendars.tera,
-                "agenda.html",
-                &context,
-                &self.calendars.base_dir.join(file_path),
-            )?;
+            self.calendars
+                .write_template("agenda.html", &context, file_path)?;
         }
 
         Ok(())

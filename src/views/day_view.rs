@@ -13,7 +13,6 @@ use crate::{
         day::Day,
         event::{Event, EventContext},
     },
-    util::write_template,
 };
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
@@ -170,12 +169,8 @@ impl DayView<'_> {
             );
 
             // write the actual template
-            write_template(
-                &self.calendars.tera,
-                "day.html",
-                &context,
-                &self.calendars.base_dir.join(file_path),
-            )?;
+            self.calendars
+                .write_template("day.html", &context, file_path)?;
         }
 
         Ok(())

@@ -7,7 +7,7 @@ use std::{collections::BTreeMap, path::PathBuf};
 use crate::configuration::types::calendar_view::CalendarView;
 use crate::model::calendar_collection::CalendarCollection;
 use crate::model::week::Week;
-use crate::{configuration::config::Config, model::event::EventList, util::write_template};
+use crate::{configuration::config::Config, model::event::EventList};
 
 /// A BTreeMap of Vecs grouped by specific weeks
 pub type WeekMap<'a> = BTreeMap<Week<'a>, EventList>;
@@ -213,12 +213,8 @@ impl WeekView<'_> {
             // }
 
             // write the actual template
-            write_template(
-                &self.calendars.tera,
-                "week.html",
-                &context,
-                &self.calendars.base_dir.join(file_path),
-            )?;
+            self.calendars
+                .write_template("week.html", &context, &file_path)?;
         }
 
         Ok(())
