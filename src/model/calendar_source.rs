@@ -7,7 +7,9 @@ use std::{
 };
 use url::Url;
 
-use crate::{configuration::config::CalendarSourceConfig, model::calendar::Calendar};
+use crate::{
+    configuration::calendar_source_config::CalendarSourceConfig, model::calendar::Calendar,
+};
 
 #[derive(Debug)]
 pub(crate) enum CalendarSource {
