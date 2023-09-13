@@ -118,14 +118,15 @@ impl CalendarCollection {
             calendar_errors.len()
         );
 
-        if calendar_sources.is_empty() {
-            bail!("no valid calendar sources found");
-        }
-
         // bail if any of them failed
         if !calendar_errors.is_empty() {
             // TODO: let the user configure whether to bail or just report errors and continue
             bail!("errors in calendars configuration")
+        }
+
+        // check after we check for error conditions so we don't hide errors behind a false empty condition
+        if calendar_sources.is_empty() {
+            bail!("no valid calendar sources found");
         }
 
         // parse calendar sources that are ok
