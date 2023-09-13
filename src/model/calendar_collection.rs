@@ -10,7 +10,7 @@ use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
-use log::{debug, info};
+use log::{debug, error, info};
 use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -133,12 +133,13 @@ impl CalendarCollection {
         debug!("parsing calendars...");
         for source in calendar_sources {
             debug!("parsing calendar source: {:?}", source);
-            match source?.parse_calendars(base_dir) {
-                Ok((mut parsed_calendars, calendar_unparsed_properties)) => {
-                    unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
-                    calendars.append(&mut parsed_calendars);
-                }
-                Err(_) => todo!(),
+            if let Ok((mut parsed_calendars, calendar_unparsed_properties)) =
+                source?.parse_calendars(base_dir)
+            {
+                unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+                calendars.append(&mut parsed_calendars);
+            } else {
+                error!("could not parse source");
             }
         }
 
