@@ -8,6 +8,8 @@ use super::{
     types::{calendar_view::CalendarView, config_time_zone::ConfigTimeZone, config_url::ConfigUrl},
 };
 
+const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.css";
+
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
     /// The date that is considered "today" on the rendered calendar
@@ -54,7 +56,7 @@ pub struct Config {
     /// This is mostly useful for local testing, unless you want to use a separate stylesheet for the calendar
     ///
     /// NOTE: This is relative to the config file
-    #[doku(example = "public/statical.css")]
+    #[doku(example = "assets/statical.css")]
     pub copy_stylesheet_from: PathBuf,
 
     /// The view (Month, Week, or Day) to use for the main index page
@@ -128,8 +130,8 @@ impl Default for Config {
             no_delete: false,
             base_url_path: "/".into(),
             stylesheet_path: "/styles/style.css".into(),
-            copy_stylesheet_to_output: false,
-            copy_stylesheet_from: "public/statical.css".into(),
+            copy_stylesheet_to_output: true,
+            copy_stylesheet_from: DEFAULT_STYLESHEET_PATH.into(),
             default_calendar_view: CalendarView::Month,
             render_month: true,
             render_week: true,

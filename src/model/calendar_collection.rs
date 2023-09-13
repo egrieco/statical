@@ -12,7 +12,6 @@ use include_dir::{
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
 use log::{debug, error, info};
-use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::{
@@ -20,6 +19,10 @@ use std::{
     path::Path,
 };
 use std::{fs, iter};
+use std::{
+    fs::{create_dir_all, File},
+    io::Write,
+};
 use tera::{Context, Tera};
 
 use super::calendar_source::CalendarSource;
@@ -43,6 +46,7 @@ pub(crate) type LocalDay = DateTime<ChronoTz>;
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
 static TEMPLATE_DIR: Dir = include_dir!("templates");
+static ASSETS_DIR: Dir = include_dir!("assets");
 
 #[derive(Debug)]
 pub struct CalendarCollection {
@@ -404,10 +408,46 @@ impl CalendarCollection {
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
             let source_stylesheet = self.base_dir.join(&self.config.copy_stylesheet_from);
-            fs::copy(&source_stylesheet, &stylesheet_destination).context(format!(
-                "could not copy stylesheet {:?} to destination: {:?}",
-                source_stylesheet, stylesheet_destination
-            ))?;
+            // TODO: test if stylesheet exists in assets dir, otherwise use the built-in
+            if source_stylesheet.exists() {
+                debug!(
+                    "copying stylesheet {:?} to destination: {:?}",
+                    &source_stylesheet, &stylesheet_destination
+                );
+
+                fs::copy(&source_stylesheet, &stylesheet_destination).wrap_err(format!(
+                    "could not copy stylesheet {:?} to destination: {:?}",
+                    source_stylesheet, &stylesheet_destination
+                ))?;
+            } else {
+                debug!(
+                    "source stylesheet does not exist at path: {:?}",
+                    source_stylesheet
+                );
+                // TODO: do we want this to be an iterator? will we ever have multiple built-in stylesheets?
+                for stylesheet in ASSETS_DIR.find("statical.css")? {
+                    if let FileEnt(f) = stylesheet {
+                        // TODO: remove the query for the name unless we want to support multiple stylesheets
+                        if let (Some(stylesheet_name), Some(stylesheet_contents)) =
+                            (f.path().to_str(), f.contents_utf8())
+                        {
+                            debug!(
+                                "copying built-in stylesheet {} to destination: {:?}",
+                                stylesheet_name, &stylesheet_destination
+                            );
+                            let mut file = File::create(&stylesheet_destination)
+                                .wrap_err("could not create destination stylesheet file")?;
+                            match file.write_all(stylesheet_contents.as_bytes()) {
+                                Ok(_) => info!("created file from built-in stylesheet"),
+                                Err(e) => error!(
+                                    "could not write file to {:?}: {}",
+                                    stylesheet_destination, e
+                                ),
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Ok(())
