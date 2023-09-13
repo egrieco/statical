@@ -90,6 +90,18 @@ If statical does not do exactly what you need, check out these projects instead.
 
 ## Road map and TODOs
 
+### Pre-release testing fixes
+
+- [ ] Fix default date bug
+- [ ] Make copy stylesheet true by default
+- [ ] Embed default stylesheet in binary
+- [ ] Add --restore-missing-default-templates
+- [ ] Make the config generation write to file directly
+- [ ] Put sources default in that triggers help if it is not updated
+- [ ] Add initial setup option
+- [ ] Add help when command is first run
+- [ ] Add assistant to help add calendar sources?
+
 ### Setup and Configuration (1.0 Milestone)
 
 - [x] Add toml config
@@ -201,6 +213,10 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] add human date format parsing
 - [ ] support for sunrise and sunset (if event has a location, or default to calendar location?)
 - [ ] Add support for first/second/third/etc. X day of the month
+
+### Ergonomics
+
+- [ ] live preview server
 
 ### External tool integration (Future Work)
 
