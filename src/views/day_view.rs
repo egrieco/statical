@@ -66,9 +66,7 @@ impl DayView<'_> {
             if !index_written {
                 if let Some(next_day) = next_day_opt {
                     // write the index file if the next day is after the current date
-                    if next_day.start_datetime.date_naive()
-                        > self.config().calendar_today_date.date()
-                    {
+                    if next_day.start_datetime.date_naive() > self.calendars.today_date() {
                         index_written = true;
                         index_paths.push(self.output_dir().join(PathBuf::from("index.html")));
 

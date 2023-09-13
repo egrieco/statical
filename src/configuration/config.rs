@@ -5,10 +5,7 @@ use std::path::PathBuf;
 
 use super::{
     calendar_source_config::CalendarSourceConfig,
-    types::{
-        calendar_view::CalendarView, config_date::ConfigDate, config_time_zone::ConfigTimeZone,
-        config_url::ConfigUrl,
-    },
+    types::{calendar_view::CalendarView, config_time_zone::ConfigTimeZone, config_url::ConfigUrl},
 };
 
 #[derive(Debug, Deserialize, Serialize, Document)]
@@ -20,8 +17,7 @@ pub struct Config {
     // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
     // TODO: should this be Local or Tz?
     #[doku(example = "today")]
-    #[serde(deserialize_with = "super::types::config_date::deserialize_config_date")]
-    pub calendar_today_date: ConfigDate,
+    pub calendar_today_date: String,
 
     /// Name of the timezone in which to display rendered times
     ///
@@ -125,7 +121,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            calendar_today_date: ConfigDate::now(),
+            calendar_today_date: "today".into(),
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),
             calendar_sources: Vec::new(),
             output_dir: "output".into(),

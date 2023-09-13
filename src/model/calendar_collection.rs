@@ -6,6 +6,7 @@ use figment::{
     providers::{Format, Serialized, Toml},
     Figment,
 };
+use fuzzydate::parse;
 use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
@@ -56,6 +57,7 @@ pub struct CalendarCollection {
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
+    today_date: NaiveDate,
 }
 
 impl CalendarCollection {
@@ -77,6 +79,11 @@ impl CalendarCollection {
             .extract()?;
 
         eprint!("config is: {:#?}", config);
+
+        // turn the user provided "today" date into an actual NaiveDate object
+        // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
+        // TODO: do we need this to be adjusted by the provided timezone?
+        let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
 
         // throw an error if the default view is not enabled
         let view_and_name = match config.default_calendar_view {
@@ -248,6 +255,7 @@ impl CalendarCollection {
             cal_start,
             cal_end,
             base_dir: base_dir.to_path_buf(),
+            today_date,
         })
     }
 
@@ -259,6 +267,10 @@ impl CalendarCollection {
         for property in &self.unparsed_properties {
             println!("  {}", property);
         }
+    }
+
+    pub(crate) fn today_date(&self) -> NaiveDate {
+        self.today_date
     }
 
     pub(crate) fn display_timezone(&self) -> &ChronoTz {

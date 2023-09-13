@@ -92,7 +92,7 @@ If statical does not do exactly what you need, check out these projects instead.
 
 ### Pre-release testing fixes
 
-- [ ] Fix default date bug
+- [x] ~~_Fix default date bug_~~ (2023-09-13)
 - [ ] Make copy stylesheet true by default
 - [ ] Embed default stylesheet in binary
 - [ ] Add --restore-missing-default-templates
