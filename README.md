@@ -101,6 +101,8 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Add initial setup option
 - [x] ~~_Add help when command is first run_~~ (2023-09-14)
 - [ ] Add assistant to help add calendar sources?
+- [ ] Ensure that partial configuration files work i.e. those missing many keys
+- [ ] Create a list of required config keys, the minimum necessary to run statical
 
 ### Setup and Configuration (1.0 Milestone)
 
