@@ -1,7 +1,9 @@
+use crate::eyre::bail;
 use clap::{CommandFactory, Parser};
-use color_eyre::eyre::{self};
+use color_eyre::eyre::{self, Context};
 use flexi_logger::Logger;
-use std::{path::PathBuf, process::exit};
+use std::path::Path;
+use std::{fs::File, io::Write, path::PathBuf, process::exit};
 
 use statical::{
     configuration::{config::Config, options::Opt},
@@ -14,9 +16,17 @@ fn main() -> eyre::Result<()> {
     let mut args = Opt::parse();
     color_eyre::install()?;
 
-    if args.generate_default_config {
+    if args.create_default_config {
         // TODO: figure out how to pre-populate the calendar sources with example data
-        println!("{}", doku::to_toml::<Config>());
+        // TODO: maybe allow the user to set a specific path for the config file
+        if Path::new(DEFAULT_CONFIG_PATH).exists() {
+            bail!("config file already exists at: statical.toml");
+        } else {
+            File::create(DEFAULT_CONFIG_PATH)
+                .wrap_err("could not create default config file")?
+                .write_all(doku::to_toml::<Config>().as_bytes())
+                .wrap_err("could not write config to default config file")?;
+        }
 
         exit(0);
     }
@@ -34,7 +44,7 @@ fn main() -> eyre::Result<()> {
                 "
 Statical needs a configuration file to run.
 
-Please specify a config file or run: statical --create-config-file
+Please specify a config file or run: statical --create-default-config
 
 Full Help Text
 --------------

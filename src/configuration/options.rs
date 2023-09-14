@@ -12,13 +12,9 @@ pub struct Opt {
     // TODO: make this a vec so we can run multiple sites at once
     pub config_file: Vec<String>,
 
-    /// The calendar sources to read (can be URLs or file paths)
-    #[clap(short, long)]
-    pub source: Option<Vec<String>>,
-
-    /// Generate the example config template
+    /// Create the example config file in the current directory
     #[clap(long, default_value_t = false)]
-    pub generate_default_config: bool,
+    pub create_default_config: bool,
 
     /// Do not delete files in the output directory
     #[clap(long, default_value_t = false)]

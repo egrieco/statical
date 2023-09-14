@@ -96,7 +96,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_Make copy stylesheet true by default_~~ (2023-09-13)
 - [x] ~~_Embed default stylesheet in binary_~~ (2023-09-13)
 - [ ] Add --restore-missing-default-templates
-- [ ] Make the config generation write to file directly
+- [x] ~~_Make the config generation write to file directly_~~ (2023-09-14)
 - [ ] Put sources default in that triggers help if it is not updated
 - [ ] Add initial setup option
 - [x] ~~_Add help when command is first run_~~ (2023-09-14)
