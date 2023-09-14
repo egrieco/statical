@@ -41,7 +41,7 @@ pub(crate) type LocalDay = DateTime<ChronoTz>;
 
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
-static TEMPLATE_DIR: Dir = include_dir!("templates");
+pub(crate) static TEMPLATE_DIR: Dir = include_dir!("templates");
 static ASSETS_DIR: Dir = include_dir!("assets");
 
 #[derive(Debug)]

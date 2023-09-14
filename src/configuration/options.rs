@@ -16,6 +16,10 @@ pub struct Opt {
     #[clap(long, default_value_t = false)]
     pub create_default_config: bool,
 
+    /// Restore the missing default templates to the templates path specified in the config file
+    #[clap(long, default_value_t = false)]
+    pub restore_missing_templates: bool,
+
     /// Do not delete files in the output directory
     #[clap(long, default_value_t = false)]
     pub no_delete: bool,

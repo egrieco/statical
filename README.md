@@ -95,7 +95,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_Fix default date bug_~~ (2023-09-13)
 - [x] ~~_Make copy stylesheet true by default_~~ (2023-09-13)
 - [x] ~~_Embed default stylesheet in binary_~~ (2023-09-13)
-- [ ] Add --restore-missing-default-templates
+- [x] ~~_Add --restore-missing-templates_~~ (2023-09-14)
 - [x] ~~_Make the config generation write to file directly_~~ (2023-09-14)
 - [ ] Put sources default in that triggers help if it is not updated
 - [ ] Add initial setup option

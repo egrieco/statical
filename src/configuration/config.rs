@@ -15,6 +15,7 @@ use super::{
 };
 
 const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.css";
+const DEFAULT_TEMPLATE_PATH: &str = "templates";
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
@@ -70,6 +71,11 @@ pub struct Config {
     /// NOTE: This is relative to the config file
     #[doku(example = "assets/statical.css")]
     pub copy_stylesheet_from: PathBuf,
+
+    /// The path for template files
+    #[doku(example = "templates")]
+    // it'd be great to make this a RelativePathBuf but Doku doesn't support that
+    pub template_path: PathBuf,
 
     /// The view (Month, Week, or Day) to use for the main index page
     // TODO: consider making this case sensitive maybe with EnumString from strum_macros
@@ -145,6 +151,7 @@ impl Default for Config {
             stylesheet_path: "/styles/style.css".into(),
             copy_stylesheet_to_output: true,
             copy_stylesheet_from: DEFAULT_STYLESHEET_PATH.into(),
+            template_path: DEFAULT_TEMPLATE_PATH.into(),
             default_calendar_view: CalendarView::Month,
             render_month: true,
             render_week: true,

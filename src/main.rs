@@ -1,13 +1,17 @@
-use crate::eyre::bail;
 use clap::{CommandFactory, Parser};
-use color_eyre::eyre::{self, Context};
+use color_eyre::eyre::{self, bail, Context};
 use flexi_logger::Logger;
-use std::path::Path;
-use std::{fs::File, io::Write, path::PathBuf, process::exit};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+    process::exit,
+};
 
 use statical::{
     configuration::{config::Config, options::Opt},
     model::calendar_collection::CalendarCollection,
+    util,
 };
 
 const DEFAULT_CONFIG_PATH: &str = "statical.toml";
@@ -60,6 +64,13 @@ Full Help Text
     // TODO: may want to deduplicate the config files
     for config_path in &args.config_file {
         let config = Config::new(config_path, &args)?;
+
+        if args.restore_missing_templates {
+            let template_path = config.base_dir.join(config.template_path);
+            eprintln!("template_path: {:?}", template_path);
+            util::restore_missing_templates(&template_path)?;
+            continue;
+        }
 
         log::info!("creating calendar collection...");
         let calendar_collection = CalendarCollection::new(config)?;
