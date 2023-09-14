@@ -63,3 +63,33 @@ pub fn restore_missing_templates(path: &Path) -> Result<()> {
     }
     Ok(())
 }
+
+pub fn restore_missing_assets(path: &Path) -> Result<()> {
+    debug!("creating assets path: {:?}", path);
+    fs::create_dir_all(path).wrap_err("could not create assets path")?;
+
+    // TODO: handle assets other than CSS
+    for asset in calendar_collection::ASSETS_DIR
+        .find("*.css")
+        .wrap_err("could not get assets")?
+    {
+        // TODO: handle subdirectories of the assets path
+        if let FileEnt(t) = asset {
+            // TODO: might need to change this to binary handling of we have images involved
+            if let (Some(asset_name), Some(asset_contents)) = (t.path().to_str(), t.contents_utf8())
+            {
+                let asset_path = path.join(asset_name);
+                if asset_path.exists() {
+                    debug!("asset already exists: {:?}", asset_path);
+                } else {
+                    debug!("adding asset: {:?}", asset_path);
+                    File::create(asset_path)
+                        .wrap_err("could not create asset file")?
+                        .write_all(asset_contents.as_bytes())
+                        .wrap_err("could not write to asset file")?;
+                }
+            }
+        }
+    }
+    Ok(())
+}

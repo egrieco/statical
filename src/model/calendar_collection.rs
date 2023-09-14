@@ -42,7 +42,7 @@ pub(crate) type LocalDay = DateTime<ChronoTz>;
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
 pub(crate) static TEMPLATE_DIR: Dir = include_dir!("templates");
-static ASSETS_DIR: Dir = include_dir!("assets");
+pub(crate) static ASSETS_DIR: Dir = include_dir!("assets");
 
 #[derive(Debug)]
 pub struct CalendarCollection {

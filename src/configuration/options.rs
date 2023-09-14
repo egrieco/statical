@@ -20,6 +20,10 @@ pub struct Opt {
     #[clap(long, default_value_t = false)]
     pub restore_missing_templates: bool,
 
+    /// Restore the missing assets to the assets path specified in the config file
+    #[clap(long, default_value_t = false)]
+    pub restore_missing_assets: bool,
+
     /// Do not delete files in the output directory
     #[clap(long, default_value_t = false)]
     pub no_delete: bool,

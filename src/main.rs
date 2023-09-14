@@ -66,9 +66,19 @@ Full Help Text
         let config = Config::new(config_path, &args)?;
 
         if args.restore_missing_templates {
-            let template_path = config.base_dir.join(config.template_path);
+            let template_path = &config.base_dir.join(&config.template_path);
             eprintln!("template_path: {:?}", template_path);
-            util::restore_missing_templates(&template_path)?;
+            util::restore_missing_templates(template_path)?;
+        }
+
+        if args.restore_missing_assets {
+            let assets_path = &config.base_dir.join(&config.assets_path);
+            eprintln!("template_path: {:?}", assets_path);
+            util::restore_missing_assets(assets_path)?;
+        }
+
+        if args.restore_missing_templates || args.restore_missing_assets {
+            // skip the rest of the normal statical actions
             continue;
         }
 

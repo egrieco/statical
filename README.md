@@ -111,11 +111,11 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
 - [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
 - [x] ~~_Prompt with instructions on how to use Statical if config file is not present or provided._~~ (2023-09-14)
-- [ ] Add `--generate-default-stylesheet` option
+- [x] ~~_Add `--restore-missing-assets` option_~~ (2023-09-14)
 
 ### Setup and Configuration (Future Work)
 
-- [ ] Allow template path config.
+- [x] ~~_Allow template path config._~~ (2023-09-14)
 - [ ] calendar colors and CSS classes
 - [ ] paths for time interval pages should be configurable?
 
