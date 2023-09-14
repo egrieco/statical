@@ -99,7 +99,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Make the config generation write to file directly
 - [ ] Put sources default in that triggers help if it is not updated
 - [ ] Add initial setup option
-- [ ] Add help when command is first run
+- [x] ~~_Add help when command is first run_~~ (2023-09-14)
 - [ ] Add assistant to help add calendar sources?
 
 ### Setup and Configuration (1.0 Milestone)
@@ -110,7 +110,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_add baseurl support_~~ (2023-09-08)
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
 - [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
-- [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
+- [x] ~~_Prompt with instructions on how to use Statical if config file is not present or provided._~~ (2023-09-14)
 - [ ] Add `--generate-default-stylesheet` option
 
 ### Setup and Configuration (Future Work)

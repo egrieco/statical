@@ -65,9 +65,9 @@ pub struct CalendarCollection {
 }
 
 impl CalendarCollection {
-    pub fn new(args: &Opt) -> eyre::Result<CalendarCollection> {
+    pub fn new(args: &Opt, config_str: &str) -> eyre::Result<CalendarCollection> {
         // ensure that output_dir is relative to the config file
-        let config_file = PathBuf::from(&args.config)
+        let config_file = PathBuf::from(config_str)
             .canonicalize()
             .wrap_err("could not canonicalize config file path")?;
         // TODO: also look into RelativePathBuf in figment::value::magic https://docs.rs/figment/0.10.10/figment/value/magic/struct.RelativePathBuf.html
@@ -78,7 +78,7 @@ impl CalendarCollection {
 
         debug!("reading configuration...");
         let config: Config = Figment::from(Serialized::defaults(Config::default()))
-            .merge(Toml::file(&args.config))
+            .merge(Toml::file(config_str))
             .admerge(Serialized::defaults(args))
             .extract()?;
 
