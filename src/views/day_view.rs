@@ -33,7 +33,7 @@ pub struct DayView<'a> {
 impl DayView<'_> {
     pub fn new(calendars: &CalendarCollection) -> DayView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         DayView {

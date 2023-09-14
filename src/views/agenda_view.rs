@@ -37,7 +37,7 @@ pub(crate) struct AgendaView<'a> {
 impl AgendaView<'_> {
     pub fn new(calendars: &CalendarCollection) -> AgendaView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         AgendaView {

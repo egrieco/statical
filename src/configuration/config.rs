@@ -1,10 +1,16 @@
 use chrono_tz::Tz;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::{eyre, Result};
 use doku::Document;
+use figment::providers::{Format, Serialized, Toml};
+use figment::Figment;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use super::{
     calendar_source_config::CalendarSourceConfig,
+    options::Opt,
     types::{calendar_view::CalendarView, config_time_zone::ConfigTimeZone, config_url::ConfigUrl},
 };
 
@@ -12,6 +18,12 @@ const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.css";
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
+    /// The base directory against which all other paths are resolved
+    ///
+    /// This is normally automatically derived from the directory in which the config file resides
+    #[doku(example = ".")]
+    pub base_dir: PathBuf,
+
     /// The date that is considered "today" on the rendered calendar
     /// (defaults to today if left empty)
     ///
@@ -123,6 +135,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            base_dir: ".".into(),
             calendar_today_date: "today".into(),
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),
             calendar_sources: Vec::new(),
@@ -147,5 +160,43 @@ impl Default for Config {
             event_start_format: "%I:%M%P".into(),
             event_end_format: "%I:%M%P".into(),
         }
+    }
+}
+
+impl Config {
+    pub fn new(config_path: &str, args: &Opt) -> Result<Config> {
+        // ensure that output_dir is relative to the config file
+        let config_file = PathBuf::from(config_path)
+            .canonicalize()
+            .wrap_err("could not canonicalize config file path")?;
+        // TODO: also look into RelativePathBuf in figment::value::magic https://docs.rs/figment/0.10.10/figment/value/magic/struct.RelativePathBuf.html
+        let config_dir = config_file
+            .parent()
+            .ok_or(eyre!("could not get parent directory of the config file"))?;
+
+        debug!("reading configuration...");
+        let figment: Figment = Figment::from(Serialized::defaults(Config::default()))
+            .merge(Toml::file(config_path))
+            .admerge(Serialized::defaults(args));
+
+        let base_dir = figment
+            .find_value("base_dir")?
+            .as_str()
+            // join should either append the path from the config, or replace it if the specified path is absolute
+            .map(|d| config_dir.join(d))
+            .unwrap_or(config_dir.into())
+            .canonicalize()
+            .wrap_err("could not canonicalize base dir")?;
+
+        debug!("base directory is set to: {:?}", base_dir);
+
+        let config = figment
+            .merge(Figment::new().join(("base_dir", base_dir)))
+            .extract()?;
+
+        // TODO: make this into a log statement or remove it
+        eprint!("config is: {:#?}", config);
+
+        Ok(config)
     }
 }

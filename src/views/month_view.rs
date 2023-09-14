@@ -45,7 +45,7 @@ pub struct MonthView<'a> {
 impl MonthView<'_> {
     pub fn new(calendars: &CalendarCollection) -> MonthView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         MonthView {

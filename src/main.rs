@@ -58,9 +58,11 @@ Full Help Text
 
     // run statical for every config file specified
     // TODO: may want to deduplicate the config files
-    for config in &args.config_file {
+    for config_path in &args.config_file {
+        let config = Config::new(config_path, &args)?;
+
         log::info!("creating calendar collection...");
-        let calendar_collection = CalendarCollection::new(&args, config)?;
+        let calendar_collection = CalendarCollection::new(config)?;
 
         log::info!("writing html pages");
         calendar_collection.create_view_files()?;
