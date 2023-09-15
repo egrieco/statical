@@ -10,6 +10,31 @@ h1 {
   float: right;
 }
 
+.calendar > .header-section {
+  display: flex;
+  width: calc(100% / 3);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.temp-spacer {
+  /*This a placeholder till h1 can be properly aligned*/
+  display: flex;
+  width: calc(100%/3);
+}
+
+.header-only-style {
+  display: flex;
+  width: calc(100%/3);
+  justify-content: center;
+}
+
+.side-button {
+  display: flex;
+  width: calc(100%/3);
+  justify-content: right;
+}
+
 .month .wday.header {
   position: sticky;
   top: 0;
@@ -63,6 +88,11 @@ h1 {
 .day .date {
   white-space: nowrap;
   text-align: right;
+}
+
+.fc-day-today {
+  /*used to hightlight today's date*/
+  background-color: mediumturquoise !important;
 }
 
 ul {
