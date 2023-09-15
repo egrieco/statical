@@ -31,7 +31,7 @@ pub struct WeekView<'a> {
 impl WeekView<'_> {
     pub fn new(calendars: &CalendarCollection) -> WeekView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         WeekView {
@@ -78,7 +78,7 @@ impl WeekView<'_> {
             if !index_written {
                 if let Some(next_week) = next_week_opt {
                     // write the index file if the next month is after the current date
-                    if next_week.first_day() >= self.config().calendar_today_date.date() {
+                    if next_week.first_day() >= self.calendars.today_date() {
                         index_written = true;
                         write_view_index = true;
                         // index_paths.push(self.output_dir.join(PathBuf::from("index.html")));

@@ -19,7 +19,7 @@ pub struct FeedView<'a> {
 impl FeedView<'_> {
     pub fn new(calendars: &CalendarCollection) -> FeedView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         FeedView {

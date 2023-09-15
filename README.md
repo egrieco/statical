@@ -40,6 +40,8 @@ The default templates are starting to look acceptable and we are planning a fina
 
 ## Usage
 
+### Background
+
 Statical is intended to be used in a "Static Site Generator chain" ([credit to CloudCannon for the term](https://cloudcannon.com/blog/introducing-pagefind/)). Statical should run before tools like Pagefind and Jampack as its output pages will need to be indexed and optimized.
 
 An example chain might look like the following:
@@ -52,25 +54,65 @@ An example chain might look like the following:
 
 ### Setup
 
-Statical needs to be run every time there are changes to the calendar. This can be done manually or via cron job, Git hook or CI pipeline.
+Statical must have a config file is order to run.
 
-Statical will look in the current directory for its config file named `statical.toml` or you can tell it where to find the config file with the `-c` or `--config` option.
+#### Config file
 
 **Create the example config file** with the command:
 
 ```zsh
-statical --generate-default-config > statical.toml
+statical --create-default-config
 ```
 
-Now edit the config file as necessary with your favorite text editor.
+**Edit the config file** as necessary with your favorite text editor. Only the keys below are strictly necessary:
 
-The **templates must be in** `./templates/`.
+- `display_timezone`
+- `default_calendar_view`
+- `calendar_sources`
+
+The rest have default values that should work for most users. There are comments in the generated config file explaining the purpose of each option.
+
+### Running statical
+
+Statical needs to be run every time there are changes to the calendar. This can be done manually or via cron job, Git hook or CI pipeline.
+
+Statical will look in the current directory for its config file named `statical.toml`. Alternately, you can specify one or more config files as arguments to statical e.g.:
+
+```zsh
+statical site-one/statical.toml site-two/statical.toml ...
+```
 
 ### Customization
 
-Statical uses [Tera](https://keats.github.io/tera/) templates to allow customization of calendar views. Default templates are built into statical, but can be overridden by creating a `templates` directory beside the `statical.toml` config file.
+Default assets and templates are built into statical, but can be overridden by the user if desired.
 
-For detailed information about Tera its capabilities see the [Tera Documentation](https://keats.github.io/tera/docs/).
+#### Assets
+
+If you would like to customize the CSS run:
+
+```zsh
+statical --restore-missing-assets
+```
+
+The assets directory will be created at the location specified in the configuration file (paths are relative to the config file itself). The default is `assets`.
+
+Any missing asset files will be re-created from those built-in to statical. Assets can be edited as desired, or deleted to return to the built-in defaults. If an asset is already present with the same name as one of the defaults, it will not be overwritten.
+
+#### Templates
+
+To customize the views themselves run:
+
+```zsh
+statical --restore-missing-templates
+```
+
+The templates directory will be created at the location specified in the configuration file (paths are relative to the config file itself). The default is `templates`.
+
+Any missing template files will be re-created from those built-in to statical. Templates can be edited as desired, or deleted to return to the built-in defaults. If a template is already present with the same name as one of the defaults, it will not be overwritten.
+
+#### Template Language
+
+Statical uses [Tera](https://keats.github.io/tera/) templates to allow customization of calendar views. For detailed information about Tera its capabilities see the [Tera Documentation](https://keats.github.io/tera/docs/).
 
 To see what data is available for use within a given template, add the following code somewhere in your template:
 
@@ -90,6 +132,20 @@ If statical does not do exactly what you need, check out these projects instead.
 
 ## Road map and TODOs
 
+### Pre-release testing fixes
+
+- [x] ~~_Fix default date bug_~~ (2023-09-13)
+- [x] ~~_Make copy stylesheet true by default_~~ (2023-09-13)
+- [x] ~~_Embed default stylesheet in binary_~~ (2023-09-13)
+- [x] ~~_Add --restore-missing-templates_~~ (2023-09-14)
+- [x] ~~_Make the config generation write to file directly_~~ (2023-09-14)
+- [ ] Put sources default in that triggers help if it is not updated
+- [ ] Add initial setup option
+- [x] ~~_Add help when command is first run_~~ (2023-09-14)
+- [ ] Add assistant to help add calendar sources?
+- [ ] Ensure that partial configuration files work i.e. those missing many keys
+- [ ] Create a list of required config keys, the minimum necessary to run statical
+
 ### Setup and Configuration (1.0 Milestone)
 
 - [x] Add toml config
@@ -98,12 +154,12 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_add baseurl support_~~ (2023-09-08)
 - [x] ~~_Default to looking for the `statical.toml` file in the current dir_~~ (2023-09-08)
 - [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
-- [ ] Prompt with instructions on how to use Statical if config file is not present or provided.
-- [ ] Add `--generate-default-stylesheet` option
+- [x] ~~_Prompt with instructions on how to use Statical if config file is not present or provided._~~ (2023-09-14)
+- [x] ~~_Add `--restore-missing-assets` option_~~ (2023-09-14)
 
 ### Setup and Configuration (Future Work)
 
-- [ ] Allow template path config.
+- [x] ~~_Allow template path config._~~ (2023-09-14)
 - [ ] calendar colors and CSS classes
 - [ ] paths for time interval pages should be configurable?
 
@@ -201,6 +257,10 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] add human date format parsing
 - [ ] support for sunrise and sunset (if event has a location, or default to calendar location?)
 - [ ] Add support for first/second/third/etc. X day of the month
+
+### Ergonomics
+
+- [ ] live preview server
 
 ### External tool integration (Future Work)
 

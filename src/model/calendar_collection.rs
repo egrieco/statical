@@ -2,16 +2,12 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
-use figment::{
-    providers::{Format, Serialized, Toml},
-    Figment,
-};
+use fuzzydate::parse;
 use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
 use log::{debug, error, info};
-use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::{
@@ -19,6 +15,10 @@ use std::{
     path::Path,
 };
 use std::{fs, iter};
+use std::{
+    fs::{create_dir_all, File},
+    io::Write,
+};
 use tera::{Context, Tera};
 
 use super::calendar_source::CalendarSource;
@@ -31,7 +31,7 @@ use crate::views::day_view::DayView;
 use crate::views::month_view::MonthView;
 use crate::views::week_view::WeekView;
 use crate::{
-    configuration::{config::Config, options::Opt, types::calendar_view::CalendarView},
+    configuration::{config::Config, types::calendar_view::CalendarView},
     views::feed_view::FeedView,
 };
 use crate::{model::calendar::Calendar, views::feed_view};
@@ -41,12 +41,11 @@ pub(crate) type LocalDay = DateTime<ChronoTz>;
 
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
-static TEMPLATE_DIR: Dir = include_dir!("templates");
+pub(crate) static TEMPLATE_DIR: Dir = include_dir!("templates");
+pub(crate) static ASSETS_DIR: Dir = include_dir!("assets");
 
 #[derive(Debug)]
 pub struct CalendarCollection {
-    /// All paths in the calendar collection should be relative to this directory
-    pub(crate) base_dir: PathBuf,
     calendars: Vec<Calendar>,
     /// Events grouped by day in the display timezone
     pub(crate) events_by_day: EventsByDay,
@@ -56,27 +55,15 @@ pub struct CalendarCollection {
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
+    today_date: NaiveDate,
 }
 
 impl CalendarCollection {
-    pub fn new(args: &Opt) -> eyre::Result<CalendarCollection> {
-        // ensure that output_dir is relative to the config file
-        let config_file = PathBuf::from(&args.config)
-            .canonicalize()
-            .wrap_err("could not canonicalize config file path")?;
-        // TODO: also look into RelativePathBuf in figment::value::magic https://docs.rs/figment/0.10.10/figment/value/magic/struct.RelativePathBuf.html
-        let base_dir = config_file
-            .parent()
-            .ok_or(eyre!("could not get parent directory of the config file"))?;
-        debug!("base directory is set to: {:?}", base_dir);
-
-        debug!("reading configuration...");
-        let config: Config = Figment::from(Serialized::defaults(Config::default()))
-            .merge(Toml::file(&args.config))
-            .admerge(Serialized::defaults(args))
-            .extract()?;
-
-        eprint!("config is: {:#?}", config);
+    pub fn new(config: Config) -> eyre::Result<CalendarCollection> {
+        // turn the user provided "today" date into an actual NaiveDate object
+        // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
+        // TODO: do we need this to be adjusted by the provided timezone?
+        let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
 
         // throw an error if the default view is not enabled
         let view_and_name = match config.default_calendar_view {
@@ -102,7 +89,7 @@ impl CalendarCollection {
         let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
         for source in &config.calendar_sources {
             debug!("creating calendar source: {:?}", &source);
-            calendars_sources_configs.push(CalendarSource::new(base_dir, source));
+            calendars_sources_configs.push(CalendarSource::new(&config.base_dir, source));
         }
 
         // sort properly configured calendars and errors
@@ -134,7 +121,7 @@ impl CalendarCollection {
         for source in calendar_sources {
             debug!("parsing calendar source: {:?}", source);
             if let Ok((mut parsed_calendars, calendar_unparsed_properties)) =
-                source?.parse_calendars(base_dir)
+                source?.parse_calendars(&config.base_dir)
             {
                 unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
                 calendars.append(&mut parsed_calendars);
@@ -213,7 +200,8 @@ impl CalendarCollection {
         info!("loading custom templates...");
         // we're joining with base_dir here to ensure that the templates are found relative to the config file
         let mut tera = Tera::new(
-            base_dir
+            config
+                .base_dir
                 .join("templates/**/*.html")
                 .to_str()
                 .ok_or(eyre!("could not convert template path into str"))?,
@@ -247,7 +235,7 @@ impl CalendarCollection {
             unparsed_properties,
             cal_start,
             cal_end,
-            base_dir: base_dir.to_path_buf(),
+            today_date,
         })
     }
 
@@ -259,6 +247,10 @@ impl CalendarCollection {
         for property in &self.unparsed_properties {
             println!("  {}", property);
         }
+    }
+
+    pub(crate) fn today_date(&self) -> NaiveDate {
+        self.today_date
     }
 
     pub(crate) fn display_timezone(&self) -> &ChronoTz {
@@ -366,7 +358,7 @@ impl CalendarCollection {
 
         // join the output_dir to the base_dir
         // note that if the output_dir is specified as an absolute path, it will override the base_dir
-        let output_dir = self.base_dir.join(&self.config.output_dir);
+        let output_dir = self.base_dir().join(&self.config.output_dir);
         debug!("output_dir: {:?}", output_dir);
 
         // make the output dir if it doesn't exist
@@ -391,11 +383,47 @@ impl CalendarCollection {
 
         if self.config.copy_stylesheet_to_output {
             let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
-            let source_stylesheet = self.base_dir.join(&self.config.copy_stylesheet_from);
-            fs::copy(&source_stylesheet, &stylesheet_destination).context(format!(
-                "could not copy stylesheet {:?} to destination: {:?}",
-                source_stylesheet, stylesheet_destination
-            ))?;
+            let source_stylesheet = self.base_dir().join(&self.config.copy_stylesheet_from);
+            // TODO: test if stylesheet exists in assets dir, otherwise use the built-in
+            if source_stylesheet.exists() {
+                debug!(
+                    "copying stylesheet {:?} to destination: {:?}",
+                    &source_stylesheet, &stylesheet_destination
+                );
+
+                fs::copy(&source_stylesheet, &stylesheet_destination).wrap_err(format!(
+                    "could not copy stylesheet {:?} to destination: {:?}",
+                    source_stylesheet, &stylesheet_destination
+                ))?;
+            } else {
+                debug!(
+                    "source stylesheet does not exist at path: {:?}",
+                    source_stylesheet
+                );
+                // TODO: do we want this to be an iterator? will we ever have multiple built-in stylesheets?
+                for stylesheet in ASSETS_DIR.find("statical.css")? {
+                    if let FileEnt(f) = stylesheet {
+                        // TODO: remove the query for the name unless we want to support multiple stylesheets
+                        if let (Some(stylesheet_name), Some(stylesheet_contents)) =
+                            (f.path().to_str(), f.contents_utf8())
+                        {
+                            debug!(
+                                "copying built-in stylesheet {} to destination: {:?}",
+                                stylesheet_name, &stylesheet_destination
+                            );
+                            let mut file = File::create(&stylesheet_destination)
+                                .wrap_err("could not create destination stylesheet file")?;
+                            match file.write_all(stylesheet_contents.as_bytes()) {
+                                Ok(_) => info!("created file from built-in stylesheet"),
+                                Err(e) => error!(
+                                    "could not write file to {:?}: {}",
+                                    stylesheet_destination, e
+                                ),
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -438,11 +466,15 @@ impl CalendarCollection {
         relative_file_path: &Path,
     ) -> eyre::Result<()> {
         // adjust the file path with regard to the base_directory
-        let file_path = &self.base_dir.join(relative_file_path);
+        let file_path = &self.base_dir().join(relative_file_path);
 
         // TODO replace this with a debug or log message
         eprintln!("Writing template to file: {:?}", file_path);
         let output_file = File::create(file_path)?;
         Ok(self.tera.render_to(template_name, context, output_file)?)
+    }
+
+    pub(crate) fn base_dir(&self) -> &Path {
+        &self.config.base_dir
     }
 }

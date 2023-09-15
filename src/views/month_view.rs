@@ -45,7 +45,7 @@ pub struct MonthView<'a> {
 impl MonthView<'_> {
     pub fn new(calendars: &CalendarCollection) -> MonthView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         MonthView {
@@ -112,7 +112,7 @@ impl MonthView<'_> {
                 if let Some(next_month) = next_month_opt {
                     // write the index file if the next month is after the current date
                     if next_month.date_naive()
-                        > self.config().calendar_today_date.with_day(1).ok_or(eyre!(
+                        > self.calendars.today_date().with_day(1).ok_or(eyre!(
                             "could not convert agenda start date to beginning of month"
                         ))?
                     {

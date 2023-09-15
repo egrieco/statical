@@ -1,18 +1,31 @@
 use chrono_tz::Tz;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::{eyre, Result};
 use doku::Document;
+use figment::providers::{Format, Serialized, Toml};
+use figment::Figment;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use super::{
     calendar_source_config::CalendarSourceConfig,
-    types::{
-        calendar_view::CalendarView, config_date::ConfigDate, config_time_zone::ConfigTimeZone,
-        config_url::ConfigUrl,
-    },
+    options::Opt,
+    types::{calendar_view::CalendarView, config_time_zone::ConfigTimeZone, config_url::ConfigUrl},
 };
+
+const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.css";
+const DEFAULT_TEMPLATE_PATH: &str = "templates";
+const DEFAULT_ASSETS_PATH: &str = "assets";
 
 #[derive(Debug, Deserialize, Serialize, Document)]
 pub struct Config {
+    /// The base directory against which all other paths are resolved
+    ///
+    /// This is normally automatically derived from the directory in which the config file resides
+    #[doku(example = ".")]
+    pub base_dir: PathBuf,
+
     /// The date that is considered "today" on the rendered calendar
     /// (defaults to today if left empty)
     ///
@@ -20,8 +33,7 @@ pub struct Config {
     // TODO: need to add a more forgiving parser for start dates that can take human strings like "now", or "today"
     // TODO: should this be Local or Tz?
     #[doku(example = "today")]
-    #[serde(deserialize_with = "super::types::config_date::deserialize_config_date")]
-    pub calendar_today_date: ConfigDate,
+    pub calendar_today_date: String,
 
     /// Name of the timezone in which to display rendered times
     ///
@@ -58,8 +70,18 @@ pub struct Config {
     /// This is mostly useful for local testing, unless you want to use a separate stylesheet for the calendar
     ///
     /// NOTE: This is relative to the config file
-    #[doku(example = "public/statical.css")]
+    #[doku(example = "assets/statical.css")]
     pub copy_stylesheet_from: PathBuf,
+
+    /// The path for template files
+    #[doku(example = "templates")]
+    // it'd be great to make this a RelativePathBuf but Doku doesn't support that
+    pub template_path: PathBuf,
+
+    /// The path for template files
+    #[doku(example = "assets")]
+    // it'd be great to make this a RelativePathBuf but Doku doesn't support that
+    pub assets_path: PathBuf,
 
     /// The view (Month, Week, or Day) to use for the main index page
     // TODO: consider making this case sensitive maybe with EnumString from strum_macros
@@ -125,15 +147,18 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            calendar_today_date: ConfigDate::now(),
+            base_dir: ".".into(),
+            calendar_today_date: "today".into(),
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),
             calendar_sources: Vec::new(),
             output_dir: "output".into(),
             no_delete: false,
             base_url_path: "/".into(),
             stylesheet_path: "/styles/style.css".into(),
-            copy_stylesheet_to_output: false,
-            copy_stylesheet_from: "public/statical.css".into(),
+            copy_stylesheet_to_output: true,
+            copy_stylesheet_from: DEFAULT_STYLESHEET_PATH.into(),
+            template_path: DEFAULT_TEMPLATE_PATH.into(),
+            assets_path: DEFAULT_ASSETS_PATH.into(),
             default_calendar_view: CalendarView::Month,
             render_month: true,
             render_week: true,
@@ -149,5 +174,43 @@ impl Default for Config {
             event_start_format: "%I:%M%P".into(),
             event_end_format: "%I:%M%P".into(),
         }
+    }
+}
+
+impl Config {
+    pub fn new(config_path: &str, args: &Opt) -> Result<Config> {
+        // ensure that output_dir is relative to the config file
+        let config_file = PathBuf::from(config_path)
+            .canonicalize()
+            .wrap_err("could not canonicalize config file path")?;
+        // TODO: also look into RelativePathBuf in figment::value::magic https://docs.rs/figment/0.10.10/figment/value/magic/struct.RelativePathBuf.html
+        let config_dir = config_file
+            .parent()
+            .ok_or(eyre!("could not get parent directory of the config file"))?;
+
+        debug!("reading configuration...");
+        let figment: Figment = Figment::from(Serialized::defaults(Config::default()))
+            .merge(Toml::file(config_path))
+            .admerge(Serialized::defaults(args));
+
+        let base_dir = figment
+            .find_value("base_dir")?
+            .as_str()
+            // join should either append the path from the config, or replace it if the specified path is absolute
+            .map(|d| config_dir.join(d))
+            .unwrap_or(config_dir.into())
+            .canonicalize()
+            .wrap_err("could not canonicalize base dir")?;
+
+        debug!("base directory is set to: {:?}", base_dir);
+
+        let config = figment
+            .merge(Figment::new().join(("base_dir", base_dir)))
+            .extract()?;
+
+        // TODO: make this into a log statement or remove it
+        eprint!("config is: {:#?}", config);
+
+        Ok(config)
     }
 }

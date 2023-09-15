@@ -1,12 +1,11 @@
-use std::fmt;
-
 use chrono::{DateTime, Datelike, Month, NaiveDate};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use num_traits::FromPrimitive;
 use serde::Serialize;
+use std::fmt;
 
-use super::event::{EventContext, WeekNum, Year};
+use super::event::EventContext;
 
 const YMD_FORMAT: &str = "%Y-%m-%d";
 const START_DATETIME_FORMAT: &str = "%a %B %d, %Y";
@@ -32,21 +31,9 @@ impl Day {
         }
     }
 
-    pub(crate) fn year(&self) -> Year {
-        self.start.year()
-    }
-
     pub(crate) fn month(&self) -> Month {
         Month::try_from(self.start.month() as u8)
             .expect("month of week out of range, this should never happen")
-    }
-
-    pub(crate) fn week(&self) -> WeekNum {
-        self.start.iso_week().week() as u8
-    }
-
-    pub(crate) fn day(&self) -> u32 {
-        self.start.day()
     }
 
     pub(crate) fn format(&self, fmt: &str) -> String {

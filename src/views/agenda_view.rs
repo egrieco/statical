@@ -37,7 +37,7 @@ pub(crate) struct AgendaView<'a> {
 impl AgendaView<'_> {
     pub fn new(calendars: &CalendarCollection) -> AgendaView<'_> {
         let output_dir = calendars
-            .base_dir
+            .base_dir()
             .join(&calendars.config.output_dir)
             .join(VIEW_PATH);
         AgendaView {
@@ -68,7 +68,7 @@ impl AgendaView<'_> {
         // TODO: might want to convert timezone on events before making the naive
         let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
             .event_list()
-            .partition(|e| e.start().date_naive() < self.config().calendar_today_date.date());
+            .partition(|e| e.start().date_naive() < self.calendars.today_date());
 
         // process past events
         past_events.sort_by_key(|e| e.start());
