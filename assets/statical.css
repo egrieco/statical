@@ -10,6 +10,10 @@ h1 {
   float: right;
 }
 
+.top-header {
+  display: flex;
+}
+
 .temp-spacer {
   /*This a placeholder till h1 can be properly aligned*/
   display: flex;
@@ -26,6 +30,7 @@ h1 {
   display: flex;
   width: calc(100%/3);
   justify-content: right;
+  align-items: center;
 }
 
 .month .wday.header {
