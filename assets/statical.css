@@ -10,13 +10,6 @@ h1 {
   float: right;
 }
 
-.calendar > .header-section {
-  display: flex;
-  width: calc(100% / 3);
-  justify-content: space-between;
-  align-items: center;
-}
-
 .temp-spacer {
   /*This a placeholder till h1 can be properly aligned*/
   display: flex;
