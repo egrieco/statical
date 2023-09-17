@@ -126,6 +126,7 @@ impl DayView<'_> {
             next_day.map(|next_day| format!("{}.html", next_day.format(YMD_FORMAT)));
 
         let mut context = self.calendars.template_context();
+        context.insert("current_view", VIEW_PATH);
         context.insert(
             "view_date",
             &current_day

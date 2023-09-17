@@ -206,6 +206,7 @@ impl MonthView<'_> {
             .map(|next_month| format!("{}-{}.html", next_month.year(), next_month.month()));
 
         let mut context = self.calendars.template_context();
+        context.insert("current_view", VIEW_PATH);
         context.insert(
             "view_date",
             &current_month

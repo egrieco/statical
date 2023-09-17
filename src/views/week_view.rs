@@ -138,6 +138,7 @@ impl WeekView<'_> {
 
         // setup the tera context
         let mut context = self.calendars.template_context();
+        context.insert("current_view", VIEW_PATH);
         context.insert(
             "view_date",
             &current_week

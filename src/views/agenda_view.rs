@@ -187,6 +187,7 @@ impl AgendaView<'_> {
         );
 
         let mut context = self.calendars.template_context();
+        context.insert("current_view", VIEW_PATH);
         // TODO: we need to refactor the way agenda pages are created before we can enable the below
         // context.insert(
         //     "view_date_start",

@@ -1,9 +1,9 @@
 <div class="view">
   <ul>
-    {% if render_month %}<li><a href="{{ month_view_path }}">Month</a></li>{% endif %}
-    {% if render_week %}<li><a href="{{ week_view_path }}">Week</a></li>{% endif %}
-    {% if render_day %}<li><a href="{{ day_view_path }}">Day</a></li>{% endif %}
-    {% if render_agenda %}<li><a href="{{ agenda_view_path }}">Agenda</a></li>{% endif %}
+    {% if render_month %}<li {% if current_view == 'month' %}class="active"{% endif %}><a href="{{ month_view_path }}">Month</a></li>{% endif %}
+    {% if render_week %}<li {% if current_view == 'week' %}class="active"{% endif %}><a href="{{ week_view_path }}">Week</a></li>{% endif %}
+    {% if render_day %}<li {% if current_view == 'day' %}class="active"{% endif %}><a href="{{ day_view_path }}">Day</a></li>{% endif %}
+    {% if render_agenda %}<li {% if current_view == 'agenda' %}class="active"{% endif %}><a href="{{ agenda_view_path }}">Agenda</a></li>{% endif %}
     {% if render_feed %}<li><a href="{{ feed_view_path }}">Calendar Feed</a></li>{% endif %}
   </ul>
 </div>
