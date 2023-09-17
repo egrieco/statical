@@ -4,114 +4,118 @@ body
 h1
   text-align: center
 
-.calendar > .expand-events
-  float: right
-
-.month .wday.header
-  position: sticky
-  top: 0
-
-.calendar .week
-  display: grid
-  grid-auto-rows: 2
-  grid-template-columns: repeat(7, 1fr)
-  gap: 2px
-
-.day
-  background-color: aliceblue
-  padding: 0.1em
-
-  img
-    /* Fix to keep absurdly large images contained within the .day cell */
-    max-width: 100%
-
-  &.other-month
-    background-color: white
-
-  &.weekend
-    background-color: lightgrey
-
 .calendar
+  > .expand-events
+    float: right
+
+  // prevent images from getting overly large
+  > .day .event .body .content img
+    max-height: 50vh
+    max-width: 50vw
+
+  .pagination
+    display: flex
+    justify-content: space-between
+    padding: 0.25em 0
+    .view ul
+      margin: 0
+      padding: 0
+      li
+        display: inline
+        margin: 0 1em
+
+    ul
+      width: 100%
+      display: inline-flex
+      justify-content: space-around
+      padding: 0
+
+      li
+        /* this is mostly to suppress the list bullet points */
+        display: inline
+
   .header
     background: gray
     padding: 0.5em
     margin: 0
     column-gap: 1em
 
-  .month .header
-    text-align: center
+  .month
+    display: grid
+    grid-auto-rows: repeat(6, minmax(6em, auto))
+    grid-template-columns: repeat(7, 1fr)
+    gap: 2px
 
-  > .week > .day > p.header
-    display: flex
-    justify-content: space-between
+    .header
+      text-align: center
 
-  .event .header > p
-    margin: 0
+    .wday.header
+      position: sticky
+      top: 0
 
-.day .date
-  white-space: nowrap
-  text-align: right
+  .week
+    display: grid
+    grid-auto-rows: 2
+    grid-template-columns: repeat(7, 1fr)
+    gap: 2px
 
-ul
-  width: 100%
-  display: inline-flex
-  justify-content: space-around
-  padding: 0
+    > .day > p.header
+      display: flex
+      justify-content: space-between
 
-  li
-    /* this is mostly to suppress the list bullet points */
-    display: inline
+  .day
+    background-color: aliceblue
+    padding: 0.1em
 
-.pagination
-  display: flex
-  justify-content: space-between
-  padding: 0.25em 0
+    img
+      /* Fix to keep absurdly large images contained within the .day cell */
+      max-width: 100%
 
-.view ul
-  margin: 0
-  padding: 0
+    &.other-month
+      background-color: white
 
-.pagination .view ul li
-  display: inline
-  margin: 0 1em
+    &.weekend
+      background-color: lightgrey
 
-.event
-  background-color: #eee
-  padding: 0
-  border-radius: 1em
-  margin: 0.5em
-  overflow: hidden
+    .date
+      white-space: nowrap
+      text-align: right
 
-  \:any-link
-    color: unset
-    text-decoration: none
+  .event
+    background-color: #eee
+    padding: 0
+    border-radius: 1em
+    margin: 0.5em
+    overflow: hidden
 
-  .body .content
-    padding: 0.5em
+    \:any-link
+      color: unset
+      text-decoration: none
 
-.calendar > .day .event .body .content img
-  max-height: 50vh
-  max-width: 50vw
+    .summary
+      font-weight: bold
 
-.event
-  p
-    margin: 1em 0
+    .body .content
+      padding: 0.5em
 
-    &:first-child
-      margin-top: 0
+    p
+      margin: 1em 0
 
-    &:last-child
+      &:first-child
+        margin-top: 0
+
+      &:last-child
+        margin-bottom: 0
+
+    div.header
+      background-color: grey
+      border-top-left-radius: 1em
+      border-top-right-radius: 1em
+      white-space: nowrap
       margin-bottom: 0
 
-  div.header
-    background-color: grey
-    border-top-left-radius: 1em
-    border-top-right-radius: 1em
-    white-space: nowrap
-    margin-bottom: 0
-
-  .summary
-    font-weight: bold
+    .header > p
+      margin: 0
 
 /* hide body until hover */
 .calendar .month .event
@@ -144,9 +148,3 @@ input#expand-events:checked ~ .month .events .event .body
   /* cannot use 100% or auto here, nor can we transition between such values on height
    * more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/ */
   max-height: 100vh
-
-.calendar .month
-  display: grid
-  grid-auto-rows: repeat(6, minmax(6em, auto))
-  grid-template-columns: repeat(7, 1fr)
-  gap: 2px
