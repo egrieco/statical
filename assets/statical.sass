@@ -48,7 +48,8 @@ h1
   .month
     display: grid
     grid-auto-rows: repeat(6, minmax(6em, auto))
-    grid-template-columns: repeat(7, 1fr)
+    // this math looks overly complex but we need to make up for the gap
+    grid-template-columns: repeat(7, calc( 100% / 7 - 2px + 2px / 7))
     gap: 2px
 
     .header
