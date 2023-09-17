@@ -8,7 +8,6 @@ use include_dir::{
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
 use log::{debug, error, info};
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -376,14 +375,39 @@ impl CalendarCollection {
             delete_dir_contents(&output_dir);
         }
 
-        // create the styles dir
-        let styles_dir = output_dir.join("styles");
-        debug!("styles_dir: {:?}", styles_dir);
-        create_dir_all(&styles_dir)?;
-
         if self.config.copy_stylesheet_to_output {
-            let stylesheet_destination = styles_dir.join(PathBuf::from("style.css"));
+            let stylesheet_path = &self
+                .config
+                .stylesheet_path
+                .strip_prefix("/")
+                .wrap_err("could not strip prefix")?;
+            let stylesheet_destination = output_dir.join(stylesheet_path.to_str().unwrap());
             let source_stylesheet = self.base_dir().join(&self.config.copy_stylesheet_from);
+
+            // create the stylesheet path
+            let styles_dir = stylesheet_destination.parent().ok_or(eyre!(
+                "could not get the parent dir of the stylesheet_destination"
+            ))?;
+            debug!(
+                "creating the parent dir of the stylesheet_destination: {:?}",
+                styles_dir
+            );
+            create_dir_all(styles_dir)
+                .wrap_err("could not create the parent directory of the stylesheet_destination")?;
+
+            // determine if we need to compile sass
+            debug!("source_stylesheet: {:?}", source_stylesheet);
+            let compile_sass = ["sass", "scss"].contains(
+                &source_stylesheet
+                    .extension()
+                    .ok_or(eyre!("could not get extension of source_stylesheet"))?
+                    .to_str()
+                    .ok_or(eyre!(
+                        "could not convert extension of source_stylesheet to str"
+                    ))?,
+            );
+            debug!("need to compile sass: {:?}", compile_sass);
+
             // TODO: test if stylesheet exists in assets dir, otherwise use the built-in
             if source_stylesheet.exists() {
                 debug!(
@@ -391,17 +415,27 @@ impl CalendarCollection {
                     &source_stylesheet, &stylesheet_destination
                 );
 
-                fs::copy(&source_stylesheet, &stylesheet_destination).wrap_err(format!(
-                    "could not copy stylesheet {:?} to destination: {:?}",
-                    source_stylesheet, &stylesheet_destination
-                ))?;
+                if compile_sass {
+                    let css_output =
+                        grass::from_path(source_stylesheet, &grass::Options::default())
+                            .wrap_err("could not convert SASS to CSS")?;
+                    File::create(stylesheet_destination)
+                        .wrap_err("could not create stylesheet_destination file")?
+                        .write_all(css_output.as_bytes())
+                        .wrap_err("could not write css output to stylesheet_destination")?;
+                } else {
+                    fs::copy(&source_stylesheet, &stylesheet_destination).wrap_err(format!(
+                        "could not copy stylesheet {:?} to destination: {:?}",
+                        source_stylesheet, &stylesheet_destination
+                    ))?;
+                };
             } else {
                 debug!(
                     "source stylesheet does not exist at path: {:?}",
                     source_stylesheet
                 );
                 // TODO: do we want this to be an iterator? will we ever have multiple built-in stylesheets?
-                for stylesheet in ASSETS_DIR.find("statical.css")? {
+                for stylesheet in ASSETS_DIR.find("statical.sass")? {
                     if let FileEnt(f) = stylesheet {
                         // TODO: remove the query for the name unless we want to support multiple stylesheets
                         if let (Some(stylesheet_name), Some(stylesheet_contents)) =
@@ -413,7 +447,10 @@ impl CalendarCollection {
                             );
                             let mut file = File::create(&stylesheet_destination)
                                 .wrap_err("could not create destination stylesheet file")?;
-                            match file.write_all(stylesheet_contents.as_bytes()) {
+                            let css_output =
+                                grass::from_string(stylesheet_contents, &grass::Options::default())
+                                    .wrap_err("could not convert built-in SASS to CSS")?;
+                            match file.write_all(css_output.as_bytes()) {
                                 Ok(_) => info!("created file from built-in stylesheet"),
                                 Err(e) => error!(
                                     "could not write file to {:?}: {}",

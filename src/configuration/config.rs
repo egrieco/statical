@@ -14,7 +14,7 @@ use super::{
     types::{calendar_view::CalendarView, config_time_zone::ConfigTimeZone, config_url::ConfigUrl},
 };
 
-const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.css";
+const DEFAULT_STYLESHEET_PATH: &str = "assets/statical.sass";
 const DEFAULT_TEMPLATE_PATH: &str = "templates";
 const DEFAULT_ASSETS_PATH: &str = "assets";
 
@@ -70,7 +70,7 @@ pub struct Config {
     /// This is mostly useful for local testing, unless you want to use a separate stylesheet for the calendar
     ///
     /// NOTE: This is relative to the config file
-    #[doku(example = "assets/statical.css")]
+    #[doku(example = "assets/statical.sass")]
     pub copy_stylesheet_from: PathBuf,
 
     /// The path for template files
