@@ -1,10 +1,12 @@
 body
   height: 100%
 
-h1
-  text-align: center
-
 .calendar
+  h1
+    background-color: white
+    text-align: center
+    margin: 0
+    padding: .6em
   > .expand-events
     position: absolute
     top: 12px
@@ -21,25 +23,30 @@ h1
   .pagination
     display: flex
     justify-content: space-between
-    background-color: lightgrey
+    margin: .5rem 0
     :any-link
       text-decoration: none
     .previous, .next
-      width: 13%
+      border-radius: .5rem
+      background-color: #eee
+      width: calc( 100% / 7 )
       text-align: center
       padding: 0.45em 0
 
-    .active
-      background-color: grey
-      font-weight: bold
-
-    .view ul
-      margin: 0
-      padding: 0
-      li
-        display: inline
+    .view
+      border-radius: .5rem
+      background-color: #eee
+      .active
+        background-color: grey
+        font-weight: bold
+        border-radius: .5rem
+      ul
         margin: 0
-        padding: 0.45em 1em
+        padding: 0
+        li
+          display: inline
+          margin: 0
+          padding: 0.45em 1em
 
 
     ul
@@ -53,24 +60,34 @@ h1
         display: inline
 
   .header
-    background: gray
     padding: 0.5em
     margin: 0
-    column-gap: 1em
 
   .month
     display: grid
     grid-auto-rows: repeat(6, minmax(6em, auto))
-    // this math looks overly complex but we need to make up for the gap
-    grid-template-columns: repeat(7, calc( 100% / 7 - 2px + 2px / 7))
-    gap: 2px
+    // simplified the math by removing the gap
+    grid-template-columns: repeat(7, calc( 100% / 7))
 
-    .header
+    > .header
+      font-weight: bold
       text-align: center
 
     .wday.header
       position: sticky
       top: 0
+    .day
+      border: .5px solid lightgrey
+      p
+        margin: .25em
+    .weekend
+      border-top: .5px solid grey
+    .weekend.first-week
+      border-top: unset
+    .weekend.Sun
+      border-right: .5px solid grey
+    .weekend.Sat
+      border-left: .5px solid grey
 
   .week
     display: grid
@@ -83,18 +100,15 @@ h1
       justify-content: space-between
 
   .day
-    background-color: aliceblue
+    background-color: white
     padding: 0.1em
 
     img
       /* Fix to keep absurdly large images contained within the .day cell */
       max-width: 100%
 
-    &.other-month
-      background-color: white
-
-    &.weekend
-      background-color: lightgrey
+    &.weekend, &.other-month
+      background-color: #ddd
 
     .date
       white-space: nowrap

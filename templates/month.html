@@ -27,7 +27,7 @@
       {% set first_week = loop.first %}
       {% for day in week %}
       {% set first_day = loop.first %}
-      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
+      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %} {{ day.wday }} {% if first_week %} first-week {% endif %}">
         <p class="date">
           {% set show_month = first_week and first_day %}
           {% if day.day == 1 or show_month %}
