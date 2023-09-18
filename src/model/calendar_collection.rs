@@ -81,7 +81,7 @@ impl CalendarCollection {
         }
 
         let mut calendars = Vec::new();
-        let mut unparsed_properties = HashSet::new();
+        let unparsed_properties = HashSet::new();
 
         // convert the CalendarSourceConfigs into Result<CalendarSources>
         debug!("configuring calendar sources...");
@@ -119,10 +119,8 @@ impl CalendarCollection {
         debug!("parsing calendars...");
         for source in calendar_sources {
             debug!("parsing calendar source: {:?}", source);
-            if let Ok((mut parsed_calendars, calendar_unparsed_properties)) =
-                source?.parse_calendars(&config.base_dir)
-            {
-                unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+            if let Ok(mut parsed_calendars) = source?.parse_calendars(&config.base_dir) {
+                // unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
                 calendars.append(&mut parsed_calendars);
             } else {
                 error!("could not parse source");
@@ -258,8 +256,8 @@ impl CalendarCollection {
 
     /// Get a reference to the calendar collection's calendars.
     #[must_use]
-    pub fn calendars(&self) -> &[Calendar] {
-        self.calendars.as_ref()
+    pub fn calendars(&self) -> &Vec<Calendar> {
+        &self.calendars
     }
 
     pub(crate) fn events(&self) -> impl Iterator<Item = &Rc<Event>> {

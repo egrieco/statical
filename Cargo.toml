@@ -23,6 +23,7 @@ chrono-tz = { version = "0.8.3", features = ["serde"] }
 chronoutil = "0.2.5"
 clap = { version = "4.4.2", features = ["derive"] }
 color-eyre = "0.6.2"
+csscolorparser = { version = "0.6.2", features = ["serde"] }
 dedup_iter = "0.1.1"
 doku = { version = "0.21.1", features = ["chrono", "chrono-04"] }
 figment = { version = "0.10.10", features = ["toml"] }

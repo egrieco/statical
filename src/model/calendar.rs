@@ -1,6 +1,7 @@
 use chrono::{DateTime, Months, TimeZone, Utc};
 use chrono_tz::Tz as ChronoTz;
 use color_eyre::eyre::{Context, Result};
+use csscolorparser::Color;
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use indent::indent_all_by;
@@ -10,20 +11,30 @@ use std::rc::Rc;
 use std::{collections::HashSet, fmt};
 
 use super::event::{EventList, UnparsedProperties};
+use crate::configuration::calendar_source_config::CalendarSourceConfig;
 use crate::model::event::Event;
 
 const START_DATETIME_FORMAT: &str = "%a %B %d, %Y";
 const END_DATETIME_FORMAT: &str = "%a %B %d, %Y";
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Calendar {
+    /// The internal name of the calendar
     name: Option<String>,
+    /// The user visible name of the calendar
+    title: String,
+    /// The color of the calendar
+    color: Color,
+
     description: Option<String>,
     pub(crate) start: DateTime<Utc>,
     pub(crate) end: DateTime<Utc>,
     events: EventList,
     recurring_events: EventList,
+    unparsed_properties: UnparsedProperties,
 }
+
+impl Eq for Calendar {}
 
 impl fmt::Display for Calendar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -46,7 +57,7 @@ impl fmt::Display for Calendar {
 }
 
 impl Calendar {
-    pub fn new(calendar: &IcalCalendar) -> Result<Calendar> {
+    pub fn new(calendar: &IcalCalendar, source_config: &CalendarSourceConfig) -> Result<Calendar> {
         // eprintln!("Parsing calendar: {:#?}", calendar);
         let mut name = None;
         let mut description = None;
@@ -65,31 +76,59 @@ impl Calendar {
         // default to today and one month from today
         let now = Utc::now();
 
+        let title = source_config
+            .title
+            .clone()
+            .or(name.clone())
+            .unwrap_or("No Calendar Name Found".to_owned());
+
+        let mut unparsed_properties: UnparsedProperties = HashSet::new();
+        let mut events: EventList = Vec::new();
+        let mut recurring_events: EventList = Vec::new();
+
+        // setup default start and end of calendar
+        let mut start = now;
+        let mut end = now + Months::new(1);
+
+        log::debug!("parsing calendar events...");
+        for event in &calendar.events {
+            let (new_event, event_unparsed_properties) =
+                Event::new(event, source_config.name.clone())?;
+            unparsed_properties.extend(event_unparsed_properties.into_iter());
+
+            // collect calendar start and end dates, we need this for rrule expansion
+            start = start.min(new_event.start());
+            end = end.max(new_event.end());
+
+            // let rc_event = Rc::new(new_event);
+            // events.push(rc_event);
+            // sort events
+            if new_event
+                .rrule()
+                .wrap_err("could not parse rrule")?
+                .is_some()
+            {
+                // add event to recurring_events
+                // TODO might want to look at any recurrence termination dates and set calendar end to that
+                recurring_events.push(Rc::new(new_event))
+            } else {
+                // add event to calendar event list
+                events.push(Rc::new(new_event))
+            }
+        }
+
         // build the new calendar
         Ok(Calendar {
             name,
             description,
-            start: now,
-            end: now + Months::new(1),
-            events: Vec::new(),
-            recurring_events: Vec::new(),
+            start,
+            end,
+            events,
+            recurring_events,
+            title,
+            color: source_config.color().clone(),
+            unparsed_properties,
         })
-    }
-
-    pub fn push(&mut self, event: Rc<Event>) -> Result<()> {
-        // collect calendar start and end dates, we need this for rrule expansion
-        self.start = self.start.min(event.start());
-        self.end = self.end.max(event.end());
-
-        if event.rrule()?.is_some() {
-            // add event to recurring_events
-            // TODO might want to look at any recurrence termination dates and set calendar end to that
-            self.recurring_events.push(event)
-        } else {
-            // add event to calendar event list
-            self.events.push(event)
-        }
-        Ok(())
     }
 
     pub fn expand_recurrences(
@@ -142,31 +181,18 @@ impl Calendar {
     /// Parse calendar data from ICS
     ///
     /// The ICS data can be either a file or a url. Anything that implements BufRead such as a File or String::as_bytes().
-    pub fn parse_calendars<B>(buf: B) -> Result<(Vec<Calendar>, UnparsedProperties)>
+    pub fn parse_calendars<B>(buf: B, source_config: &CalendarSourceConfig) -> Result<Vec<Calendar>>
     where
         B: BufRead,
     {
         log::debug!("parsing calendars...");
         let mut calendars = Vec::new();
         let reader = IcalParser::new(buf);
-        // TODO: might want to store the unparsed properties in the calendar itself
-        let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
         for calendar in reader.flatten() {
-            let mut new_calendar = Calendar::new(&calendar)?;
-
-            log::debug!("parsing calendar events...");
-            for event in calendar.events {
-                let (new_event, event_unparsed_properties) = Event::new(event)?;
-                unparsed_properties.extend(event_unparsed_properties.into_iter());
-                let rc_event = Rc::new(new_event);
-                new_calendar
-                    .push(rc_event)
-                    .wrap_err("could not add event to calendar")?;
-            }
-            calendars.push(new_calendar);
+            calendars.push(Calendar::new(&calendar, source_config)?);
         }
-        Ok((calendars, unparsed_properties))
+        Ok(calendars)
     }
 
     #[must_use]

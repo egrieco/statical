@@ -49,6 +49,7 @@ pub type EventList = Vec<Rc<Event>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Event {
+    calendar_name: String,
     summary: Option<String>,
     description: Option<String>,
     start: DateTime<Utc>,
@@ -209,7 +210,7 @@ impl Event {
         }
     }
 
-    pub fn new(event: IcalEvent) -> Result<(Event, UnparsedProperties)> {
+    pub fn new(event: &IcalEvent, calendar_name: String) -> Result<(Event, UnparsedProperties)> {
         log::debug!("creating new Event...");
 
         let mut summary = None;
@@ -222,29 +223,30 @@ impl Event {
 
         let mut unparsed_properties: UnparsedProperties = HashSet::new();
 
-        for property in event.properties {
+        for property in &event.properties {
             log::debug!("parsing property: {}: {:?}", property.name, property.value);
             match property.name.as_str() {
-                "SUMMARY" => summary = property.value,
+                "SUMMARY" => summary = property.value.clone(),
                 // TODO: sanitize html, maybe expand markdown
                 "DESCRIPTION" => {
                     description = property
                         .value
+                        .clone()
                         // we have to strip out escaped commas so they don't trip up unescape
                         .map(|v| v.replace(r"\,", r","))
                         .map(|v| unescape(&v))
                         .transpose()?
                 }
                 // TODO use the user configured default timezone
-                "DTSTART" => start = property_to_time(&property, chrono_tz::UTC)?,
+                "DTSTART" => start = property_to_time(property, chrono_tz::UTC)?,
                 // TODO use the user configured default timezone
-                "DTEND" => end = property_to_time(&property, chrono_tz::UTC)?,
-                "RRULE" => rrule = property.value,
-                "LOCATION" => location = property.value,
-                "URL" => url = property.value,
+                "DTEND" => end = property_to_time(property, chrono_tz::UTC)?,
+                "RRULE" => rrule = property.value.clone(),
+                "LOCATION" => location = property.value.clone(),
+                "URL" => url = property.value.clone(),
                 _ => {
                     log::trace!("adding unparsed property: {}", property.name);
-                    unparsed_properties.insert(property.name);
+                    unparsed_properties.insert(property.name.clone());
                     // TODO collect unparsed params as well
                     // if let Some(params) = property.params {
                     //     println!("{:#?}", params);
@@ -267,6 +269,7 @@ impl Event {
         // TODO parse the rrule here, store None if it does not parse
         Ok((
             Event {
+                calendar_name,
                 summary,
                 description,
                 start: start.unwrap(),
@@ -285,6 +288,7 @@ impl Event {
     pub fn duplicate_with_date(&self, date: DateTime<ChronoTz>) -> Event {
         // TODO might want to link this event back to its parent event in some way, maybe even have a separate event class
         Event {
+            calendar_name: self.calendar_name.clone(),
             summary: self.summary.clone(),
             description: self.description.clone(),
             start: date.with_timezone(&Utc),
