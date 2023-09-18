@@ -86,9 +86,10 @@ impl CalendarCollection {
         // convert the CalendarSourceConfigs into Result<CalendarSources>
         debug!("configuring calendar sources...");
         let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
-        for source in &config.calendar_sources {
-            debug!("creating calendar source: {:?}", &source);
-            calendars_sources_configs.push(CalendarSource::new(&config.base_dir, source));
+        for source_config in &config.calendar_sources {
+            debug!("creating calendar source: {:?}", &source_config);
+            calendars_sources_configs
+                .push(CalendarSource::new(&config.base_dir, source_config.clone()));
         }
 
         // sort properly configured calendars and errors

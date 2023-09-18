@@ -3,6 +3,7 @@ use std::{
     fs::File,
     io::BufReader,
     path::{Path, PathBuf},
+    rc::Rc,
 };
 use url::Url;
 
@@ -11,24 +12,24 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) enum CalendarSource<'a> {
-    CalendarUrl(Url, &'a CalendarSourceConfig),
-    CalendarFile(PathBuf, &'a CalendarSourceConfig),
+pub(crate) enum CalendarSource {
+    CalendarUrl(Url, Rc<CalendarSourceConfig>),
+    CalendarFile(PathBuf, Rc<CalendarSourceConfig>),
 }
 
-impl CalendarSource<'_> {
-    pub(crate) fn new<'a>(
-        base_dir: &'a Path,
-        source_config: &'a CalendarSourceConfig,
-    ) -> Result<CalendarSource<'a>> {
+impl CalendarSource {
+    pub(crate) fn new(
+        base_dir: &Path,
+        source_config: Rc<CalendarSourceConfig>,
+    ) -> Result<CalendarSource> {
         log::debug!("creating calendar source: {}", source_config);
-        if let Ok(url) = Url::parse(source_config.into()) {
+        if let Ok(url) = Url::parse(&source_config.source) {
             log::debug!("calendar source is a url");
             return Ok(CalendarSource::CalendarUrl(url, source_config));
         };
 
         let path = base_dir.join(
-            PathBuf::try_from(&source_config)
+            PathBuf::try_from(&source_config.source)
                 .wrap_err("calendar source is not a valid file path")?,
         );
 
@@ -48,12 +49,12 @@ impl CalendarSource<'_> {
             Self::CalendarFile(file, source_config) => {
                 log::info!("reading calendar file: {:?}", file);
                 let buf = BufReader::new(File::open(base_dir.join(file))?);
-                Calendar::parse_calendars(buf, source_config)?
+                Calendar::parse_calendars(buf, source_config.clone())?
             }
             Self::CalendarUrl(url, source_config) => {
                 log::info!("reading calendar url: {}", url);
                 let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
-                Calendar::parse_calendars(ics_string.as_bytes(), source_config)?
+                Calendar::parse_calendars(ics_string.as_bytes(), source_config.clone())?
             }
         };
 

@@ -1,6 +1,6 @@
-<div class="event">
+<div class="event {{ event.calendar_name }}">
   <a href="{{ event.url }}">
-    <div class="header">
+    <div class="header" style="background-color: {{ event.calendar_color }};">
       <p class="times"><span class="time">{{ event.start }} - {{ event.end }}</span> <span class="duration">({{ event.duration }})</span></p>
       <p class="summary">{{ event.summary }}</p>
     </div>

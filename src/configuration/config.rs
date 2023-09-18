@@ -7,6 +7,7 @@ use figment::Figment;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use super::{
     calendar_source_config::CalendarSourceConfig,
@@ -42,7 +43,7 @@ pub struct Config {
     pub display_timezone: ConfigTimeZone,
 
     /// The list of calendars to import (can be files and urls)
-    pub(crate) calendar_sources: Vec<CalendarSourceConfig>,
+    pub(crate) calendar_sources: Vec<Rc<CalendarSourceConfig>>,
 
     /// The path to the output directory where files will be written.
     ///

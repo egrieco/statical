@@ -1,4 +1,3 @@
-use csscolorparser::Color;
 use doku::Document;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -9,7 +8,7 @@ use std::{
 use super::types::config_color::ConfigColor;
 
 /// A Config item representing a calendar source
-#[derive(Debug, Deserialize, Serialize, Document)]
+#[derive(Debug, Deserialize, Serialize, Document, PartialEq, Eq)]
 pub struct CalendarSourceConfig {
     /// The url or file path of the calendar
     ///
@@ -36,13 +35,7 @@ pub struct CalendarSourceConfig {
     pub title: Option<String>,
 
     /// Any valid CSS color notation
-    pub color: ConfigColor,
-}
-
-impl CalendarSourceConfig {
-    pub(crate) fn color(&self) -> &Color {
-        &self.color.0
-    }
+    pub(crate) color: ConfigColor,
 }
 
 // TODO: need to update this function for new fields

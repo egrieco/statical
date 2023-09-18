@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::{collections::HashSet, fmt, rc::Rc};
 use unescaper::unescape;
 
-use crate::configuration::config::Config;
+use crate::configuration::{calendar_source_config::CalendarSourceConfig, config::Config};
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {
@@ -49,7 +49,7 @@ pub type EventList = Vec<Rc<Event>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Event {
-    calendar_name: String,
+    calendar_config: Rc<CalendarSourceConfig>,
     summary: Option<String>,
     description: Option<String>,
     start: DateTime<Utc>,
@@ -61,6 +61,9 @@ pub struct Event {
 
 #[derive(Debug, Serialize)]
 pub struct EventContext {
+    calendar_name: String,
+    calendar_title: String,
+    calendar_color: String,
     summary: String,
     description: String,
     start: String,
@@ -106,6 +109,14 @@ impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
     pub fn context(&self, config: &Config) -> EventContext {
         EventContext {
+            calendar_name: self.calendar_config.name.clone(),
+            // TODO: make sure that this is using the fallback from the calendar
+            calendar_title: self
+                .calendar_config
+                .title
+                .clone()
+                .unwrap_or("No Title".to_owned()),
+            calendar_color: self.calendar_config.color.to_hex_string(),
             summary: self.summary().into(),
             description: self
                 .description
@@ -210,9 +221,13 @@ impl Event {
         }
     }
 
-    pub fn new(event: &IcalEvent, calendar_name: String) -> Result<(Event, UnparsedProperties)> {
+    pub fn new(
+        event: &IcalEvent,
+        calendar_config: Rc<CalendarSourceConfig>,
+    ) -> Result<(Event, UnparsedProperties)> {
         log::debug!("creating new Event...");
 
+        // let calendar_config = Rc::new(calendar_config);
         let mut summary = None;
         let mut description = None;
         let mut start: Option<DateTime<Utc>> = None;
@@ -269,7 +284,7 @@ impl Event {
         // TODO parse the rrule here, store None if it does not parse
         Ok((
             Event {
-                calendar_name,
+                calendar_config,
                 summary,
                 description,
                 start: start.unwrap(),
@@ -288,7 +303,7 @@ impl Event {
     pub fn duplicate_with_date(&self, date: DateTime<ChronoTz>) -> Event {
         // TODO might want to link this event back to its parent event in some way, maybe even have a separate event class
         Event {
-            calendar_name: self.calendar_name.clone(),
+            calendar_config: self.calendar_config.clone(),
             summary: self.summary.clone(),
             description: self.description.clone(),
             start: date.with_timezone(&Utc),

@@ -1,7 +1,6 @@
 use chrono::{DateTime, Months, TimeZone, Utc};
 use chrono_tz::Tz as ChronoTz;
 use color_eyre::eyre::{Context, Result};
-use csscolorparser::Color;
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use indent::indent_all_by;
@@ -23,8 +22,8 @@ pub struct Calendar {
     name: Option<String>,
     /// The user visible name of the calendar
     title: String,
-    /// The color of the calendar
-    color: Color,
+
+    source_config: Rc<CalendarSourceConfig>,
 
     description: Option<String>,
     pub(crate) start: DateTime<Utc>,
@@ -57,7 +56,10 @@ impl fmt::Display for Calendar {
 }
 
 impl Calendar {
-    pub fn new(calendar: &IcalCalendar, source_config: &CalendarSourceConfig) -> Result<Calendar> {
+    pub fn new(
+        calendar: &IcalCalendar,
+        source_config: Rc<CalendarSourceConfig>,
+    ) -> Result<Calendar> {
         // eprintln!("Parsing calendar: {:#?}", calendar);
         let mut name = None;
         let mut description = None;
@@ -92,8 +94,7 @@ impl Calendar {
 
         log::debug!("parsing calendar events...");
         for event in &calendar.events {
-            let (new_event, event_unparsed_properties) =
-                Event::new(event, source_config.name.clone())?;
+            let (new_event, event_unparsed_properties) = Event::new(event, source_config.clone())?;
             unparsed_properties.extend(event_unparsed_properties.into_iter());
 
             // collect calendar start and end dates, we need this for rrule expansion
@@ -120,13 +121,13 @@ impl Calendar {
         // build the new calendar
         Ok(Calendar {
             name,
+            title,
+            source_config,
             description,
-            start,
-            end,
+            start: now,
+            end: now + Months::new(1),
             events,
             recurring_events,
-            title,
-            color: source_config.color().clone(),
             unparsed_properties,
         })
     }
@@ -181,7 +182,10 @@ impl Calendar {
     /// Parse calendar data from ICS
     ///
     /// The ICS data can be either a file or a url. Anything that implements BufRead such as a File or String::as_bytes().
-    pub fn parse_calendars<B>(buf: B, source_config: &CalendarSourceConfig) -> Result<Vec<Calendar>>
+    pub fn parse_calendars<B>(
+        buf: B,
+        source_config: Rc<CalendarSourceConfig>,
+    ) -> Result<Vec<Calendar>>
     where
         B: BufRead,
     {
@@ -190,7 +194,7 @@ impl Calendar {
         let reader = IcalParser::new(buf);
 
         for calendar in reader.flatten() {
-            calendars.push(Calendar::new(&calendar, source_config)?);
+            calendars.push(Calendar::new(&calendar, source_config.clone())?);
         }
         Ok(calendars)
     }
