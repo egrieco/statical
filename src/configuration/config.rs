@@ -142,6 +142,15 @@ pub struct Config {
     // TODO: find a way to validate format strings: https://github.com/chronotope/chrono/issues/342
     #[doku(example = "%I:%M%P")]
     pub event_end_format: String,
+
+    /// Whether to correct provided colors to ensure readability
+    pub adjust_colors: bool,
+
+    /// The adjusted lightness of the calendar colors
+    pub adjusted_lightness: f64,
+
+    /// The adjusted chroma or "color intensity" of the calendar colors
+    pub adjusted_chroma: f64,
 }
 
 /// Sane default values for the config struct.
@@ -174,6 +183,9 @@ impl Default for Config {
             agenda_events_per_page: 10,
             event_start_format: "%I:%M%P".into(),
             event_end_format: "%I:%M%P".into(),
+            adjust_colors: true,
+            adjusted_lightness: 0.9,
+            adjusted_chroma: 0.15,
         }
     }
 }

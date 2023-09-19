@@ -1,6 +1,7 @@
 use doku::Document;
 use serde::{Deserialize, Serialize};
 use std::{
+    cell::OnceCell,
     ffi::OsStr,
     fmt::{self},
 };
@@ -36,6 +37,9 @@ pub struct CalendarSourceConfig {
 
     /// Any valid CSS color notation
     pub(crate) color: ConfigColor,
+
+    #[serde(skip)]
+    pub(crate) adjusted_color: OnceCell<String>,
 }
 
 // TODO: need to update this function for new fields

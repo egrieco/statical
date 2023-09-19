@@ -2,6 +2,8 @@ use csscolorparser::Color;
 use palette::{FromColor, Oklch, Srgb};
 use serde::{Deserialize, Serialize};
 
+use crate::configuration::config::Config;
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub(crate) struct ConfigColor(pub(crate) Color);
 
@@ -10,16 +12,15 @@ impl ConfigColor {
         self.0.to_hex_string()
     }
 
-    // TODO: need to do this math once per color, and not on every call to this method
-    pub(crate) fn to_adjusted_hex_string(&self) -> String {
+    pub(crate) fn adjust_color(&self, config: &Config) -> String {
         let (r, g, b, _a) = self.0.to_linear_rgba();
         // NOTE: its really important to use Oklch or another perceptually normalized color model here
         //       colors will look very strange if they are adjusted in other models
         let mut color = Oklch::from_color(Srgb::new(r, g, b));
-        color.chroma = 0.15;
-        color.l = 0.9;
+        color.chroma = config.adjusted_chroma;
+        color.l = config.adjusted_lightness;
         let (or, og, ob) = Srgb::from_color(color).into_components();
-        csscolorparser::Color::from_linear_rgba(or, og, ob, 1.0).to_hex_string()
+        ConfigColor(csscolorparser::Color::from_linear_rgba(or, og, ob, 1.0)).to_hex_string()
     }
 }
 

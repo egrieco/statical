@@ -116,7 +116,15 @@ impl Event {
                 .title
                 .clone()
                 .unwrap_or("No Title".to_owned()),
-            calendar_color: self.calendar_config.color.to_adjusted_hex_string(),
+            calendar_color: if config.adjust_colors {
+                self.calendar_config
+                    .adjusted_color
+                    .get()
+                    .unwrap_or(&self.calendar_config.color.to_hex_string())
+                    .clone()
+            } else {
+                self.calendar_config.color.to_hex_string()
+            },
             summary: self.summary().into(),
             description: self
                 .description

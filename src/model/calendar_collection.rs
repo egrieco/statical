@@ -88,8 +88,11 @@ impl CalendarCollection {
         let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
         for source_config in &config.calendar_sources {
             debug!("creating calendar source: {:?}", &source_config);
-            calendars_sources_configs
-                .push(CalendarSource::new(&config.base_dir, source_config.clone()));
+            calendars_sources_configs.push(CalendarSource::new(
+                &config.base_dir,
+                source_config.clone(),
+                &config,
+            ));
         }
 
         // sort properly configured calendars and errors
@@ -118,10 +121,9 @@ impl CalendarCollection {
 
         // parse calendar sources that are ok
         debug!("parsing calendars...");
-        for source in calendar_sources {
+        for source in calendar_sources.into_iter().flatten() {
             debug!("parsing calendar source: {:?}", source);
-            if let Ok(mut parsed_calendars) = source?.parse_calendars(&config.base_dir) {
-                // unparsed_properties.extend(calendar_unparsed_properties.clone().into_iter());
+            if let Ok(mut parsed_calendars) = source.parse_calendars(&config) {
                 calendars.append(&mut parsed_calendars);
             } else {
                 error!("could not parse source");

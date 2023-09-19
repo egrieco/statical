@@ -1,4 +1,4 @@
-use color_eyre::eyre::{bail, Context, Result};
+use color_eyre::eyre::{bail, eyre, Context, Result};
 use std::{
     fs::File,
     io::BufReader,
@@ -8,7 +8,8 @@ use std::{
 use url::Url;
 
 use crate::{
-    configuration::calendar_source_config::CalendarSourceConfig, model::calendar::Calendar,
+    configuration::{calendar_source_config::CalendarSourceConfig, config::Config},
+    model::calendar::Calendar,
 };
 
 #[derive(Debug)]
@@ -21,7 +22,15 @@ impl CalendarSource {
     pub(crate) fn new(
         base_dir: &Path,
         source_config: Rc<CalendarSourceConfig>,
+        config: &Config,
     ) -> Result<CalendarSource> {
+        // adjust the color here if the config instructs us to
+        source_config
+            .adjusted_color
+            .set(source_config.color.adjust_color(config))
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not adjust color")?;
+
         log::debug!("creating calendar source: {}", source_config);
         if let Ok(url) = Url::parse(&source_config.source) {
             log::debug!("calendar source is a url");
@@ -44,7 +53,8 @@ impl CalendarSource {
     /// Returns the parsed calendars of this [`CalendarSource`].
     ///
     /// Listed as plural because a single source may contain multiple calendars as per the ical/ics standard.
-    pub(crate) fn parse_calendars(&self, base_dir: &Path) -> Result<Vec<Calendar>> {
+    pub(crate) fn parse_calendars(&self, config: &Config) -> Result<Vec<Calendar>> {
+        let base_dir: &Path = &config.base_dir;
         let parsed_calendars = match self {
             Self::CalendarFile(file, source_config) => {
                 log::info!("reading calendar file: {:?}", file);
