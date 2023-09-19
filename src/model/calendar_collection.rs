@@ -246,6 +246,12 @@ impl CalendarCollection {
         tera.add_template_files(custom_templates)
             .wrap_err("could not add custom templates")?;
 
+        // we reset the page template if we are going to be embedding our pages in existing HTML
+        if config.embed_in_page.is_some() {
+            tera.add_raw_template("page.html", "{% block content %}{% endblock content %}")
+                .wrap_err("could not override page template with blank template")?;
+        }
+
         Ok(CalendarCollection {
             calendars,
             events_by_day,
