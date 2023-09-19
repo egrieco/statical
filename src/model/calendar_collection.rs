@@ -8,7 +8,7 @@ use include_dir::{
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
 use log::{debug, error, info};
-use std::rc::Rc;
+use lol_html::{element, html_content::ContentType, rewrite_str, Settings};
 use std::{
     collections::{BTreeMap, HashSet},
     path::Path,
@@ -18,6 +18,7 @@ use std::{
     fs::{create_dir_all, File},
     io::Write,
 };
+use std::{io::Read, rc::Rc};
 use tera::{Context, Tera};
 
 use super::calendar_source::CalendarSource;
@@ -55,6 +56,7 @@ pub struct CalendarCollection {
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
     today_date: NaiveDate,
+    embed_in_page: Option<String>,
 }
 
 impl CalendarCollection {
@@ -63,6 +65,19 @@ impl CalendarCollection {
         // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
         // TODO: do we need this to be adjusted by the provided timezone?
         let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
+
+        // load the embed page if it has been specified
+        let embed_in_page = if let Some(page) = &config.embed_in_page {
+            let mut embed_file = File::open(page).wrap_err("could not open embed page")?;
+            let mut embed_page = String::new();
+            embed_file
+                .read_to_string(&mut embed_page)
+                .wrap_err("could not read embed file")?;
+
+            Some(embed_page)
+        } else {
+            None
+        };
 
         // throw an error if the default view is not enabled
         let view_and_name = match config.default_calendar_view {
@@ -236,6 +251,7 @@ impl CalendarCollection {
             cal_start,
             cal_end,
             today_date,
+            embed_in_page,
         })
     }
 
@@ -506,10 +522,38 @@ impl CalendarCollection {
         // adjust the file path with regard to the base_directory
         let file_path = &self.base_dir().join(relative_file_path);
 
+        // get the embed_page
+
         // TODO replace this with a debug or log message
         eprintln!("Writing template to file: {:?}", file_path);
-        let output_file = File::create(file_path)?;
-        Ok(self.tera.render_to(template_name, context, output_file)?)
+        let tera_output = self.tera.render(template_name, context)?;
+
+        let output = if let Some(page) = &self.embed_in_page {
+            rewrite_str(
+                page,
+                Settings {
+                    element_content_handlers: vec![element!(
+                        &self.config.embed_element_selector,
+                        |el| {
+                            el.set_inner_content(&tera_output, ContentType::Html);
+                            Ok(())
+                        }
+                    )],
+                    ..Default::default()
+                },
+            )?
+        } else {
+            tera_output
+        };
+
+        // write output to file
+        let mut output_file =
+            File::create(file_path).wrap_err("could not create template output file")?;
+        output_file
+            .write_all(output.as_bytes())
+            .wrap_err("could not write to template output file")?;
+
+        Ok(())
     }
 
     pub(crate) fn base_dir(&self) -> &Path {

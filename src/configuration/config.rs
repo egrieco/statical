@@ -84,6 +84,12 @@ pub struct Config {
     // it'd be great to make this a RelativePathBuf but Doku doesn't support that
     pub assets_path: PathBuf,
 
+    /// The path to an HTML page in which to embed the output of statical
+    pub embed_in_page: Option<PathBuf>,
+
+    /// The CSS selector for the element whose content will be replaced
+    pub embed_element_selector: String,
+
     /// The view (Month, Week, or Day) to use for the main index page
     // TODO: consider making this case sensitive maybe with EnumString from strum_macros
     // strum_macros: https://docs.rs/strum_macros/latest/strum_macros/derive.EnumString.html
@@ -169,6 +175,8 @@ impl Default for Config {
             copy_stylesheet_from: DEFAULT_STYLESHEET_PATH.into(),
             template_path: DEFAULT_TEMPLATE_PATH.into(),
             assets_path: DEFAULT_ASSETS_PATH.into(),
+            embed_in_page: None,
+            embed_element_selector: "main".into(),
             default_calendar_view: CalendarView::Month,
             render_month: true,
             render_week: true,
