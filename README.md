@@ -32,11 +32,33 @@ The default templates are starting to look acceptable and we are planning a fina
   - Day
   - Agenda
 - View customization
-  - Views are embedded in the app
+  - Default views are embedded in the app
   - Alternately, views can also be individually overridden and fully customized via Tera templates
   - Views are completely HTML and CSS based, no JavaScript is present
-- CSS is provided but can be edited or completely overridden
+  - SASS/CSS is provided but can be edited or completely overridden
+  - Calendars can be assigned custom colors. Any valid CSS color notation should work, including color names.
+  - Colors are adjusted for readability via the [Oklch color space](https://lea.verou.me/blog/2020/04/lch-colors-in-css-what-why-and-how/#what-is-lch%3F). (The lightness and chroma adjustment values can be configured or adjustment can be entirely disabled.)
 - Generates calendar feeds in ICS format
+
+## Target users
+
+Statical is built with three types of users in mind:
+
+### 1. Casual CLI users
+
+Statical should be easy enough for someone with basic CLI knowledge to install it, modify the default configuration, and have calendars that look good in minutes.
+
+### 2. Advanced web designers
+
+For those who want more control of the calendars generated:
+
+- Ample config options are provided
+- SASS/CSS can be customized or completely overridden
+- Views are generated via templates that can be customized or completely overridden
+
+### 3. Rust programmers
+
+If complete control is desired, this code is released under the [BSD 3 clause license](LICENSE.txt).
 
 ## Usage
 
@@ -47,18 +69,14 @@ Statical is intended to be used in a "Static Site Generator chain" ([credit to C
 An example chain might look like the following:
 
 1. [soupault](https://soupault.app/) (or your favorite [static](https://www.smashingmagazine.com/2015/11/modern-static-website-generators-next-big-thing/) [site](https://jamstack.org/generators/) [generator](https://staticsitegenerators.net/))
-2. statical
+2. **statical**
 3. [Pagefind](https://pagefind.app/) (or [tinysearch](https://github.com/tinysearch/tinysearch), [stork](https://github.com/jameslittle230/stork), [orama](https://github.com/oramasearch/orama), or similar)
 4. [Jampack](https://jampack.divriots.com/)
 5. deploy or sync your site
 
-### Setup
+### Configuration
 
-Statical must have a config file is order to run.
-
-#### Config file
-
-**Create the example config file** with the command:
+Statical must have a config file is order to run. **Create the example config file** with the command:
 
 ```zsh
 statical --create-default-config
@@ -66,9 +84,12 @@ statical --create-default-config
 
 **Edit the config file** as necessary with your favorite text editor. Only the keys below are strictly necessary:
 
-- `display_timezone`
-- `default_calendar_view`
-- `calendar_sources`
+- `display_timezone`: One of the TZ identifiers from the [IANA Time Zone Database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List)
+- `default_calendar_view`: one of Month, Week, Day, or Agenda
+- `calendar_sources` Multiple sources can be provided.
+  - `name`: must be kebab-case
+  - `source`: can be the URL of a calendar feed or a local `*.ics` file
+
 
 The rest have default values that should work for most users. There are comments in the generated config file explaining the purpose of each option.
 
@@ -160,7 +181,7 @@ If statical does not do exactly what you need, check out these projects instead.
 ### Setup and Configuration (Future Work)
 
 - [x] ~~_Allow template path config._~~ (2023-09-14)
-- [ ] calendar colors and CSS classes
+- [x] ~~_calendar colors and CSS classes_~~ (2023-09-19)
 - [ ] paths for time interval pages should be configurable?
 
 ### Calendar Generation (1.0 Milestone)
@@ -177,17 +198,19 @@ If statical does not do exactly what you need, check out these projects instead.
 
 - [x] ~~_Add styling to hide event descriptions in the calendar view and show them on hover_~~ (2023-09-01)
 - [x] ~~_Add weekday vs weekend classes_~~ (2023-09-08)
+- [x] ~~_SASS processing_~~ (2023-09-19)
+- [x] ~~_add source calendar class_~~ (2023-09-19)
+- [ ] Remove no-wrap from event header text (but keep no-wrap on duration)
 - [ ] highlight current day
 - [ ] Clean up pagination and views
 - [ ] Align pagination with grid
 - [ ] Center header
 - [ ] cleanup css
+- [ ] CSS classes for calendar colors
 
 ### Styling (Future Work)
 
-- [ ] scss processing
 - [ ] add event classes
-- [ ] add source calendar
 - [ ] add event categories
 - [ ] Figure out how to layout overlapping events. CSS grid to the rescue?
 - [ ] Make overlapping events stack horizontally in the Day view on desktop (maybe week and month if space allows)
