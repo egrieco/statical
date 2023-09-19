@@ -1,50 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "page.html" %}
 
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="{{ stylesheet_path | safe }}" />
-  <title>Month View</title>
-</head>
+{% block title %}Month View{% endblock title %}
 
-<body>
-  <div class="calendar">
-    <input class="expand-events" type="checkbox" name="expand-events" id="expand-events" />
-    <label class="expand-events" for="expand-events">Expand All Events</label>
-    <h1>{{ view_date }}</h1>
-    {% include "pagination_with_views.html" %}
-    <div class="month">
-      <p class="wday header">Sunday</p>
-      <p class="wday header">Monday</p>
-      <p class="wday header">Tuesday</p>
-      <p class="wday header">Wednesday</p>
-      <p class="wday header">Thursday</p>
-      <p class="wday header">Friday</p>
-      <p class="wday header">Saturday</p>
-      {% for week in weeks %}
-      {% set first_week = loop.first %}
-      {% for day in week %}
-      {% set first_day = loop.first %}
-      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %} {{ day.wday }} {% if first_week %} first-week {% endif %}">
-        <p class="date">
-          {% set show_month = first_week and first_day %}
-          {% if day.day == 1 or show_month %}
-          {{ day.month_name }}
-          {% endif %}
-          {{ day.day }}
-        </p>
-        <div class="events">
-          {% for event in day.events %}
-            {% include "event.html" %}
-          {% endfor %}
-        </div>
+{% block content %}
+<div class="calendar">
+  <input class="expand-events" type="checkbox" name="expand-events" id="expand-events" />
+  <label class="expand-events" for="expand-events">Expand All Events</label>
+  <h1>{{ view_date }}</h1>
+  {% include "pagination_with_views.html" %}
+  <div class="month">
+    <p class="wday header">Sunday</p>
+    <p class="wday header">Monday</p>
+    <p class="wday header">Tuesday</p>
+    <p class="wday header">Wednesday</p>
+    <p class="wday header">Thursday</p>
+    <p class="wday header">Friday</p>
+    <p class="wday header">Saturday</p>
+    {% for week in weeks %}
+    {% set first_week = loop.first %}
+    {% for day in week %}
+    {% set first_day = loop.first %}
+    <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %} {{ day.wday }} {% if first_week %} first-week {% endif %}">
+      <p class="date">
+        {% set show_month = first_week and first_day %}
+        {% if day.day == 1 or show_month %}
+        {{ day.month_name }}
+        {% endif %}
+        {{ day.day }}
+      </p>
+      <div class="events">
+        {% for event in day.events %}
+          {% include "event.html" %}
+        {% endfor %}
       </div>
-      {% endfor %} {% endfor %}
     </div>
-    {% include "pagination.html" %}
+    {% endfor %} {% endfor %}
   </div>
-</body>
-
-</html>
+  {% include "pagination.html" %}
+</div>
+{% endblock content %}

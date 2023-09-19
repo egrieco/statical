@@ -7,11 +7,12 @@ use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
 };
+use itertools::Itertools;
 use log::{debug, error, info};
 use lol_html::{element, html_content::ContentType, rewrite_str, Settings};
 use std::{
     collections::{BTreeMap, HashSet},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use std::{fs, iter};
 use std::{
@@ -211,36 +212,39 @@ impl CalendarCollection {
             }
         }
 
-        // load custom tera templates
-        info!("loading custom templates...");
-        // we're joining with base_dir here to ensure that the templates are found relative to the config file
-        let mut tera = Tera::new(
-            config
-                .base_dir
-                .join("templates/**/*.html")
-                .to_str()
-                .ok_or(eyre!("could not convert template path into str"))?,
-        )?;
-
         // load default tera templates
         info!("loading default templates...");
-        let mut default_templates = Tera::default();
-        for template in TEMPLATE_DIR.find("**/*.html")? {
-            match template {
-                DirEnt(_) => Ok(()),
-                FileEnt(t) => match (t.path().to_str(), t.contents_utf8()) {
-                    (Some(template_name), Some(template_contents)) => {
-                        debug!("adding default template: {}", template_name);
-                        default_templates.add_raw_template(template_name, template_contents)
-                    }
-                    // TODO: probably want to surface these errors
-                    (_, _) => Ok(()),
-                },
-            }?;
-        }
+        let mut tera = Tera::default();
+        let default_templates = TEMPLATE_DIR.find("**/*.html")?.filter_map(|t| match t {
+            DirEnt(_) => None,
+            FileEnt(t) => Some((
+                t.path()
+                    .to_str()
+                    .expect("could not get default template name"),
+                t.contents_utf8()
+                    .expect("could not get default template contents"),
+            )),
+        });
 
-        // combine the defaults with the custom templates
-        tera.extend(&default_templates)?;
+        // NOTE: we must use the plural version so that any template extends don't error out
+        tera.add_raw_templates(default_templates)
+            .wrap_err("could not add default templates to Tera")?;
+
+        // load custom tera templates
+        info!("loading custom templates...");
+        let custom_templates: Vec<(PathBuf, Option<String>)> = config
+            .base_dir
+            // we're joining with base_dir here to ensure that the templates are found relative to the config file
+            .join(&config.template_path)
+            .read_dir()
+            .wrap_err("could not read custom templates dir")?
+            .filter_map_ok(|t| Some(t.path()))
+            .map(|t| (t.unwrap(), None))
+            .collect();
+
+        // NOTE: we must use the plural version so that any template extends don't error out
+        tera.add_template_files(custom_templates)
+            .wrap_err("could not add custom templates")?;
 
         Ok(CalendarCollection {
             calendars,

@@ -1,42 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "page.html" %}
 
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="{{ stylesheet_path | safe }}" />
-  <title>Week View</title>
-</head>
+{% block title %}Week View{% endblock title %}
 
-<body>
-  <div class="calendar">
-    <h1>Events for week {{ iso_week }} of {{ month_name }} {{ year }}</h1>
-    {% include "pagination_with_views.html" %}
-    <div class="week">
-      {% for day in week_dates %}
-      <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
-        <p class="header">
-          <span class="wday">{{ day.wday }}</span>
-          <span class="date">
-            {% if week_switches_months -%}
-              {%- if loop.first or day.day == 1 -%}
-               <span class="month-name">{{ day.month_name }}</span>
-              {%- endif -%}
-            {%- endif %}
-            <span class="day-number">{{ day.day }}</span>
-          </span>
-        </p>
-        <div class="events">
-          {% for event in day.events %}
-            {% include "event.html" %}
-          {% endfor %}
-        </div>
+{% block content %}
+<div class="calendar">
+  <h1>Events for week {{ iso_week }} of {{ month_name }} {{ year }}</h1>
+  {% include "pagination_with_views.html" %}
+  <div class="week">
+    {% for day in week_dates %}
+    <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %}">
+      <p class="header">
+        <span class="wday">{{ day.wday }}</span>
+        <span class="date">
+          {% if week_switches_months -%}
+            {%- if loop.first or day.day == 1 -%}
+              <span class="month-name">{{ day.month_name }}</span>
+            {%- endif -%}
+          {%- endif %}
+          <span class="day-number">{{ day.day }}</span>
+        </span>
+      </p>
+      <div class="events">
+        {% for event in day.events %}
+          {% include "event.html" %}
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
-    {% include "pagination.html" %}
+    {% endfor %}
   </div>
-</body>
-
-</html>
+  {% include "pagination.html" %}
+</div>
+{% endblock content %}
