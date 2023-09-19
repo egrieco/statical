@@ -21,6 +21,7 @@ pub type WeekDayMap = BTreeMap<u8, EventList>;
 pub type WeekSlice<'a> = &'a [Option<Week<'a>>];
 
 const VIEW_PATH: &str = "week";
+const PAGE_TITLE: &str = "Week Page";
 
 #[derive(Debug)]
 pub struct WeekView<'a> {
@@ -139,6 +140,7 @@ impl WeekView<'_> {
         // setup the tera context
         let mut context = self.calendars.template_context();
         context.insert("current_view", VIEW_PATH);
+        context.insert("page_title", PAGE_TITLE);
         context.insert(
             "view_date",
             &current_week

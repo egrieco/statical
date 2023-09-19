@@ -542,13 +542,36 @@ impl CalendarCollection {
             rewrite_str(
                 page,
                 Settings {
-                    element_content_handlers: vec![element!(
-                        &self.config.embed_element_selector,
-                        |el| {
+                    element_content_handlers: vec![
+                        element!(&self.config.embed_element_selector, |el| {
                             el.set_inner_content(&tera_output, ContentType::Html);
                             Ok(())
-                        }
-                    )],
+                        }),
+                        element!("title", |el| {
+                            el.set_inner_content(
+                                &context
+                                    .get("page_title")
+                                    .expect("could not get page title from context")
+                                    .as_str()
+                                    .expect("could not get page title as string"),
+                                ContentType::Text,
+                            );
+                            Ok(())
+                        }),
+                        element!("head", |el| {
+                            el.append(
+                                &(r#"<link rel="stylesheet" href=""#.to_owned()
+                                    + self
+                                        .config
+                                        .stylesheet_path
+                                        .to_str()
+                                        .expect("could not get stylesheet path from config")
+                                    + r#"">"#),
+                                ContentType::Html,
+                            );
+                            Ok(())
+                        }),
+                    ],
                     ..Default::default()
                 },
             )?

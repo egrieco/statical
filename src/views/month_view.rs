@@ -35,6 +35,7 @@ pub type MonthMap<'a> = BTreeMap<Month, WeekMap<'a>>;
 pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 
 const VIEW_PATH: &str = "month";
+const PAGE_TITLE: &str = "Month Page";
 
 #[derive(Debug)]
 pub struct MonthView<'a> {
@@ -207,6 +208,7 @@ impl MonthView<'_> {
 
         let mut context = self.calendars.template_context();
         context.insert("current_view", VIEW_PATH);
+        context.insert("page_title", PAGE_TITLE);
         context.insert(
             "view_date",
             &current_month

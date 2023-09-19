@@ -23,6 +23,7 @@ const YMD_FORMAT: &str = "%Y-%m-%d";
 pub type DaySlice<'a> = &'a [Option<Day>];
 
 const VIEW_PATH: &str = "day";
+const PAGE_TITLE: &str = "Day Page";
 
 #[derive(Debug)]
 pub struct DayView<'a> {
@@ -127,6 +128,7 @@ impl DayView<'_> {
 
         let mut context = self.calendars.template_context();
         context.insert("current_view", VIEW_PATH);
+        context.insert("page_title", PAGE_TITLE);
         context.insert(
             "view_date",
             &current_day

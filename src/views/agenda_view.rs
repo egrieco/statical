@@ -27,6 +27,7 @@ pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
 type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
 const VIEW_PATH: &str = "agenda";
+const PAGE_TITLE: &str = "Agenda Page";
 
 #[derive(Debug)]
 pub(crate) struct AgendaView<'a> {
@@ -188,6 +189,7 @@ impl AgendaView<'_> {
 
         let mut context = self.calendars.template_context();
         context.insert("current_view", VIEW_PATH);
+        context.insert("page_title", PAGE_TITLE);
         // TODO: we need to refactor the way agenda pages are created before we can enable the below
         // context.insert(
         //     "view_date_start",
