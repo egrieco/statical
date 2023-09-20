@@ -1,81 +1,129 @@
-body
-  height: 100%
+$background-color-active: grey
+$view-border-radius: .5rem
+$vertical-views-padding: 0.35em
 
-.calendar
+main #statical-calendar.calendar div
+  flex: unset
+
+// scoping all of these rules under the statical-calendar element
+#statical-calendar.calendar
   h1
     background-color: white
     text-align: center
     margin: 0
     padding: .6em
-  > .expand-events
-    position: absolute
-    top: 12px
-    right: 12px
 
-  > label.expand-events
-    right: 36px
-
-  // prevent images from getting overly large
-  > .day .event .body .content img
-    max-height: 50vh
-    max-width: 50vw
-
-  .pagination
-    display: flex
-    justify-content: space-between
-    margin: .5rem 0
-    :any-link
-      text-decoration: none
-    .previous, .next
-      border-radius: .5rem
-      background-color: #eee
-      width: calc( 100% / 7 )
-      text-align: center
-      padding: 0.45em 0
-
-    .view
-      border-radius: .5rem
-      background-color: #eee
-      .active
-        background-color: grey
-        font-weight: bold
-        border-radius: .5rem
-      ul
-        margin: 0
-        padding: 0
-        li
-          display: inline
-          margin: 0
-          padding: 0.45em 1em
-
-
-    ul
-      width: 100%
-      display: inline-flex
-      justify-content: space-around
-      padding: 0
-
-      li
-        /* this is mostly to suppress the list bullet points */
-        display: inline
-
+  // header styles
   .header
     padding: 0.5em
     margin: 0
 
-  .month
+  // prevent images from getting overly large
+  .day .event .body .content img
+    max-height: 50vh
+    max-width: 50vw
+
+  // styles for the pagination and view elements
+  .pagination
+    display: flex
+    justify-content: space-between
+    margin: .5rem 0
+    font-size: 1.2rem
+    line-height: initial // here to improve styles when embedding in other pages
+    \:any-link
+      text-decoration: none
+    .views, .previous, .next
+      border-radius: $view-border-radius
+      background-color: #eee
+      padding: $vertical-views-padding 0
+    .previous, .next
+      width: calc( 100% / 7 )
+      text-align: center
+    .views
+      ul
+        width: 100%
+        justify-content: space-around
+        margin: 0
+        padding: 0
+        font-size: revert // here to improve styles when embedding in other pages
+        li
+          // this is mostly to suppress the list bullet points
+          display: inline
+          padding: $vertical-views-padding 1em
+          margin: 0 // here to improve styles when embedding in other pages
+        li.active
+          background-color: $background-color-active
+          border-radius: $view-border-radius
+
+  // styles for all events
+  div.event
+    background-color: #eee
+    padding: 0
+    border-radius: 1em
+    margin: 0.5em
+    overflow: hidden
+    \:any-link
+      color: unset
+      text-decoration: none
+    .summary
+      font-weight: bold
+    .body .content
+      padding: 0.5em
+    p
+      margin: 1em 0
+      &:first-child
+        margin-top: 0
+      &:last-child
+        margin-bottom: 0
+    div.header
+      background-color: grey
+      border-top-left-radius: 1em
+      border-top-right-radius: 1em
+      margin-bottom: 0
+      .times, .duration
+        white-space: nowrap
+    .header > p
+      margin: 0
+
+  // styles for the day view only
+  div.day
+    background-color: white
+    padding: 0.1em
+    img
+      // Fix to keep absurdly large images contained within the .day cell
+      max-width: 100%
+    &.weekend, &.other-month
+      background-color: #ddd
+    .date
+      white-space: nowrap
+      text-align: right
+
+  // styles for the week view only
+  div.week
+    display: grid
+    grid-auto-rows: 2
+    grid-template-columns: repeat(7, 1fr)
+    gap: 2px
+    > .day > p.header
+      display: flex
+      justify-content: space-between
+
+  // styles for the month view only
+  div.month
     display: grid
     grid-auto-rows: repeat(6, minmax(6em, auto))
     // simplified the math by removing the gap
     grid-template-columns: repeat(7, calc( 100% / 7))
-
     > .header
       font-weight: bold
       text-align: center
-
+    // sticky header for days of the week
     .wday.header
       position: sticky
       top: 0
+      background-color: white
+      // box-shadow: 0 2px 3px grey
+      border-bottom: 1px solid grey
     .day
       border: .5px solid lightgrey
       p
@@ -89,95 +137,59 @@ body
     .weekend.Sat
       border-left: .5px solid grey
 
-  .week
-    display: grid
-    grid-auto-rows: 2
-    grid-template-columns: repeat(7, 1fr)
-    gap: 2px
+  // hide body until hover
+  div.month
+    div.event .body
+      visibility: hidden
 
-    > .day > p.header
-      display: flex
-      justify-content: space-between
+      // cannot use 100% or auto here, nor can we transition between such values on height
+      // more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/
+      max-height: 0
+      transition: all 1s ease
 
-  .day
-    background-color: white
-    padding: 0.1em
+      &:hover
+        visibility: visible
 
-    img
-      /* Fix to keep absurdly large images contained within the .day cell */
-      max-width: 100%
+        // cannot use 100% or auto here, nor can we transition between such values on height
+        // more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/
+        max-height: 100vh
 
-    &.weekend, &.other-month
-      background-color: #ddd
-
-    .date
-      white-space: nowrap
-      text-align: right
-
-  .event
-    background-color: #eee
-    padding: 0
-    border-radius: 1em
-    margin: 0.5em
-    overflow: hidden
-
-    \:any-link
-      color: unset
-      text-decoration: none
-
-    .summary
-      font-weight: bold
-
-    .body .content
-      padding: 0.5em
-
-    p
-      margin: 1em 0
-
-      &:first-child
-        margin-top: 0
-
-      &:last-child
-        margin-bottom: 0
-
-    div.header
-      background-color: grey
-      border-top-left-radius: 1em
-      border-top-right-radius: 1em
-      white-space: nowrap
-      margin-bottom: 0
-
-    .header > p
-      margin: 0
-
-/* hide body until hover */
-.calendar .month .event
-  .body
-    visibility: hidden
-
-    /* cannot use 100% or auto here, nor can we transition between such values on height
-     * more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/ */
-    max-height: 0
-    transition: all 1s ease
-
-    &:hover
+    // continue showing body on hover over body
+    .header:hover + .body
       visibility: visible
 
-      /* cannot use 100% or auto here, nor can we transition between such values on height
-       * more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/ */
+      // cannot use 100% or auto here, nor can we transition between such values on height
+      // more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/
       max-height: 100vh
 
-  .header:hover + .body
+  // CSS all event expansion toggle UI elements
+  div.month
+    // these elemnts have to be siblings of day elements for the CSS based hack to work
+    // we cannot place them into a containing block until Firefox properly supports the :has() selector
+    input#expand-events, label.expand-events
+      grid-row-start: 1
+      grid-column-end: 7
+      position: relative
+      top: 10px
+      height: 1rem
+      margin: 1rem
+      font-size: 1rem
+    input#expand-events
+      // we're using vw here as that changes dynamically with the viewport width
+      left: 6vw
+      grid-column-start: 7
+    label.expand-events
+      // we're using vw here as that changes dynamically with the viewport width
+      left: 13vw
+      grid-column-start: 1
+      text-align: right
+
+  // CSS all event expansion toggle hack
+  // input#expand-events:checked ~ .month .events .event .body
+  // html body.calendar main div.calendar div.month input#expand-events.expand-events ~ .day .events .event .body
+  input#expand-events:checked ~ .day .events .event .body
     visibility: visible
 
-    /* cannot use 100% or auto here, nor can we transition between such values on height
-     * more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/ */
+    // cannot use 100% or auto here, nor can we transition between such values on height
+    // more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/
     max-height: 100vh
-
-/* continue showing body on hover over body */
-input#expand-events:checked ~ .month .events .event .body
-  visibility: visible
-
-  /* cannot use 100% or auto here, nor can we transition between such values on height
-   * more info here: https://css-tricks.com/using-css-transitions-auto-dimensions/ */
-  max-height: 100vh

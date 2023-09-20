@@ -3,12 +3,12 @@
 {% block title %}Month View{% endblock title %}
 
 {% block content %}
-<div class="calendar">
-  <input class="expand-events" type="checkbox" name="expand-events" id="expand-events" />
-  <label class="expand-events" for="expand-events">Expand All Events</label>
+<div id="statical-calendar" class="calendar">
   <h1>{{ view_date }}</h1>
   {% include "pagination_with_views.html" %}
   <div class="month">
+    <label class="expand-events" for="expand-events">Expand All Events</label>
+    <input class="expand-events" type="checkbox" name="expand-events" id="expand-events" />
     <p class="wday header">Sunday</p>
     <p class="wday header">Monday</p>
     <p class="wday header">Tuesday</p>
