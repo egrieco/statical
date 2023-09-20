@@ -90,7 +90,6 @@ statical --create-default-config
   - `name`: must be kebab-case
   - `source`: can be the URL of a calendar feed or a local `*.ics` file
 
-
 The rest have default values that should work for most users. There are comments in the generated config file explaining the purpose of each option.
 
 ### Running statical
@@ -166,6 +165,8 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Add assistant to help add calendar sources?
 - [ ] Ensure that partial configuration files work i.e. those missing many keys
 - [x] ~~_Create a list of required config keys, the minimum necessary to run statical_~~ (2023-09-15)
+- [ ] Adjust the view links for the closest time period to the current page
+- [ ] Link day numbers
 
 ### Setup and Configuration (1.0 Milestone)
 
@@ -207,6 +208,11 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Center header
 - [ ] cleanup css
 - [ ] CSS classes for calendar colors
+- [ ] Append calendar class CSS rules to stylesheet
+- [ ] Make CCS rules have higher specificity
+- [ ] Make the calendar feed view button a drop-down menu
+- [ ] Add translucent overlay to other-month days
+- [ ] Rename the default stylesheet `statical.css`
 
 ### Styling (Future Work)
 
@@ -238,6 +244,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Add day strftime format?
 - [ ] Add strftime format for agenda dates?
 - [ ] Add keybindings to allow keyboard navigation of calendar
+- [ ] Allow a template based replacement of embed_page `head` section
 
 ### JavaScript (Future Work)
 
