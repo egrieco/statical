@@ -24,6 +24,9 @@ The default templates are starting to look acceptable and we are planning a fina
 ## Features
 
 - Reads `*.ics` files or live calendar feeds
+  - Caches live calendar feeds
+  - Cache timeout is configurable (defalut is 1 day)
+  - Allows cookies to be specified to enable downloading of calendar feeds that require login
 - Does NOT require contributors to create a new login. Just add their calendar feed to the config file.
 - Can be run manually on your personal machine or setup on a Cron job, Git hook, or Continuous Integration (CI) pipeline
 - Generates static HTML views
