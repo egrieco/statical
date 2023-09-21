@@ -19,9 +19,13 @@ main #statical-calendar.calendar div
     margin: 0
 
   // prevent images from getting overly large
-  .day .event .body .content img
-    max-height: 50vh
-    max-width: 50vw
+  .month .day .event .body .content img,
+  .week .day .event .body .content img
+    max-width: calc( 100 / 7 ) vw
+
+  .day .events .event .body .content img,
+  .agenda .events .event .body .content img
+    max-width: calc( 100% / 7 )
 
   // styles for the pagination and view elements
   .pagination
@@ -98,11 +102,15 @@ main #statical-calendar.calendar div
       white-space: nowrap
       text-align: right
 
+  // shared styles for week and month (for consistency)
+  div.week, div.month
+    display: grid
+    // simplified the math by removing the gap
+    grid-template-columns: repeat(7, calc( 100% / 7))
+
   // styles for the week view only
   div.week
-    display: grid
     grid-auto-rows: 2
-    grid-template-columns: repeat(7, 1fr)
     gap: 2px
     > .day > p.header
       display: flex
@@ -110,10 +118,7 @@ main #statical-calendar.calendar div
 
   // styles for the month view only
   div.month
-    display: grid
     grid-auto-rows: repeat(6, minmax(6em, auto))
-    // simplified the math by removing the gap
-    grid-template-columns: repeat(7, calc( 100% / 7))
     > .header
       font-weight: bold
       text-align: center
