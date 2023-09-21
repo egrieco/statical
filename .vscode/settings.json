@@ -1,3 +1,6 @@
 {
-  "cSpell.words": ["CALDESC", "CALNAME", "chrono", "chronoutil", "concatcp", "Datelike", "datetime", "DTEND", "DTSTART", "flexi", "ical", "iframes", "indoc", "isoywd", "Jampack", "Pagefind", "rrule", "soupault", "stylesheet", "subdir", "tera", "TZID", "unescaper", "ureq", "Vecs"]
+  "cSpell.words": ["CALDESC", "CALNAME", "chrono", "chronoutil", "concatcp", "Datelike", "datetime", "DTEND", "DTSTART", "flexi", "ical", "iframes", "indoc", "isoywd", "Jampack", "Pagefind", "rrule", "soupault", "stylesheet", "subdir", "tera", "TZID", "unescaper", "ureq", "Vecs"],
+  "scss.format.enable": false,
+  "sass.format.enabled": false,
+  "sass.disableUnitCompletion": false
 }
