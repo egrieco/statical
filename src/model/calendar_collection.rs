@@ -1,8 +1,9 @@
-use chrono::{DateTime, Datelike, Days, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, Days, Duration, NaiveDate, Utc};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{self, bail, eyre, Context as EyreContext, Result};
 use fuzzydate::parse;
+use humantime::parse_duration;
 use include_dir::{
     include_dir, Dir,
     DirEntry::{Dir as DirEnt, File as FileEnt},
@@ -62,6 +63,19 @@ pub struct CalendarCollection {
 
 impl CalendarCollection {
     pub fn new(config: Config) -> eyre::Result<CalendarCollection> {
+        // perform validations and transformations on the config object
+        config
+            .cache_timeout_duration
+            .set(
+                Duration::from_std(
+                    parse_duration(&config.cache_timeout)
+                        .wrap_err("could not parse the specified duration string")?,
+                )
+                .wrap_err("could not convert standard duration into Chrono::Duration")?,
+            )
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not set cache_timeout_duration")?;
+
         // turn the user provided "today" date into an actual NaiveDate object
         // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
         // TODO: do we need this to be adjusted by the provided timezone?
@@ -139,10 +153,13 @@ impl CalendarCollection {
         debug!("parsing calendars...");
         for source in calendar_sources.into_iter().flatten() {
             debug!("parsing calendar source: {:?}", source);
-            if let Ok(mut parsed_calendars) = source.parse_calendars(&config) {
-                calendars.append(&mut parsed_calendars);
-            } else {
-                error!("could not parse source");
+            match source.parse_calendars(&config) {
+                Ok(mut parsed_calendars) => {
+                    calendars.append(&mut parsed_calendars);
+                }
+                Err(e) => {
+                    error!("could not parse source: {:?}", e);
+                }
             }
         }
 
@@ -549,7 +566,7 @@ impl CalendarCollection {
                         }),
                         element!("title", |el| {
                             el.set_inner_content(
-                                &context
+                                context
                                     .get("page_title")
                                     .expect("could not get page title from context")
                                     .as_str()

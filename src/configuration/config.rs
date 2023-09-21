@@ -1,3 +1,4 @@
+use chrono::Duration;
 use chrono_tz::Tz;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::{eyre, Result};
@@ -6,9 +7,11 @@ use figment::providers::{Format, Serialized, Toml};
 use figment::Figment;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use std::cell::OnceCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use super::types::cache_mode::CacheMode;
 use super::{
     calendar_source_config::CalendarSourceConfig,
     options::Opt,
@@ -50,6 +53,22 @@ pub struct Config {
     /// NOTE: This is relative to the config file
     #[doku(example = "output")]
     pub output_dir: PathBuf,
+
+    /// Whether to download remote calendar sources to disk to reduce server load and increase reliability
+    pub(crate) cache_mode: CacheMode,
+
+    /// The directory in which downloaded calendars and other temporary files are cached
+    #[doku(example = "statical_cache")]
+    pub cache_dir: PathBuf,
+
+    /// The amount of time after which cached items are considered stale and should be re-downloaded
+    #[doku(example = "1 day")]
+    pub cache_timeout: String,
+
+    // this field will be created from cache_timeout in CalendarCollection::new() hence the serde skip and the OnceCell
+    // this is the machine readable version of the above
+    #[serde(skip)]
+    pub cache_timeout_duration: OnceCell<Duration>,
 
     /// Do not delete files in the output directory
     #[doku(example = "false")]
@@ -168,6 +187,10 @@ impl Default for Config {
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),
             calendar_sources: Vec::new(),
             output_dir: "output".into(),
+            cache_mode: CacheMode::Normal,
+            cache_dir: "statical_cache".into(),
+            cache_timeout: "1 day".into(),
+            cache_timeout_duration: OnceCell::new(),
             no_delete: false,
             base_url_path: "/".into(),
             stylesheet_path: "/styles/style.css".into(),

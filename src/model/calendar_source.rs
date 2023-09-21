@@ -1,14 +1,18 @@
+use chrono::Duration;
 use color_eyre::eyre::{bail, eyre, Context, Result};
+use log::debug;
 use std::{
-    fs::File,
-    io::BufReader,
+    fs::{self, create_dir_all, File},
+    io::{BufReader, Read, Write},
     path::{Path, PathBuf},
     rc::Rc,
 };
 use url::Url;
 
 use crate::{
-    configuration::{calendar_source_config::CalendarSourceConfig, config::Config},
+    configuration::{
+        calendar_source_config::CalendarSourceConfig, config::Config, types::cache_mode::CacheMode,
+    },
     model::calendar::Calendar,
 };
 
@@ -63,11 +67,99 @@ impl CalendarSource {
             }
             Self::CalendarUrl(url, source_config) => {
                 log::info!("reading calendar url: {}", url);
-                let ics_string = ureq::get(url.as_ref()).call()?.into_string()?;
+                let ics_string = retrieve_cached_url(config, source_config, url)?;
                 Calendar::parse_calendars(ics_string.as_bytes(), source_config.clone())?
             }
         };
 
         Ok(parsed_calendars)
     }
+}
+
+fn retrieve_cached_url(
+    config: &Config,
+    source_config: &Rc<CalendarSourceConfig>,
+    url: &Url,
+) -> Result<String, color_eyre::eyre::Error> {
+    // setup the cache directory
+    // TODO: might want to do this once in the Config or CalendarCollection
+    let cache_dir = &config.base_dir.join(&config.cache_dir);
+    // create the cache file path
+    let mut calendar_cache_file = cache_dir.join(&source_config.name);
+    calendar_cache_file.set_extension("ics");
+
+    if config.cache_mode != CacheMode::NeverCache {
+        // make the cache directory if it does not exist
+        if !cache_dir.exists() {
+            create_dir_all(cache_dir).wrap_err("could not create cache dir")?;
+        }
+
+        debug!(
+            "checking to see if the cache file exists: {:?}",
+            calendar_cache_file
+        );
+        if calendar_cache_file.exists() {
+            // get the last modified time
+            let cache_file_age = Duration::from_std(
+                fs::metadata(&calendar_cache_file)
+                    .wrap_err("could not get file metadata for cache file")?
+                    .modified()
+                    .wrap_err("could not get the last modified time of cache file")?
+                    .elapsed()
+                    .wrap_err("could not get elapsed time since the file modified date")?,
+            )
+            .wrap_err("could not convert system duration into Chrono::Duration")?;
+
+            let cache_timeout = config
+                .cache_timeout_duration
+                .get()
+                .ok_or(eyre!("could not get cache_timeout_duration"))?;
+            debug!(
+                "checking if the cache file is still valid: {} <= {}",
+                cache_file_age, cache_timeout
+            );
+            if cache_file_age <= *cache_timeout {
+                let mut file_buffer = String::new();
+                File::open(calendar_cache_file)
+                    .wrap_err("could not open cache file for read")?
+                    .read_to_string(&mut file_buffer)
+                    .wrap_err("could not read contents of cache file")?;
+
+                // return the cached calendar contents
+                debug!("cache file is valid, returning cached data");
+                return Ok(file_buffer);
+            }
+        }
+    }
+    // if we did not find a valid cache file, we need to download the data, cache it, and then return it
+
+    if config.cache_mode != CacheMode::NeverDownload {
+        // retrieve the calendar
+        debug!("downloading the calendar from: {}", url);
+        let ics_string = ureq::get(url.as_ref())
+            .call()
+            .wrap_err("could not get content from downloaded calendar")?
+            .into_string()
+            .wrap_err("could not convert calendar to string")?;
+
+        // throw an error if we are not using the cache and we could not actually download a calendar
+        if config.cache_mode == CacheMode::NeverCache && ics_string.is_empty() {
+            return Err(eyre!("could not download calendar"));
+        }
+
+        if config.cache_mode != CacheMode::NeverCache {
+            // create the cache file and write the calendar to the cache file
+            debug!("creating the calendar cache file...");
+            File::create(calendar_cache_file)
+                .wrap_err("could not create the cache file")?
+                .write_all(ics_string.as_bytes())
+                .wrap_err("could not write the calendar to its cache file")?;
+        }
+
+        return Ok(ics_string);
+    }
+
+    Err(eyre!(
+        "could not retrieve a cached file or download from the network with the current cache mode"
+    ))
 }
