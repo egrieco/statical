@@ -40,6 +40,19 @@ pub struct CalendarSourceConfig {
 
     #[serde(skip)]
     pub(crate) adjusted_color: OnceCell<String>,
+
+    /// An array of headers to pass along with the main request
+    ///
+    /// This is handy if you are retrieving calendars from a site which requires login.
+    /// Cookie values and other necessary headers can be provided so the request can succeed.
+    ///
+    /// For example, meetup.com requires a header like the following:
+    ///
+    /// ```
+    /// MEETUP_MEMBER=id=<IDENTIFIER>&s=<SESSION_TOKEN>
+    /// ```
+    /// We may add the ability to auto-retrieve cookies from a local browser at some point.
+    pub cookies: Option<Vec<String>>,
 }
 
 // TODO: need to update this function for new fields
