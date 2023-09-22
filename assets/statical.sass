@@ -19,13 +19,9 @@ main #statical-calendar.calendar div
     margin: 0
 
   // prevent images from getting overly large
-  .month .day .event .body .content img,
-  .week .day .event .body .content img
-    max-width: calc( 100 / 7 ) vw
-
   .day .events .event .body .content img,
   .agenda .events .event .body .content img
-    max-width: calc( 100% / 7 )
+    max-width: 30vw
 
   // styles for the pagination and view elements
   .pagination
@@ -88,6 +84,12 @@ main #statical-calendar.calendar div
         white-space: nowrap
     .header > p
       margin: 0
+
+  > div.day > p.header,
+  > div.agenda > p.header
+    font-size: 1.3em
+    text-align: center
+    padding-bottom: 0
 
   // styles for the day view only
   div.day
