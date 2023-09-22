@@ -25,7 +25,7 @@ The default templates are starting to look acceptable and we are planning a fina
 
 - Reads `*.ics` files or live calendar feeds
   - Caches live calendar feeds
-  - Cache timeout is configurable (defalut is 1 day)
+  - Cache timeout is configurable (default is 1 day)
   - Allows cookies to be specified to enable downloading of calendar feeds that require login
 - Does NOT require contributors to create a new login. Just add their calendar feed to the config file.
 - Can be run manually on your personal machine or setup on a Cron job, Git hook, or Continuous Integration (CI) pipeline
@@ -168,7 +168,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] Add assistant to help add calendar sources?
 - [ ] Ensure that partial configuration files work i.e. those missing many keys
 - [x] ~~_Create a list of required config keys, the minimum necessary to run statical_~~ (2023-09-15)
-- [ ] Adjust the view links for the closest time period to the current page
+- [ ] Adjust the view links for the closest time period to the current page (link to the item that is >= the current item)
 - [ ] Link day numbers
 
 ### Setup and Configuration (1.0 Milestone)
@@ -181,6 +181,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [x] ~~_Make all paths relative to the config file_~~ (2023-09-09)
 - [x] ~~_Prompt with instructions on how to use Statical if config file is not present or provided._~~ (2023-09-14)
 - [x] ~~_Add `--restore-missing-assets` option_~~ (2023-09-14)
+- [ ] Add auto-retrieval of authentication cookies from browsers
 
 ### Setup and Configuration (Future Work)
 
@@ -240,6 +241,7 @@ If statical does not do exactly what you need, check out these projects instead.
 - [ ] event detail
   - [ ] decide on url naming, probably not date based, maybe including calendar name
   - [ ] use unexpanded events
+- [ ] Add page map, an overview of all pages generated in the calendar (good for debugging and double checking sparse vs. dense generation)
 - [ ] Add ics feed generation
 - [x] ~~_Add month name on fist day of month in week view (just like month view)_~~ (2023-09-09)
 - [x] ~~_Determine which month a week "belongs to" based on which month has the most days in that week?_~~ (2023-09-09)
