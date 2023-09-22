@@ -7,6 +7,11 @@ main #statical-calendar.calendar div
 
 // scoping all of these rules under the statical-calendar element
 #statical-calendar.calendar
+  display: flex
+  flex-direction: column
+  align-items: center
+  justify-content: center
+
   h1
     background-color: white
     text-align: center
@@ -18,13 +23,9 @@ main #statical-calendar.calendar div
     padding: 0.5em
     margin: 0
 
-  // prevent images from getting overly large
-  .day .events .event .body .content img,
-  .agenda .events .event .body .content img
-    max-width: 30vw
-
   // styles for the pagination and view elements
   .pagination
+    width: 100%
     display: flex
     justify-content: space-between
     margin: .5rem 0
@@ -80,7 +81,7 @@ main #statical-calendar.calendar div
       border-top-left-radius: 1em
       border-top-right-radius: 1em
       margin-bottom: 0
-      .times, .duration
+      .time, .duration
         white-space: nowrap
     .header > p
       margin: 0
@@ -95,6 +96,7 @@ main #statical-calendar.calendar div
   div.day
     background-color: white
     padding: 0.1em
+    max-width: 600px
     img
       // Fix to keep absurdly large images contained within the .day cell
       max-width: 100%
