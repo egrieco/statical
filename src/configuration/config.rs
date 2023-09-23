@@ -127,6 +127,9 @@ pub struct Config {
     /// Whether to render the agenda pages.
     pub render_agenda: bool,
 
+    /// Whether to render the event pages.
+    pub render_event: bool,
+
     /// Whether to render the calendar feed.
     pub render_feed: bool,
 
@@ -205,6 +208,7 @@ impl Default for Config {
             render_week: true,
             render_day: true,
             render_agenda: true,
+            render_event: true,
             render_feed: true,
             month_view_format: "%B %Y".into(),
             week_view_format: "%B %Y".into(),

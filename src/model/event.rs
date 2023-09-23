@@ -1,17 +1,23 @@
-use chrono::{DateTime, Datelike, Duration, IsoWeek, NaiveDate, NaiveDateTime, Utc};
+use chrono::{
+    DateTime, Datelike, Duration, IsoWeek, Month, NaiveDate, NaiveDateTime, Utc, Weekday,
+};
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use ical::parser::ical::component::IcalEvent;
 use indent::indent_all_by;
-use regex::RegexSet;
+use num_traits::FromPrimitive;
+use regex::{Regex, RegexSet};
 use rrule::RRuleSet;
 use serde::Serialize;
-use std::{collections::HashSet, fmt, rc::Rc};
+use std::path::PathBuf;
+use std::sync::atomic::Ordering::Relaxed;
+use std::{collections::HashSet, fmt, rc::Rc, sync::atomic::AtomicUsize};
 use unescaper::unescape;
 
 use crate::configuration::{calendar_source_config::CalendarSourceConfig, config::Config};
+use crate::views::event_view::{self};
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {
@@ -37,6 +43,8 @@ const END_DATETIME_FORMAT: &str = "%H:%M%P";
 // );
 const RRULE_DTSTART_PARSING_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
+const EVENT_FILE_FORMAT: &str = "%Y-%m-%d";
+
 pub type Year = i32;
 pub type WeekNum = u8;
 
@@ -46,6 +54,9 @@ pub type UnparsedProperties = HashSet<String>;
 ///
 /// These are reference counted since they may appear in more than one list
 pub type EventList = Vec<Rc<Event>>;
+
+/// This mostly exists to ensure that there is something to use as a unique ID for events when creating file names
+static EVENT_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Event {
@@ -57,6 +68,7 @@ pub struct Event {
     rrule: Option<String>,
     location: Option<String>,
     url: Option<String>,
+    event_number: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -72,6 +84,7 @@ pub struct EventContext {
     end_timestamp: i64,
     duration: String,
     url: String,
+    file_path: String,
 }
 
 impl fmt::Display for Event {
@@ -151,7 +164,37 @@ impl Event {
                 .timestamp(),
             duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             url: self.url().to_owned(),
+            file_path: self.file_path(),
         }
+    }
+
+    pub(crate) fn summary_for_filename(&self) -> String {
+        let replace_pattern =
+            Regex::new("[^a-zA-Z0-9_-]+").expect("could not compile event summary replacer regex");
+        replace_pattern
+            .replace_all(
+                self.summary
+                    .as_ref()
+                    .unwrap_or(&format!("event-{}", self.event_number)),
+                "_",
+            )
+            .to_string()
+    }
+
+    pub fn file_name(&self) -> String {
+        format!(
+            "{}-{}.html",
+            self.start().format(EVENT_FILE_FORMAT),
+            self.summary_for_filename()
+        )
+    }
+
+    pub fn file_path(&self) -> String {
+        PathBuf::from("/")
+            .join(event_view::VIEW_PATH)
+            .join(self.file_name())
+            .to_string_lossy()
+            .to_string()
     }
 
     pub fn summary(&self) -> &str {
@@ -197,6 +240,18 @@ impl Event {
 
     pub fn year_with_timezone(&self, tz: &ChronoTz) -> Year {
         self.start_with_timezone(tz).year()
+    }
+
+    pub fn month(&self) -> Option<Month> {
+        Month::from_u32(self.start.month())
+    }
+
+    pub fn day(&self) -> u32 {
+        self.start().day()
+    }
+
+    pub fn weekday(&self) -> Weekday {
+        self.start().weekday()
     }
 
     /// Returns the week number of the event
@@ -300,6 +355,7 @@ impl Event {
                 rrule,
                 location,
                 url,
+                event_number: EVENT_COUNT.fetch_add(1, Relaxed),
             },
             unparsed_properties,
         ))
@@ -320,6 +376,7 @@ impl Event {
             rrule: None,
             location: self.location.clone(),
             url: self.url.clone(),
+            event_number: EVENT_COUNT.fetch_add(1, Relaxed),
         }
     }
 }

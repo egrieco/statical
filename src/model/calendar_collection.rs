@@ -30,6 +30,7 @@ use super::week::Week;
 use crate::util::delete_dir_contents;
 use crate::views::agenda_view::AgendaView;
 use crate::views::day_view::DayView;
+use crate::views::event_view::EventView;
 use crate::views::month_view::MonthView;
 use crate::views::week_view::WeekView;
 use crate::{
@@ -325,16 +326,20 @@ impl CalendarCollection {
         );
         context.insert("timezone", &self.config.display_timezone.name());
 
+        // TODO: convert these to functions of each view class
         context.insert("render_month", &self.config.render_month);
         context.insert("render_week", &self.config.render_week);
         context.insert("render_day", &self.config.render_day);
+        context.insert("render_event", &self.config.render_event);
         context.insert("render_agenda", &self.config.render_agenda);
         context.insert("render_feed", &self.config.render_feed);
 
+        // TODO: convert these to functions of each view class
         let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
         context.insert("month_view_path", &base_url_path.join("month"));
         context.insert("week_view_path", &base_url_path.join("week"));
         context.insert("day_view_path", &base_url_path.join("day"));
+        context.insert("event_view_path", &base_url_path.join("event"));
         context.insert("agenda_view_path", &base_url_path.join("agenda"));
         context.insert("feed_view_path", &base_url_path.join(feed_view::VIEW_PATH));
 
@@ -371,6 +376,18 @@ impl CalendarCollection {
             .chain(weeks_to_show)
             .chain(iter::once(None));
         // let week_windows = chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
+        Ok(chained_iter.collect())
+    }
+
+    pub fn events_to_show(&self) -> Result<Vec<Option<Rc<Event>>>> {
+        // TODO: decide whether we want these to have previous/next links (for now, we'll go with yes for consistency with other views)
+        // chain a None to the list of weeks and a None at the end
+        // this will allow us to traverse the list as windows with the first and last
+        // having None as appropriate
+        let chained_iter = iter::once(None)
+            .chain(self.events().map(|e| Some(e.clone())))
+            .chain(iter::once(None));
+
         Ok(chained_iter.collect())
     }
 
@@ -528,6 +545,10 @@ impl CalendarCollection {
 
         if self.config.render_agenda {
             AgendaView::new(self).create_html_pages()?;
+        };
+
+        if self.config.render_event {
+            EventView::new(self).create_html_pages()?;
         };
 
         if self.config.render_feed {

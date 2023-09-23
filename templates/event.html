@@ -1,13 +1,17 @@
-<div class="event {{ event.calendar_name }}">
-  <a href="{{ event.url }}">
-    <div class="header" style="background-color: {{ event.calendar_color }};">
-      <p class="times-info"><span class="time">{{ event.start }} - {{ event.end }}</span> <span class="duration">({{ event.duration }})</span></p>
-      <p class="summary">{{ event.summary }}</p>
-    </div>
-    <div class="body">
-      <div class="content">
-        <p class="description">{{ event.description | linebreaksbr | safe }}</p>
-      </div>
-    </div>
-  </a>
+{% extends "page.html" %}
+
+{% block title %}Event View{% endblock title %}
+
+{% block content %}
+<div id="statical-calendar" class="calendar">
+  <h1>Event {{ view_date }}</h1>
+  {% include "pagination_with_views.html" %}
+  <div class="event">
+    <p class="header">
+      <span class="date">{{ month_name }} {{ day }}, {{ year }}</span>
+    </p>
+    {% include "event_include.html" %}
+  </div>
+  {% include "pagination.html" %}
 </div>
+{% endblock content %}

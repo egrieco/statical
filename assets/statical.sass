@@ -86,31 +86,38 @@ main #statical-calendar.calendar div
     .header > p
       margin: 0
 
-  > div.day > p.header,
-  > div.agenda > p.header
-    font-size: 1.3em
-    text-align: center
-    padding-bottom: 0
-
-  // styles for the day view only
-  div.day
-    background-color: white
-    padding: 0.1em
+  > div.day,
+  > div.agenda,
+  > div.event
     max-width: 600px
-    img
-      // Fix to keep absurdly large images contained within the .day cell
-      max-width: 100%
-    &.weekend, &.other-month
-      background-color: #ddd
-    .date
-      white-space: nowrap
-      text-align: right
+    > p.header
+      font-size: 1.3em
+      text-align: center
+      padding-bottom: 0
+      margin-bottom: 0
+
+  > div.event
+    padding: 0
+    background-color: white
+    // max-width: 600px
 
   // shared styles for week and month (for consistency)
-  div.week, div.month
+  > div.week,
+  > div.month
     display: grid
     // simplified the math by removing the gap
     grid-template-columns: repeat(7, calc( 100% / 7))
+    div.day
+      background-color: white
+      padding: 0.1em
+      img
+        // Fix to keep absurdly large images contained within the .day cell
+        max-width: 100%
+      &.weekend, &.other-month
+        background-color: #ddd
+      .date
+        white-space: nowrap
+        text-align: right
 
   // styles for the week view only
   div.week

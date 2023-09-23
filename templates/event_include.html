@@ -1,0 +1,15 @@
+<div class="event {{ event.calendar_name }}">
+  <div class="header" style="background-color: {{ event.calendar_color }};">
+    <a href="{{ event.file_path }}">
+      <p class="times-info"><span class="time">{{ event.start }} - {{ event.end }}</span> <span class="duration">({{ event.duration }})</span></p>
+      <p class="summary">{{ event.summary }}</p>
+    </a>
+  </div>
+  <div class="body">
+    <a href="{{ event.url }}">
+      <div class="content">
+        <p class="description">{{ event.description | linebreaksbr | safe }}</p>
+      </div>
+    </a>
+  </div>
+</div>
