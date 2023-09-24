@@ -101,20 +101,27 @@ impl Calendar {
             start = start.min(new_event.start());
             end = end.max(new_event.end());
 
-            // let rc_event = Rc::new(new_event);
-            // events.push(rc_event);
-            // sort events
-            if new_event
-                .rrule()
-                .wrap_err("could not parse rrule")?
-                .is_some()
-            {
-                // add event to recurring_events
-                // TODO might want to look at any recurrence termination dates and set calendar end to that
-                recurring_events.push(Rc::new(new_event))
-            } else {
-                // add event to calendar event list
-                events.push(Rc::new(new_event))
+            // sort events into recurring and non-recurring
+            match &new_event.rrule().wrap_err("could not parse rrule")? {
+                Some(rrules) => {
+                    // extend the calendar end to the until value of the RRule
+                    if let Some(end_date) = rrules
+                        .get_rrule()
+                        .iter()
+                        .filter_map(|r| r.get_until())
+                        .reduce(|accum, date| accum.max(date))
+                    {
+                        end = end.max(end_date.with_timezone(&Utc));
+                    }
+
+                    // add event to recurring_events
+                    // TODO might want to look at any recurrence termination dates and set calendar end to that
+                    recurring_events.push(Rc::new(new_event))
+                }
+                None => {
+                    // add event to calendar event list
+                    events.push(Rc::new(new_event))
+                }
             }
         }
 
