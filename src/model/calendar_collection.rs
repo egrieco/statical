@@ -116,17 +116,7 @@ impl CalendarCollection {
         let (cal_start, cal_end) = determine_beginning_and_end(&config, &calendars);
 
         // expand recurring events
-        // TODO: make Events an enum so that original events and recurrences are distinct
-        log::debug!("expanding recurring events...");
-        for calendar in calendars.iter_mut() {
-            let pre_expansion_count = calendar.events().len();
-            calendar.expand_recurrences(cal_start, cal_end, &config.display_timezone)?;
-            log::debug!(
-                "calendar events pre_expansion_count: {} post_expansion_count: {}",
-                pre_expansion_count,
-                calendar.events().len()
-            );
-        }
+        expand_recurring_events(&mut calendars, &cal_start, &cal_end, &config)?;
 
         println!("Read {} calendars:", &calendars.len());
         for calendar in &calendars {
@@ -504,6 +494,26 @@ impl CalendarCollection {
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
     }
+}
+
+fn expand_recurring_events(
+    calendars: &mut [Calendar],
+    cal_start: &DateTime<ChronoTz>,
+    cal_end: &DateTime<ChronoTz>,
+    config: &Config,
+) -> Result<(), eyre::Error> {
+    log::debug!("expanding recurring events...");
+    for calendar in calendars.iter_mut() {
+        let pre_expansion_count = calendar.events().len();
+        calendar.expand_recurrences(*cal_start, *cal_end, &config.display_timezone)?;
+        log::debug!(
+            "calendar events pre_expansion_count: {} post_expansion_count: {}",
+            pre_expansion_count,
+            calendar.events().len()
+        );
+    }
+
+    Ok(())
 }
 
 #[must_use = "the loaded calendars must be stored somewhere"]
