@@ -3,7 +3,9 @@ use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use num_traits::FromPrimitive;
 use serde::Serialize;
-use std::fmt;
+use std::{fmt, path::PathBuf};
+
+use crate::views::day_view;
 
 use super::event::EventContext;
 
@@ -60,6 +62,7 @@ impl fmt::Display for Day {
 pub struct DayContext {
     pub(crate) date: String,
     pub(crate) day: u8,
+    pub(crate) link: String,
     pub(crate) wday: String,
     pub(crate) month: String,
     pub(crate) month_name: String,
@@ -69,9 +72,15 @@ pub struct DayContext {
 
 impl DayContext {
     pub fn new(date: NaiveDate, events: Vec<EventContext>) -> DayContext {
+        let mut file_path = PathBuf::from("/")
+            .join(day_view::VIEW_PATH)
+            .join(date.format(day_view::YMD_FORMAT).to_string());
+        file_path.set_extension("html");
+
         DayContext {
             date: date.format(YMD_FORMAT).to_string(),
             day: date.day() as u8,
+            link: file_path.to_string_lossy().to_string(),
             month: date.month().to_string(),
             month_name: Month::from_u32(date.month())
                 .expect("invalid month")

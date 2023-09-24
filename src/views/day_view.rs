@@ -15,14 +15,14 @@ use crate::{
     },
 };
 
-const YMD_FORMAT: &str = "%Y-%m-%d";
+pub(crate) const YMD_FORMAT: &str = "%Y-%m-%d";
 
 /// A triple with the previous, current, and next days present
 ///
 /// Note that the previous and next days may be None
 pub type DaySlice<'a> = &'a [Option<Day>];
 
-const VIEW_PATH: &str = "day";
+pub(crate) const VIEW_PATH: &str = "day";
 const PAGE_TITLE: &str = "Day Page";
 
 #[derive(Debug)]

@@ -21,18 +21,20 @@
     {% for day in week %}
     {% set first_day = loop.first %}
     <div class="day {% if day.month | int == month | int %}current-month{% else %}other-month{% endif %} {% if day.is_weekend %}weekend{% else %}weekday{% endif %} {{ day.wday }} {% if first_week %} first-week {% endif %}">
-      <p class="date">
-        {% set show_month = first_week and first_day %}
-        {% if day.day == 1 or show_month %}
-        {{ day.month_name }}
-        {% endif %}
-        {{ day.day }}
-      </p>
-      <div class="events">
-        {% for event in day.events %}
-          {% include "event_include.html" %}
-        {% endfor %}
-      </div>
+      <a href="{{ day.link }}">
+        <p class="date">
+          {% set show_month = first_week and first_day %}
+          {% if day.day == 1 or show_month %}
+          {{ day.month_name }}
+          {% endif %}
+          {{ day.day }}
+        </p>
+        <div class="events">
+          {% for event in day.events %}
+            {% include "event_include.html" %}
+          {% endfor %}
+        </div>
+      </a>
     </div>
     {% endfor %} {% endfor %}
   </div>
