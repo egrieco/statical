@@ -111,58 +111,7 @@ impl CalendarCollection {
             (true, _) => (),
         }
 
-        let mut calendars = Vec::new();
-        let unparsed_properties = HashSet::new();
-
-        // convert the CalendarSourceConfigs into Result<CalendarSources>
-        debug!("configuring calendar sources...");
-        let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
-        for source_config in &config.calendar_sources {
-            debug!("creating calendar source: {:?}", &source_config);
-            calendars_sources_configs.push(CalendarSource::new(
-                &config.base_dir,
-                source_config.clone(),
-                &config,
-            ));
-        }
-
-        // sort properly configured calendars and errors
-        let (calendar_sources, calendar_errors): (
-            Vec<Result<CalendarSource>>,
-            Vec<Result<CalendarSource>>,
-        ) = calendars_sources_configs
-            .into_iter()
-            .partition(|s| s.is_ok());
-        debug!(
-            "{} valid and {} erroneous calendar sources",
-            calendar_sources.len(),
-            calendar_errors.len()
-        );
-
-        // bail if any of them failed
-        if !calendar_errors.is_empty() {
-            // TODO: let the user configure whether to bail or just report errors and continue
-            bail!("errors in calendars configuration")
-        }
-
-        // check after we check for error conditions so we don't hide errors behind a false empty condition
-        if calendar_sources.is_empty() {
-            bail!("no valid calendar sources found");
-        }
-
-        // parse calendar sources that are ok
-        debug!("parsing calendars...");
-        for source in calendar_sources.into_iter().flatten() {
-            debug!("parsing calendar source: {:?}", source);
-            match source.parse_calendars(&config) {
-                Ok(mut parsed_calendars) => {
-                    calendars.append(&mut parsed_calendars);
-                }
-                Err(e) => {
-                    error!("could not parse source: {:?}", e);
-                }
-            }
-        }
+        let (mut calendars, unparsed_properties) = load_calendars(&config)?;
 
         let (cal_start, cal_end) = determine_beginning_and_end(&config, &calendars);
 
@@ -555,6 +504,64 @@ impl CalendarCollection {
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
     }
+}
+
+#[must_use]
+fn load_calendars(config: &Config) -> Result<(Vec<Calendar>, HashSet<String>)> {
+    let mut calendars = Vec::new();
+    let unparsed_properties = HashSet::new();
+
+    // convert the CalendarSourceConfigs into Result<CalendarSources>
+    debug!("configuring calendar sources...");
+    let mut calendars_sources_configs: Vec<Result<CalendarSource>> = Vec::new();
+    for source_config in &config.calendar_sources {
+        debug!("creating calendar source: {:?}", &source_config);
+        calendars_sources_configs.push(CalendarSource::new(
+            &config.base_dir,
+            source_config.clone(),
+            config,
+        ));
+    }
+
+    // sort properly configured calendars and errors
+    let (calendar_sources, calendar_errors): (
+        Vec<Result<CalendarSource>>,
+        Vec<Result<CalendarSource>>,
+    ) = calendars_sources_configs
+        .into_iter()
+        .partition(|s| s.is_ok());
+    debug!(
+        "{} valid and {} erroneous calendar sources",
+        calendar_sources.len(),
+        calendar_errors.len()
+    );
+
+    // bail if any of them failed
+    if !calendar_errors.is_empty() {
+        // TODO: let the user configure whether to bail or just report errors and continue
+        bail!("errors in calendars configuration")
+    }
+
+    // check after we check for error conditions so we don't hide errors behind a false empty condition
+    if calendar_sources.is_empty() {
+        bail!("no valid calendar sources found");
+    }
+
+    // parse calendar sources that are ok
+    debug!("parsing calendars...");
+    for source in calendar_sources.into_iter().flatten() {
+        debug!("parsing calendar source: {:?}", source);
+        match source.parse_calendars(config) {
+            Ok(mut parsed_calendars) => {
+                calendars.append(&mut parsed_calendars);
+            }
+            Err(e) => {
+                error!("could not parse source: {:?}", e);
+            }
+        }
+    }
+
+    Ok((calendars, unparsed_properties))
 }
 
 #[must_use]
