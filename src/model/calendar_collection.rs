@@ -506,7 +506,7 @@ impl CalendarCollection {
     }
 }
 
-#[must_use]
+#[must_use = "the loaded calendars must be stored somewhere"]
 fn load_calendars(config: &Config) -> Result<(Vec<Calendar>, HashSet<String>)> {
     let mut calendars = Vec::new();
     let unparsed_properties = HashSet::new();
@@ -567,7 +567,7 @@ fn load_calendars(config: &Config) -> Result<(Vec<Calendar>, HashSet<String>)> {
 #[must_use]
 fn determine_beginning_and_end(
     config: &Config,
-    calendars: &Vec<Calendar>,
+    calendars: &[Calendar],
 ) -> (DateTime<ChronoTz>, DateTime<ChronoTz>) {
     // TODO: have each calendar determine its own start and end
     let end_of_month_default =
@@ -597,7 +597,7 @@ fn determine_beginning_and_end(
 
 #[must_use]
 fn group_events_by_day(
-    calendars: &Vec<Calendar>,
+    calendars: &[Calendar],
     config: &Config,
 ) -> BTreeMap<NaiveDate, Vec<Rc<Event>>> {
     // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
@@ -629,7 +629,7 @@ fn group_events_by_day(
     events_by_day
 }
 
-#[must_use]
+#[must_use = "the loaded templates must be stored somewhere"]
 fn load_templates(config: &Config) -> Result<Tera, eyre::Error> {
     info!("loading default templates...");
     let mut tera = Tera::default();
