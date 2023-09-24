@@ -39,6 +39,16 @@ pub struct Config {
     #[doku(example = "today")]
     pub calendar_today_date: String,
 
+    /// The start date of the rendered calendar and feed
+    ///
+    /// This is automatically determined if this is omitted
+    pub calendar_start_date: Option<String>,
+
+    /// The end date of the rendered calendar and feed
+    ///
+    /// This is automatically determined if this is omitted
+    pub calendar_end_date: Option<String>,
+
     /// Name of the timezone in which to display rendered times
     ///
     /// See available timezones here: <https://docs.rs/chrono-tz/latest/chrono_tz/enum.Tz.html>
@@ -187,6 +197,8 @@ impl Default for Config {
         Self {
             base_dir: ".".into(),
             calendar_today_date: "today".into(),
+            calendar_start_date: None,
+            calendar_end_date: None,
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),
             calendar_sources: Vec::new(),
             output_dir: "output".into(),

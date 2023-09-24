@@ -81,6 +81,28 @@ impl CalendarCollection {
         // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
         // TODO: do we need this to be adjusted by the provided timezone?
         let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
+        let cal_start = &config
+            .calendar_start_date
+            .as_ref()
+            .map(parse)
+            .transpose()
+            .wrap_err("could not parse calendar_start_date")?
+            .map(|t| {
+                t.and_local_timezone(config.display_timezone.timezone())
+                    // TODO: might want to handle ambiguous timezone conversions better
+                    .single()
+            });
+        let cal_end = &config
+            .calendar_end_date
+            .as_ref()
+            .map(parse)
+            .transpose()
+            .wrap_err("could not parse calendar_end_date")?
+            .map(|t| {
+                t.and_local_timezone(config.display_timezone.timezone())
+                    // TODO: might want to handle ambiguous timezone conversions better
+                    .single()
+            });
 
         // load the embed page if it has been specified
         let embed_in_page = if let Some(page) = &config.embed_in_page {
@@ -113,7 +135,12 @@ impl CalendarCollection {
 
         let (mut calendars, unparsed_properties) = load_calendars(&config)?;
 
-        let (cal_start, cal_end) = determine_beginning_and_end(&config, &calendars);
+        let cal_start = cal_start
+            .unwrap_or_else(|| Some(determine_calendar_start(&config, &calendars)))
+            .unwrap();
+        let cal_end = cal_end
+            .unwrap_or_else(|| Some(determine_calendar_end(&config, &calendars)))
+            .unwrap();
         debug!("calendar runs from {} to {}", cal_start, cal_end);
 
         // expand recurring events
@@ -576,50 +603,30 @@ fn load_calendars(config: &Config) -> Result<(Vec<Calendar>, HashSet<String>)> {
 }
 
 #[must_use]
-fn determine_beginning_and_end(
-    config: &Config,
-    calendars: &[Calendar],
-) -> (DateTime<ChronoTz>, DateTime<ChronoTz>) {
-    // TODO: have each calendar determine its own start and end
+fn determine_calendar_start(config: &Config, calendars: &[Calendar]) -> DateTime<ChronoTz> {
+    // get start date for entire collection
+    calendars
+        .iter()
+        .map(|c| c.start().with_timezone(&config.display_timezone.into()))
+        .reduce(|min_start, start| min_start.min(start))
+        .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()))
+}
+
+#[must_use]
+fn determine_calendar_end(config: &Config, calendars: &[Calendar]) -> DateTime<ChronoTz> {
     let end_of_month_default =
         DateRule::monthly(Utc::now().with_timezone(&config.display_timezone.into()))
             .with_rolling_day(31)
             .unwrap()
             .next()
-            .unwrap();
-    // .ok_or(eyre!("could not get end of month")?;
+            .expect("could not get end of month");
 
-    debug!(
-        "{} calendars to check for start and end dates",
-        calendars.len()
-    );
-    for calendar in calendars {
-        debug!(
-            "calendar runs from {} to {} ({})",
-            calendar.start(),
-            calendar.end(),
-            calendar.title(),
-        );
-    }
-    // get start and end date for entire collection
-    let cal_start_opt = calendars
-        .iter()
-        .map(|c| c.start().with_timezone(&config.display_timezone.into()))
-        .reduce(|min_start, start| min_start.min(start));
-    let cal_start =
-        cal_start_opt.unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
-
-    let cal_end_opt = calendars
+    // get end date for entire collection
+    calendars
         .iter()
         .map(|c| c.end().with_timezone(&config.display_timezone.into()))
-        .reduce(|max_end, end| max_end.max(end));
-    let cal_end = cal_end_opt
-        // TODO consider a better approach to finding the correct number of days
-        .unwrap_or(end_of_month_default);
-
-    debug!("cal_start: {:?}, cal_end: {:?}", cal_start_opt, cal_end_opt);
-
-    (cal_start, cal_end)
+        .reduce(|max_end, end| max_end.max(end))
+        .unwrap_or(end_of_month_default)
 }
 
 #[must_use]
