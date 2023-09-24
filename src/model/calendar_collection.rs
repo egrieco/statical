@@ -164,27 +164,7 @@ impl CalendarCollection {
             }
         }
 
-        // TODO: have each calendar determine its own start and end
-        let end_of_month_default =
-            DateRule::monthly(Utc::now().with_timezone(&config.display_timezone.into()))
-                .with_rolling_day(31)
-                .unwrap()
-                .next()
-                .unwrap();
-        // .ok_or(eyre!("could not get end of month")?;
-
-        // get start and end date for entire collection
-        let cal_start = calendars
-            .iter()
-            .map(|c| c.start().with_timezone(&config.display_timezone.into()))
-            .reduce(|min_start, start| min_start.min(start))
-            .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
-        let cal_end = calendars
-            .iter()
-            .map(|c| c.end().with_timezone(&config.display_timezone.into()))
-            .reduce(|max_end, end| max_end.max(end))
-            // TODO consider a better approach to finding the correct number of days
-            .unwrap_or(end_of_month_default);
+        let (cal_start, cal_end) = determine_beginning_and_end(&config, &calendars);
 
         // expand recurring events
         // TODO: make Events an enum so that original events and recurrences are distinct
@@ -575,6 +555,37 @@ impl CalendarCollection {
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
     }
+}
+
+#[must_use]
+fn determine_beginning_and_end(
+    config: &Config,
+    calendars: &Vec<Calendar>,
+) -> (DateTime<ChronoTz>, DateTime<ChronoTz>) {
+    // TODO: have each calendar determine its own start and end
+    let end_of_month_default =
+        DateRule::monthly(Utc::now().with_timezone(&config.display_timezone.into()))
+            .with_rolling_day(31)
+            .unwrap()
+            .next()
+            .unwrap();
+    // .ok_or(eyre!("could not get end of month")?;
+
+    // get start and end date for entire collection
+    let cal_start = calendars
+        .iter()
+        .map(|c| c.start().with_timezone(&config.display_timezone.into()))
+        .reduce(|min_start, start| min_start.min(start))
+        .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
+
+    let cal_end = calendars
+        .iter()
+        .map(|c| c.end().with_timezone(&config.display_timezone.into()))
+        .reduce(|max_end, end| max_end.max(end))
+        // TODO consider a better approach to finding the correct number of days
+        .unwrap_or(end_of_month_default);
+
+    (cal_start, cal_end)
 }
 
 #[must_use]
