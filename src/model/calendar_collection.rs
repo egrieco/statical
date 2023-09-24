@@ -231,38 +231,7 @@ impl CalendarCollection {
         }
 
         // load default tera templates
-        info!("loading default templates...");
-        let mut tera = Tera::default();
-        let default_templates = TEMPLATE_DIR.find("**/*.html")?.filter_map(|t| match t {
-            DirEnt(_) => None,
-            FileEnt(t) => Some((
-                t.path()
-                    .to_str()
-                    .expect("could not get default template name"),
-                t.contents_utf8()
-                    .expect("could not get default template contents"),
-            )),
-        });
-
-        // NOTE: we must use the plural version so that any template extends don't error out
-        tera.add_raw_templates(default_templates)
-            .wrap_err("could not add default templates to Tera")?;
-
-        // load custom tera templates
-        info!("loading custom templates...");
-        let custom_templates: Vec<(PathBuf, Option<String>)> = config
-            .base_dir
-            // we're joining with base_dir here to ensure that the templates are found relative to the config file
-            .join(&config.template_path)
-            .read_dir()
-            .wrap_err("could not read custom templates dir")?
-            .filter_map_ok(|t| Some(t.path()))
-            .map(|t| (t.unwrap(), None))
-            .collect();
-
-        // NOTE: we must use the plural version so that any template extends don't error out
-        tera.add_template_files(custom_templates)
-            .wrap_err("could not add custom templates")?;
+        let mut tera = load_templates(&config)?;
 
         // we reset the page template if we are going to be embedding our pages in existing HTML
         if config.embed_in_page.is_some() {
@@ -630,4 +599,38 @@ impl CalendarCollection {
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
     }
+}
+
+#[must_use]
+fn load_templates(config: &Config) -> Result<Tera, eyre::Error> {
+    info!("loading default templates...");
+    let mut tera = Tera::default();
+    let default_templates = TEMPLATE_DIR.find("**/*.html")?.filter_map(|t| match t {
+        DirEnt(_) => None,
+        FileEnt(t) => Some((
+            t.path()
+                .to_str()
+                .expect("could not get default template name"),
+            t.contents_utf8()
+                .expect("could not get default template contents"),
+        )),
+    });
+
+    tera.add_raw_templates(default_templates)
+        .wrap_err("could not add default templates to Tera")?;
+
+    info!("loading custom templates...");
+    let custom_templates: Vec<(PathBuf, Option<String>)> = config
+        .base_dir
+        // we're joining with base_dir here to ensure that the templates are found relative to the config file
+        .join(&config.template_path)
+        .read_dir()
+        .wrap_err("could not read custom templates dir")?
+        .filter_map_ok(|t| Some(t.path()))
+        .map(|t| (t.unwrap(), None))
+        .collect();
+    tera.add_template_files(custom_templates)
+        .wrap_err("could not add custom templates")?;
+
+    Ok(tera)
 }
