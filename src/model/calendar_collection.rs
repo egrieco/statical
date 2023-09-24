@@ -114,6 +114,7 @@ impl CalendarCollection {
         let (mut calendars, unparsed_properties) = load_calendars(&config)?;
 
         let (cal_start, cal_end) = determine_beginning_and_end(&config, &calendars);
+        debug!("calendar runs from {} to {}", cal_start, cal_end);
 
         // expand recurring events
         expand_recurring_events(&mut calendars, &cal_start, &cal_end, &config)?;
@@ -588,19 +589,35 @@ fn determine_beginning_and_end(
             .unwrap();
     // .ok_or(eyre!("could not get end of month")?;
 
+    debug!(
+        "{} calendars to check for start and end dates",
+        calendars.len()
+    );
+    for calendar in calendars {
+        debug!(
+            "calendar runs from {} to {} ({})",
+            calendar.start(),
+            calendar.end(),
+            calendar.title(),
+        );
+    }
     // get start and end date for entire collection
-    let cal_start = calendars
+    let cal_start_opt = calendars
         .iter()
         .map(|c| c.start().with_timezone(&config.display_timezone.into()))
-        .reduce(|min_start, start| min_start.min(start))
-        .unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
+        .reduce(|min_start, start| min_start.min(start));
+    let cal_start =
+        cal_start_opt.unwrap_or_else(|| Utc::now().with_timezone(&config.display_timezone.into()));
 
-    let cal_end = calendars
+    let cal_end_opt = calendars
         .iter()
         .map(|c| c.end().with_timezone(&config.display_timezone.into()))
-        .reduce(|max_end, end| max_end.max(end))
+        .reduce(|max_end, end| max_end.max(end));
+    let cal_end = cal_end_opt
         // TODO consider a better approach to finding the correct number of days
         .unwrap_or(end_of_month_default);
+
+    debug!("cal_start: {:?}, cal_end: {:?}", cal_start_opt, cal_end_opt);
 
     (cal_start, cal_end)
 }

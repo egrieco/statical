@@ -4,6 +4,7 @@ use color_eyre::eyre::{Context, Result};
 use ical::parser::ical::component::IcalCalendar;
 use ical::IcalParser;
 use indent::indent_all_by;
+use log::debug;
 use rrule::Tz as RruleTz;
 use std::io::BufRead;
 use std::rc::Rc;
@@ -125,14 +126,16 @@ impl Calendar {
             }
         }
 
+        debug!("calendar {:?} runs from {} to {}", name, start, end);
+
         // build the new calendar
         Ok(Calendar {
             name,
             title,
             source_config,
             description,
-            start: now,
-            end: now + Months::new(1),
+            start,
+            end,
             events,
             recurring_events,
             unparsed_properties,
@@ -146,7 +149,7 @@ impl Calendar {
         tz: &ChronoTz,
     ) -> Result<()> {
         log::debug!("expanding recurrences for calendar: {:?}", self.name);
-        log::debug!("calendar_runs from '{}' to '{}'", cal_start, cal_end);
+        log::debug!("calendar runs from '{}' to '{}'", cal_start, cal_end);
 
         // we need to convert from the time-rs library to chrono for RRule's sake
         let repeat_start: DateTime<RruleTz> =
@@ -204,6 +207,11 @@ impl Calendar {
             calendars.push(Calendar::new(&calendar, source_config.clone())?);
         }
         Ok(calendars)
+    }
+
+    #[must_use]
+    pub(crate) fn title(&self) -> &String {
+        &self.title
     }
 
     #[must_use]
