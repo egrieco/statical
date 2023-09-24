@@ -204,31 +204,7 @@ impl CalendarCollection {
             println!("  Calendar: {}", calendar);
         }
 
-        // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
-        let mut events_by_day = EventsByDay::new();
-
-        for (event_num, event) in calendars.iter().flat_map(|c| c.events()).enumerate() {
-            // find out if event is longer than 1 day
-            // find out if the event crosses a day boundary in this timezone
-            // find out if this event ends on this day
-            let event_days = event.days_with_timezone(&config.display_timezone);
-            println!(
-                "Event {} (day span: {})\n  {}",
-                event_num,
-                event_days.len(),
-                event
-            );
-            for day in event_days {
-                events_by_day
-                    // TODO: do we need to adjust for timezone here?
-                    .entry(
-                        day.with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
-                            .date_naive(),
-                    )
-                    .or_default()
-                    .push(event.clone());
-            }
-        }
+        let events_by_day = group_events_by_day(&calendars, &config);
 
         // load default tera templates
         let mut tera = load_templates(&config)?;
@@ -599,6 +575,40 @@ impl CalendarCollection {
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
     }
+}
+
+#[must_use]
+fn group_events_by_day(
+    calendars: &Vec<Calendar>,
+    config: &Config,
+) -> BTreeMap<NaiveDate, Vec<Rc<Event>>> {
+    // TODO might want to hand back a better event collection e.g. might want to de-duplicate them
+    let mut events_by_day = EventsByDay::new();
+
+    for (event_num, event) in calendars.iter().flat_map(|c| c.events()).enumerate() {
+        // TODO: find out if event is longer than 1 day
+        // TODO: find out if the event crosses a day boundary in this timezone
+        // TODO: find out if this event ends on this day
+        let event_days = event.days_with_timezone(&config.display_timezone);
+        println!(
+            "Event {} (day span: {})\n  {}",
+            event_num,
+            event_days.len(),
+            event
+        );
+        for day in event_days {
+            events_by_day
+                // TODO: do we need to adjust for timezone here?
+                .entry(
+                    day.with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
+                        .date_naive(),
+                )
+                .or_default()
+                .push(event.clone());
+        }
+    }
+
+    events_by_day
 }
 
 #[must_use]
