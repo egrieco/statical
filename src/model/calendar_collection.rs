@@ -44,6 +44,8 @@ pub(crate) type LocalDay = DateTime<ChronoTz>;
 
 pub(crate) type EventsByDay = BTreeMap<NaiveDate, EventList>;
 
+const AUTO_DATE_VALUES: &[&str] = &["", "auto", "automatic"];
+
 pub(crate) static TEMPLATE_DIR: Dir = include_dir!("templates");
 pub(crate) static ASSETS_DIR: Dir = include_dir!("assets");
 
@@ -81,28 +83,9 @@ impl CalendarCollection {
         // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
         // TODO: do we need this to be adjusted by the provided timezone?
         let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
-        let cal_start = &config
-            .calendar_start_date
-            .as_ref()
-            .map(parse)
-            .transpose()
-            .wrap_err("could not parse calendar_start_date")?
-            .map(|t| {
-                t.and_local_timezone(config.display_timezone.timezone())
-                    // TODO: might want to handle ambiguous timezone conversions better
-                    .single()
-            });
-        let cal_end = &config
-            .calendar_end_date
-            .as_ref()
-            .map(parse)
-            .transpose()
-            .wrap_err("could not parse calendar_end_date")?
-            .map(|t| {
-                t.and_local_timezone(config.display_timezone.timezone())
-                    // TODO: might want to handle ambiguous timezone conversions better
-                    .single()
-            });
+
+        let cal_start = parse_calendar_date(&config.calendar_start_date, &config)?;
+        let cal_end = parse_calendar_date(&config.calendar_end_date, &config)?;
 
         // load the embed page if it has been specified
         let embed_in_page = if let Some(page) = &config.embed_in_page {
@@ -135,12 +118,8 @@ impl CalendarCollection {
 
         let (mut calendars, unparsed_properties) = load_calendars(&config)?;
 
-        let cal_start = cal_start
-            .unwrap_or_else(|| Some(determine_calendar_start(&config, &calendars)))
-            .unwrap();
-        let cal_end = cal_end
-            .unwrap_or_else(|| Some(determine_calendar_end(&config, &calendars)))
-            .unwrap();
+        let cal_start = cal_start.unwrap_or_else(|| determine_calendar_start(&config, &calendars));
+        let cal_end = cal_end.unwrap_or_else(|| determine_calendar_end(&config, &calendars));
         debug!("calendar runs from {} to {}", cal_start, cal_end);
 
         // expand recurring events
@@ -521,6 +500,36 @@ impl CalendarCollection {
 
     pub(crate) fn base_dir(&self) -> &Path {
         &self.config.base_dir
+    }
+}
+
+fn parse_calendar_date(
+    date: &Option<String>,
+    config: &Config,
+) -> Result<Option<DateTime<ChronoTz>>> {
+    match &config.calendar_start_date {
+        // if calendar_start_date is not specified, auto-calculate
+        None => Ok(None),
+        // if calendar_start_date is set to some value
+        Some(start_date) => {
+            match AUTO_DATE_VALUES.contains(&start_date.as_str()) {
+                // if calendar_start_date is set to auto, auto-calculate
+                true => Ok(None),
+                // if set to another value, attempt to parse and set the value
+                false => {
+                    Ok(date
+                        .as_ref()
+                        .map(parse)
+                        .transpose()
+                        .wrap_err("could not parse calendar_start_date")?
+                        .and_then(|t| {
+                            t.and_local_timezone(config.display_timezone.timezone())
+                                // TODO: might want to handle ambiguous timezone conversions better
+                                .single()
+                        }))
+                }
+            }
+        }
     }
 }
 

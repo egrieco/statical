@@ -42,11 +42,13 @@ pub struct Config {
     /// The start date of the rendered calendar and feed
     ///
     /// This is automatically determined if this is omitted
+    #[doku(example = "auto")]
     pub calendar_start_date: Option<String>,
 
     /// The end date of the rendered calendar and feed
     ///
     /// This is automatically determined if this is omitted
+    #[doku(example = "auto")]
     pub calendar_end_date: Option<String>,
 
     /// Name of the timezone in which to display rendered times
