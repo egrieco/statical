@@ -17,7 +17,10 @@ use std::{collections::HashSet, fmt, rc::Rc, sync::atomic::AtomicUsize};
 use unescaper::unescape;
 
 use crate::configuration::{calendar_source_config::CalendarSourceConfig, config::Config};
-use crate::views::event_view::{self};
+use crate::views::{
+    day_view,
+    event_view::{self},
+};
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
 enum ParseType {
@@ -86,6 +89,7 @@ pub struct EventContext {
     duration: String,
     url: String,
     file_path: String,
+    day_view_path: String,
 }
 
 impl fmt::Display for Event {
@@ -168,6 +172,7 @@ impl Event {
             duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
             url: self.url().to_owned(),
             file_path: self.file_path(),
+            day_view_path: self.day_view_path(),
         }
     }
 
@@ -196,6 +201,20 @@ impl Event {
         PathBuf::from("/")
             .join(event_view::VIEW_PATH)
             .join(self.file_name())
+            .to_string_lossy()
+            .to_string()
+    }
+
+    pub fn day_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        PathBuf::from("/")
+            .join(day_view::VIEW_PATH)
+            .join(format!(
+                "{}-{:02}-{:02}.html",
+                self.year(),
+                self.month_num(),
+                self.day()
+            ))
             .to_string_lossy()
             .to_string()
     }
@@ -245,8 +264,12 @@ impl Event {
         self.start_with_timezone(tz).year()
     }
 
+    pub fn month_num(&self) -> u32 {
+        self.start.month()
+    }
+
     pub fn month(&self) -> Option<Month> {
-        Month::from_u32(self.start.month())
+        Month::from_u32(self.month_num())
     }
 
     pub fn day(&self) -> u32 {

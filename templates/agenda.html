@@ -10,12 +10,14 @@
     {% set previous_agenda_header = "initial_placeholder_value" %}
     {% for event in events %}
       {% if event.agenda_header != previous_agenda_header %}
-      <p class="header">{{ event.agenda_header }}</p>
-      <div class="events">
-      {% endif %}
-        {% include "event_include.html" %}
-      {% if event.agenda_header != previous_agenda_header %}
-      </div>
+      <a href="{{ event.day_view_path }}">
+        <p class="header">{{ event.agenda_header }}</p>
+        <div class="events">
+        {% endif %}
+          {% include "event_include.html" %}
+        {% if event.agenda_header != previous_agenda_header %}
+        </div>
+      </a>
       {% endif %}
       {% set_global previous_agenda_header = event.agenda_header %}
     {% endfor %}
