@@ -5,7 +5,7 @@ use num_traits::FromPrimitive;
 use serde::Serialize;
 use std::{fmt, path::PathBuf};
 
-use crate::views::day_view;
+use crate::views::{day_view, month_view, week_view};
 
 use super::event::EventContext;
 
@@ -33,13 +33,35 @@ impl Day {
         }
     }
 
+    pub(crate) fn month_num(&self) -> u8 {
+        self.start.month() as u8
+    }
     pub(crate) fn month(&self) -> Month {
-        Month::try_from(self.start.month() as u8)
+        Month::try_from(self.month_num())
             .expect("month of week out of range, this should never happen")
     }
 
     pub(crate) fn format(&self, fmt: &str) -> String {
         self.start.format(fmt).to_string()
+    }
+
+    pub fn week_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        let week = self.start.iso_week();
+        PathBuf::from("/")
+            .join(week_view::VIEW_PATH)
+            .join(format!("{}-{}.html", week.year(), week.week0()))
+            .to_string_lossy()
+            .to_string()
+    }
+
+    pub(crate) fn month_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        PathBuf::from("/")
+            .join(month_view::VIEW_PATH)
+            .join(format!("{}-{}.html", self.start.year(), self.month_num()))
+            .to_string_lossy()
+            .to_string()
     }
 }
 
