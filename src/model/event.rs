@@ -20,6 +20,7 @@ use crate::configuration::{calendar_source_config::CalendarSourceConfig, config:
 use crate::views::{
     day_view,
     event_view::{self},
+    month_view, week_view,
 };
 
 /// An enum to help us determine how to parse a given date based on the regex that matched
@@ -198,6 +199,7 @@ impl Event {
     }
 
     pub fn file_path(&self) -> String {
+        // TODO: need to add config.base_url_path
         PathBuf::from("/")
             .join(event_view::VIEW_PATH)
             .join(self.file_name())
@@ -215,6 +217,25 @@ impl Event {
                 self.month_num(),
                 self.day()
             ))
+            .to_string_lossy()
+            .to_string()
+    }
+
+    pub fn week_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        let week = self.iso_week();
+        PathBuf::from("/")
+            .join(week_view::VIEW_PATH)
+            .join(format!("{}-{}.html", week.year(), week.week0()))
+            .to_string_lossy()
+            .to_string()
+    }
+
+    pub fn month_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        PathBuf::from("/")
+            .join(month_view::VIEW_PATH)
+            .join(format!("{}-{}.html", self.year(), self.month_num()))
             .to_string_lossy()
             .to_string()
     }

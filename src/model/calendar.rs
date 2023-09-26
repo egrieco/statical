@@ -210,11 +210,6 @@ impl Calendar {
     }
 
     #[must_use]
-    pub(crate) fn title(&self) -> &String {
-        &self.title
-    }
-
-    #[must_use]
     pub fn start(&self) -> DateTime<Utc> {
         self.start
     }

@@ -20,7 +20,7 @@ pub type WeekDayMap = BTreeMap<u8, EventList>;
 /// Note that the previous and next weeks may be None
 pub type WeekSlice<'a> = &'a [Option<Week<'a>>];
 
-const VIEW_PATH: &str = "week";
+pub(crate) const VIEW_PATH: &str = "week";
 const PAGE_TITLE: &str = "Week Page";
 
 #[derive(Debug)]

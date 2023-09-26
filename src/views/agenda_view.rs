@@ -185,6 +185,15 @@ impl AgendaView<'_> {
         );
 
         let mut context = self.calendars.template_context();
+
+        let first_event = events.first().expect("could not get first event for page");
+        // let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
+        context.insert("month_view_path", &first_event.month_view_path());
+        context.insert("week_view_path", &first_event.week_view_path());
+        context.insert("day_view_path", &first_event.day_view_path());
+        context.insert("event_view_path", &first_event.file_path());
+        // context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
         context.insert("current_view", VIEW_PATH);
         context.insert("page_title", PAGE_TITLE);
         // TODO: we need to refactor the way agenda pages are created before we can enable the below

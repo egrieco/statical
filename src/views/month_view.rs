@@ -34,7 +34,7 @@ pub type MonthMap<'a> = BTreeMap<Month, WeekMap<'a>>;
 /// Note that the previous and next weeks may be None
 pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
 
-const VIEW_PATH: &str = "month";
+pub(crate) const VIEW_PATH: &str = "month";
 const PAGE_TITLE: &str = "Month Page";
 
 #[derive(Debug)]
