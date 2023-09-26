@@ -2,26 +2,17 @@ use chrono::Datelike;
 use color_eyre::eyre::Result;
 use std::{
     fs::create_dir_all,
-    isize, iter,
     path::{Path, PathBuf},
-    rc::Rc,
 };
 
 use crate::{
     configuration::{config::Config, types::calendar_view::CalendarView},
     model::{
+        agenda::{Agenda, AgendaSlice},
         calendar_collection::CalendarCollection,
-        event::{Event, EventContext},
+        event::EventContext,
     },
 };
-
-type AgendaPageId = isize;
-type EventSlice<'a> = &'a [&'a Rc<Event>];
-
-/// A triple with the previous, current, and next agenda pages present
-///
-/// Note that the previous and next weeks may be None
-pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
 
 const VIEW_PATH: &str = "agenda";
 const PAGE_TITLE: &str = "Agenda Page";
@@ -52,58 +43,16 @@ impl AgendaView<'_> {
         &self.output_dir
     }
 
-    fn event_list(&self) -> impl Iterator<Item = &Rc<Event>> {
-        self.calendars.events()
-    }
-
     pub fn create_html_pages(&self) -> Result<()> {
         // create the subdirectory to hold the files
         create_dir_all(self.output_dir())?;
 
         let mut index_written = false;
 
-        // partition events into past and future events
-        // TODO: might want to convert timezone on events before making the naive
-        let (mut past_events, mut future_events): (Vec<_>, Vec<_>) = self
-            .event_list()
-            .partition(|e| e.start().date_naive() < self.calendars.today_date());
-
-        // process past events
-        past_events.sort_by_key(|e| e.start());
-        let mut past_events: Vec<_> = past_events
-            .rchunks(self.config().agenda_events_per_page)
-            .zip((1_isize..).map(|i| -i))
-            .collect();
-        past_events.reverse();
-
-        // process future events
-        future_events.sort_by_key(|e| e.start());
-        let future_events_iter = future_events
-            .chunks(self.config().agenda_events_per_page)
-            .zip(0..);
-
-        // combine all events into one list
-        past_events.extend(future_events_iter);
-
-        // let event_pages = past_events
-        //     .into_iter()
-        //     .map(|(events, page)| (page, events))
-        //     .collect();
-
-        // chain a None to the list of agenda blocks and a None at the end
-        // this will allow us to traverse the list as windows with the first and last
-        // having None as appropriate
-        let chained_iter = iter::once(None)
-            .chain(
-                past_events
-                    .iter()
-                    .map(|(events, page)| Some((page, events))),
-            )
-            .chain(iter::once(None));
-        let page_windows = &chained_iter.collect::<Vec<Option<(&AgendaPageId, &EventSlice)>>>();
+        let events = Agenda::new(self.calendars);
 
         // iterate through all windows
-        for window in page_windows.windows(3) {
+        for window in events.pages().windows(3) {
             let next_page_opt = window[2];
 
             let mut index_paths = vec![];
