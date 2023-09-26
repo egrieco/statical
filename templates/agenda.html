@@ -7,13 +7,17 @@
   <h1>Events</h1>
   {% include "pagination_with_views.html" %}
   <div class="day">
-    {% for group, events in event_groups %}
-      <p class="header">{{ group }}</p>
+    {% set previous_agenda_header = "initial_placeholder_value" %}
+    {% for event in events %}
+      {% if event.agenda_header != previous_agenda_header %}
+      <p class="header">{{ event.agenda_header }}</p>
       <div class="events">
-        {% for event in events %}
-          {% include "event_include.html" %}
-        {% endfor %}
+      {% endif %}
+        {% include "event_include.html" %}
+      {% if event.agenda_header != previous_agenda_header %}
       </div>
+      {% endif %}
+      {% set_global previous_agenda_header = event.agenda_header %}
     {% endfor %}
   </div>
   {% include "pagination.html" %}

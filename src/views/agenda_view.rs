@@ -1,7 +1,6 @@
 use chrono::Datelike;
 use color_eyre::eyre::Result;
 use std::{
-    collections::BTreeMap,
     fs::create_dir_all,
     isize, iter,
     path::{Path, PathBuf},
@@ -23,8 +22,6 @@ type EventSlice<'a> = &'a [&'a Rc<Event>];
 ///
 /// Note that the previous and next weeks may be None
 pub type AgendaSlice<'a> = &'a [Option<(&'a AgendaPageId, &'a EventSlice<'a>)>];
-
-type EventDayGroups = BTreeMap<String, Vec<EventContext>>;
 
 const VIEW_PATH: &str = "agenda";
 const PAGE_TITLE: &str = "Agenda Page";
@@ -206,16 +203,14 @@ impl AgendaView<'_> {
         context.insert("page", &page);
         context.insert("events", &event_contexts);
 
-        // group events by whatever format is specified
-        // TODO add agenda group format to the config file
-        let mut event_groups = EventDayGroups::new();
-        for event in events.iter() {
-            event_groups
-                .entry(event.start().format("%a, %d %m %Y").to_string())
-                .or_default()
-                .push(event.context(self.config()))
-        }
-        context.insert("event_groups", &event_groups);
+        // event groups are created by the template and whatever format is specified for headers
+        context.insert(
+            "events",
+            &events
+                .iter()
+                .map(|e| e.context(self.config()))
+                .collect::<Vec<EventContext>>(),
+        );
 
         let base_url_path: unix_path::PathBuf =
             self.calendars.config.base_url_path.path_buf().clone();

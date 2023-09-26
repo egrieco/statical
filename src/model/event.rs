@@ -73,6 +73,7 @@ pub struct Event {
 
 #[derive(Debug, Serialize)]
 pub struct EventContext {
+    agenda_header: String,
     calendar_name: String,
     calendar_title: String,
     calendar_color: String,
@@ -122,6 +123,8 @@ impl Event {
     /// Returns and EventContext suitable for providing values to Tera templates
     pub fn context(&self, config: &Config) -> EventContext {
         EventContext {
+            // TODO: add an agenda_header_format to the config
+            agenda_header: self.start.format("%a, %-d %B %Y").to_string(),
             calendar_name: self.calendar_config.name.clone(),
             // TODO: make sure that this is using the fallback from the calendar
             calendar_title: self
