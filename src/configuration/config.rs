@@ -1,4 +1,4 @@
-use chrono::Duration;
+use chrono::{Duration, NaiveDate};
 use chrono_tz::Tz;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::{eyre, Result};
@@ -38,6 +38,11 @@ pub struct Config {
     // TODO: should this be Local or Tz?
     #[doku(example = "today")]
     pub calendar_today_date: String,
+
+    // this field will be created from calendar_today_date in CalendarCollection::new() hence the serde skip and the OnceCell
+    // this is the machine readable version of the above
+    #[serde(skip)]
+    pub today_date: OnceCell<NaiveDate>,
 
     /// The start date of the rendered calendar and feed
     ///
@@ -199,6 +204,7 @@ impl Default for Config {
         Self {
             base_dir: ".".into(),
             calendar_today_date: "today".into(),
+            today_date: OnceCell::new(),
             calendar_start_date: None,
             calendar_end_date: None,
             display_timezone: ConfigTimeZone(Tz::America__Phoenix),

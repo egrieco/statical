@@ -60,7 +60,6 @@ pub struct CalendarCollection {
     unparsed_properties: UnparsedProperties,
     pub(crate) cal_start: DateTime<ChronoTz>,
     pub(crate) cal_end: DateTime<ChronoTz>,
-    today_date: NaiveDate,
     embed_in_page: Option<String>,
 }
 
@@ -78,11 +77,20 @@ impl CalendarCollection {
             )
             .map_err(|e| eyre!(e))
             .wrap_err("could not set cache_timeout_duration")?;
-
         // turn the user provided "today" date into an actual NaiveDate object
         // NOTE: we were having problems with the default value from Local::now() being "invalid" so we'll just parse it here and the default can be a string
         // TODO: do we need this to be adjusted by the provided timezone?
-        let today_date = parse(&config.calendar_today_date).map(|d| d.date())?;
+        config
+            .today_date
+            .set(
+                parse(&config.calendar_today_date)
+                    .map(|d| d.date())
+                    .wrap_err(
+                        "could not convert user provided fuzzy date into Chrono::NaiveDate",
+                    )?,
+            )
+            .map_err(|e| eyre!(e))
+            .wrap_err("could not set today_date")?;
 
         let cal_start = parse_calendar_date(&config.calendar_start_date, &config)?;
         let cal_end = parse_calendar_date(&config.calendar_end_date, &config)?;
@@ -149,7 +157,6 @@ impl CalendarCollection {
             unparsed_properties,
             cal_start,
             cal_end,
-            today_date,
             embed_in_page,
         })
     }
@@ -165,7 +172,11 @@ impl CalendarCollection {
     }
 
     pub(crate) fn today_date(&self) -> NaiveDate {
-        self.today_date
+        *self
+            .config
+            .today_date
+            .get()
+            .expect("today's date was not set")
     }
 
     pub(crate) fn display_timezone(&self) -> &ChronoTz {
