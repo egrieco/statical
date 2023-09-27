@@ -1,5 +1,10 @@
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use crate::model::event::WeekNum;
 use crate::model::event::Year;
+use crate::views::day_view;
+use crate::views::month_view;
 use chrono::format::{DelayedFormat, StrftimeItems};
 use chrono::Month;
 use chrono::NaiveWeek;
@@ -12,6 +17,7 @@ use itertools::Itertools;
 
 use super::calendar_collection::CalendarCollection;
 use super::day::DayContext;
+use super::event::Event;
 
 /// Represents a week and generates the week context for [crate::views::week_view::WeekView]
 #[derive(Debug)]
@@ -36,7 +42,19 @@ impl Week<'_> {
         })
     }
 
-    pub(crate) fn week_dates(&self) -> Vec<DayContext> {
+    pub(crate) fn first_event(&self) -> Option<&Rc<Event>> {
+        self.days()
+            .filter_map(|day| {
+                self.parent_collection
+                    .events_by_day
+                    // TODO: I doubt that we need to adjust the timezone here, probably remove it
+                    .get(&day)
+            })
+            .next()
+            .and_then(|e| e.first())
+    }
+
+    pub(crate) fn week_day_contexts(&self) -> Vec<DayContext> {
         let mut week_dates = Vec::new();
         for day in self.days() {
             let events = self
@@ -145,5 +163,41 @@ impl Week<'_> {
 
     pub(crate) fn file_name(&self) -> String {
         format!("{}-{}.html", self.year_start(), self.iso_week())
+    }
+
+    pub(crate) fn start(&self) -> NaiveDate {
+        self.week.first_day()
+    }
+
+    pub fn day(&self) -> u32 {
+        self.start().day()
+    }
+
+    pub(crate) fn month_num(&self) -> u8 {
+        self.start().month() as u8
+    }
+
+    pub(crate) fn month_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        PathBuf::from("/")
+            .join(month_view::VIEW_PATH)
+            .join(format!("{}-{}.html", self.start().year(), self.month_num()))
+            .to_string_lossy()
+            .to_string()
+    }
+
+    pub fn day_view_path(&self) -> String {
+        // TODO: need to add config.base_url_path
+        PathBuf::from("/")
+            .join(day_view::VIEW_PATH)
+            .join(format!(
+                "{}-{:02}-{:02}.html",
+                self.year(),
+                self.month_num(),
+                // TODO: need to get the same day of this week, not day of the month
+                self.parent_collection.today_date().day()
+            ))
+            .to_string_lossy()
+            .to_string()
     }
 }

@@ -139,6 +139,18 @@ impl WeekView<'_> {
 
         // setup the tera context
         let mut context = self.calendars.template_context();
+
+        // let first_event = events.first().expect("could not get first event for page");
+        // let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
+        context.insert("month_view_path", &current_week.month_view_path());
+        // context.insert("week_view_path", &current_week.week_view_path());
+        context.insert("day_view_path", &current_week.day_view_path());
+        // TODO: need to search through the week to find the first event, even if there are not events in the first few days
+        if let Some(first_event) = &current_week.first_event() {
+            context.insert("event_view_path", &first_event.file_path());
+        }
+        // context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
         context.insert("current_view", VIEW_PATH);
         context.insert("page_title", PAGE_TITLE);
         context.insert(
@@ -160,7 +172,7 @@ impl WeekView<'_> {
         context.insert("month_end", &current_week.month_end().number_from_month());
         context.insert("month_end_name", &current_week.month_end().name());
         context.insert("iso_week", &current_week.iso_week());
-        context.insert("week_dates", &current_week.week_dates());
+        context.insert("week_dates", &current_week.week_day_contexts());
         context.insert("week_switches_months", &current_week.week_switches_months());
         context.insert("week_switches_years", &current_week.week_switches_years());
 

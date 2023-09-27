@@ -36,6 +36,7 @@ impl Day {
     pub(crate) fn month_num(&self) -> u8 {
         self.start.month() as u8
     }
+
     pub(crate) fn month(&self) -> Month {
         Month::try_from(self.month_num())
             .expect("month of week out of range, this should never happen")
