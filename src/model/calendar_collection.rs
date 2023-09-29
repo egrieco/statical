@@ -113,6 +113,7 @@ impl CalendarCollection {
             CalendarView::Month => (config.render_month, "month"),
             CalendarView::Week => (config.render_week, "week"),
             CalendarView::Day => (config.render_day, "day"),
+            CalendarView::Event => (config.render_event, "event"),
             CalendarView::Agenda => (config.render_agenda, "agenda"),
         };
         match view_and_name {

@@ -8,5 +8,6 @@ pub(crate) enum CalendarView {
     Month,
     Week,
     Day,
+    Event,
     Agenda,
 }
