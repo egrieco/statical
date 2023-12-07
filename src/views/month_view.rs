@@ -1,8 +1,7 @@
 use chrono::Weekday::Sun;
-use chrono::{DateTime, Datelike, Days, Duration, NaiveDate};
-use chrono_tz::Tz as ChronoTz;
+use chrono::{Datelike, Days, Duration, LocalResult, NaiveDate, NaiveTime, TimeZone};
 use chronoutil::DateRule;
-use color_eyre::eyre::{eyre, Result, WrapErr};
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
 use std::fs::create_dir_all;
@@ -11,28 +10,25 @@ use std::{collections::BTreeMap, iter, path::PathBuf};
 
 use super::week_view::WeekMap;
 use crate::configuration::types::calendar_view::CalendarView;
+use crate::model::month::Month;
 use crate::{
     configuration::config::Config,
     model::{
         calendar_collection::{CalendarCollection, LocalDay},
         day::DayContext,
-        event::Year,
     },
     views::week_view::WeekDayMap,
 };
 
 type InternalDate = NaiveDate;
 
-/// Type alias representing a specific month in time
-type Month = (Year, u8);
-
 /// A BTreeMap of Vecs grouped by specific months
-pub type MonthMap<'a> = BTreeMap<Month, WeekMap<'a>>;
+pub type MonthMap<'a> = BTreeMap<Month<'a>, WeekMap<'a>>;
 
 /// A triple with the previous, current, and next weeks present
 ///
 /// Note that the previous and next weeks may be None
-pub type MonthSlice<'a> = &'a [Option<DateTime<ChronoTz>>];
+pub type MonthSlice<'a> = &'a [Option<Month<'a>>];
 
 pub(crate) const VIEW_PATH: &str = "month";
 const PAGE_TITLE: &str = "Month Page";
@@ -71,7 +67,7 @@ impl MonthView<'_> {
     ///
     /// This function will return an error if it cannot construct the [`DateRule`] properly.
     // TODO: map the returned values to NaiveDate objects
-    fn months_to_show(&self) -> Result<Vec<Option<DateTime<ChronoTz>>>, color_eyre::eyre::Error> {
+    fn months_to_show(&self) -> Result<Vec<Option<Month>>, color_eyre::eyre::Error> {
         let aligned_month_start = self
             .calendars
             .cal_start
@@ -88,10 +84,18 @@ impl MonthView<'_> {
             .with_rolling_day(1)
             .map_err(|e| eyre!(e))
             .wrap_err("could not create month iterator")?;
+
+        // we're adding a None on each end to represent the months just outside of the given timeframe
         let chained_iter = iter::once(None)
-            .chain(months_to_show.into_iter().map(Some))
+            .chain(
+                months_to_show
+                    .into_iter()
+                    // TODO: might want to adjust by timezone, even though we aren't working with dates below day level granularity
+                    .map(|m| Some(Month::new(self.calendars, m.date_naive()))),
+            )
             .chain(iter::once(None));
-        let month_windows = chained_iter.collect::<Vec<Option<DateTime<ChronoTz>>>>();
+        // TODO return Month structs rather than DateTimes
+        let month_windows = chained_iter.collect::<Vec<Option<Month>>>();
         Ok(month_windows)
     }
 
@@ -112,7 +116,7 @@ impl MonthView<'_> {
             if !index_written {
                 if let Some(next_month) = next_month_opt {
                     // write the index file if the next month is after the current date
-                    if next_month.date_naive()
+                    if next_month
                         > self.calendars.today_date().with_day(1).ok_or(eyre!(
                             "could not convert agenda start date to beginning of month"
                         ))?
@@ -160,7 +164,7 @@ impl MonthView<'_> {
             month_slice[1].expect("Current month is None. This should never happen.");
         let next_month = month_slice[2];
 
-        println!("month: {}", current_month);
+        println!("month: {:?}", current_month);
         let mut week_list = Vec::new();
 
         // create all weeks in this month
@@ -207,11 +211,29 @@ impl MonthView<'_> {
             .map(|next_month| format!("{}-{}.html", next_month.year(), next_month.month()));
 
         let mut context = self.calendars.template_context();
+
+        // let first_event = events.first().expect("could not get first event for page");
+        // let base_url_path: unix_path::PathBuf = self.config.base_url_path.path_buf().clone();
+        // context.insert("month_view_path", &current_week.month_view_path());
+        context.insert("week_view_path", &current_month.week_view_path());
+        context.insert("day_view_path", &current_month.day_view_path());
+        // TODO: need to search through the week to find the first event, even if there are not events in the first few days
+        if let Some(first_event) = &current_month
+            .first_event()
+            .wrap_err("could not get first event")?
+        {
+            context.insert("event_view_path", &first_event.file_path());
+        }
+        // context.insert("agenda_view_path", &base_url_path.join("agenda"));
+
         context.insert("current_view", VIEW_PATH);
         context.insert("page_title", PAGE_TITLE);
         context.insert(
             "view_date",
             &current_month
+                .naive_date()
+                .ok_or(eyre!("could not get naive date"))?
+                // TODO: replace this with a direct format function that rejects format options below month resolution
                 .format(&self.config().month_view_format)
                 .to_string(),
         );
@@ -261,9 +283,11 @@ impl MonthView<'_> {
 ///
 /// We cannot simply sort events into a Month -> Week -> Day data structure, as in month views
 /// the first and last week can contain days from the previous and next months respectively
-fn month_view_date_range(month: LocalDay) -> Result<DateRule<LocalDay>> {
+fn month_view_date_range(month: Month) -> Result<DateRule<LocalDay>> {
     // get the first day of the month
     let first_day_of_month = month
+        .naive_date()
+        .ok_or(eyre!("could not retrieve first day of month"))?
         .with_day(1)
         .ok_or(eyre!("could not get first day of month"))?;
     // get the last day of the month
@@ -282,7 +306,26 @@ fn month_view_date_range(month: LocalDay) -> Result<DateRule<LocalDay>> {
     let last_day_of_view = last_day_of_month
         + Days::new(((7 - last_day_of_month.weekday().num_days_from_sunday()) % 7).into());
 
-    Ok(DateRule::daily(first_day_of_view).with_end(last_day_of_view))
+    let start_datetime = match month
+        .timezone()
+        .from_local_datetime(&first_day_of_view.and_time(NaiveTime::MIN))
+    {
+        LocalResult::None => bail!("could not get start_datetime"),
+        LocalResult::Single(t) => t,
+        // TODO: find a better way to disambiguate these dates
+        LocalResult::Ambiguous(t, _) => t,
+    };
+    let end_datetime = match month
+        .timezone()
+        .from_local_datetime(&last_day_of_view.and_time(NaiveTime::MIN))
+    {
+        LocalResult::None => bail!("could not get end_datetime"),
+        LocalResult::Single(t) => t,
+        // TODO: find a better way to disambiguate these dates
+        LocalResult::Ambiguous(t, _) => t,
+    };
+
+    Ok(DateRule::daily(start_datetime).with_end(end_datetime))
 }
 
 /// Return the first Sunday of the week, even if that week is in the previous month
