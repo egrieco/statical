@@ -2,7 +2,7 @@ use super::{calendar_collection::CalendarCollection, event::Event};
 use crate::views::{day_view, week_view};
 use chrono::{Datelike, NaiveDate};
 use chrono_tz::Tz as ChronoTz;
-use color_eyre::eyre::{bail, eyre, Result};
+use color_eyre::eyre::{eyre, Result};
 use std::ops::Bound::Included;
 use std::{cmp::Ordering, path::PathBuf, rc::Rc};
 
@@ -27,8 +27,12 @@ impl Month<'_> {
         self.year
     }
 
-    pub fn month(&self) -> u8 {
+    pub fn month0(&self) -> u8 {
         self.month
+    }
+
+    pub fn month(&self) -> u8 {
+        self.month + 1
     }
 
     pub(crate) fn timezone(&self) -> ChronoTz {
@@ -36,12 +40,12 @@ impl Month<'_> {
     }
 
     pub(crate) fn naive_date(&self) -> Option<NaiveDate> {
-        NaiveDate::from_ymd_opt(self.year, self.month.into(), 1)
+        NaiveDate::from_ymd_opt(self.year, self.month().into(), 1)
     }
 
     // based on: https://stackoverflow.com/questions/73796125/how-to-get-the-start-and-the-end-of-date-for-each-month-with-naivedate-rust
     pub(crate) fn last_day(&self) -> Option<NaiveDate> {
-        NaiveDate::from_ymd_opt(self.year, self.month as u32 + 1, 1)
+        NaiveDate::from_ymd_opt(self.year, self.month() as u32 + 1, 1)
             .unwrap_or(NaiveDate::from_ymd_opt(self.year + 1, 1, 1)?)
             .pred_opt()
     }
@@ -79,18 +83,15 @@ impl Month<'_> {
         let start_day = self.naive_date().ok_or(eyre!("could not get start_day"))?;
         let end_day = self.last_day().ok_or(eyre!("could not get end_day"))?;
 
-        let first_event = (match self
+        let first_event = self
             .parent_collection
             .events_by_day
             // TODO: I doubt that we need to adjust the timezone here, probably remove it
             .range((Included(start_day), Included(end_day)))
             .into_iter()
             .next()
-        {
-            Some((_first_date, events)) => events,
-            None => bail!("could not get an event for month"),
-        })
-        .first();
+            .map(|(_first_date, events)| events.first())
+            .flatten();
 
         Ok(first_event)
     }
