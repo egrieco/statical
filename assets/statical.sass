@@ -104,6 +104,7 @@ main #statical-calendar.calendar div
   // shared styles for week and month (for consistency)
   > div.week,
   > div.month
+    width: 100%
     display: grid
     // simplified the math by removing the gap
     grid-template-columns: repeat(7, calc( 100% / 7))
@@ -122,10 +123,21 @@ main #statical-calendar.calendar div
   // styles for the week view only
   div.week
     grid-auto-rows: 2
-    gap: 2px
     > .day > p.header
       display: flex
       justify-content: space-between
+    .day
+      border: .5px solid lightgrey
+      p
+        margin: .25em
+    .weekend
+      border-top: .5px solid grey
+    .weekend.first-week
+      border-top: unset
+    .weekend.Sun
+      border-right: .5px solid grey
+    .weekend.Sat
+      border-left: .5px solid grey
 
   // styles for the month view only
   div.month
