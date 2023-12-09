@@ -116,9 +116,12 @@ main #statical-calendar.calendar div
         max-width: 100%
       &.weekend, &.other-month
         background-color: #ddd
-      .date
-        white-space: nowrap
-        text-align: right
+      > a > div.header
+        display: flex
+        justify-content: space-between
+        p.date
+          white-space: nowrap
+          text-align: right
 
   // styles for the week view only
   div.week

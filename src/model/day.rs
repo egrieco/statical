@@ -3,7 +3,7 @@ use chrono_tz::Tz as ChronoTz;
 use chronoutil::DateRule;
 use num_traits::FromPrimitive;
 use serde::Serialize;
-use std::{fmt, path::PathBuf};
+use std::{fmt, path::PathBuf, u8};
 
 use crate::views::{day_view, month_view, week_view};
 
@@ -87,6 +87,7 @@ pub struct DayContext {
     pub(crate) day: u8,
     pub(crate) link: String,
     pub(crate) wday: String,
+    pub(crate) iso_week: u8,
     pub(crate) month: String,
     pub(crate) month_name: String,
     pub(crate) is_weekend: bool,
@@ -104,6 +105,7 @@ impl DayContext {
             date: date.format(YMD_FORMAT).to_string(),
             day: date.day() as u8,
             link: file_path.to_string_lossy().to_string(),
+            iso_week: date.iso_week().week() as u8,
             month: date.month().to_string(),
             month_name: Month::from_u32(date.month())
                 .expect("invalid month")

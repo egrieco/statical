@@ -88,6 +88,8 @@ pub struct EventContext {
     end: String,
     end_timestamp: i64,
     duration: String,
+    // NOTE: not sure if we want this in event context as well as day context
+    iso_week: u8,
     url: String,
     file_path: String,
     day_view_path: String,
@@ -171,6 +173,7 @@ impl Event {
                 .with_timezone::<chrono_tz::Tz>(&config.display_timezone.into())
                 .timestamp(),
             duration: HumanTime::from(self.duration).to_text_en(Accuracy::Precise, Tense::Present),
+            iso_week: self.start.iso_week().week() as u8,
             url: self.url().to_owned(),
             file_path: self.file_path(),
             day_view_path: self.day_view_path(),
