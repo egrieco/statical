@@ -58,7 +58,7 @@ impl Month<'_> {
             .iso_week();
         PathBuf::from("/")
             .join(week_view::VIEW_PATH)
-            .join(format!("{}-{}.html", week.year(), week.week0()))
+            .join(format!("{}-{}.html", week.year(), week.week()))
             .to_string_lossy()
             .to_string()
     }
