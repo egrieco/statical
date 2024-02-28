@@ -360,8 +360,8 @@ impl Event {
                     description = property
                         .value
                         .clone()
-                        // we have to strip out escaped commas so they don't trip up unescape
-                        .map(|v| v.replace(r"\,", r","))
+                        // we have to strip out escaped commas and so they don't trip up unescape
+                        .map(|v| v.replace(r"\,", r",").replace(r"\;", r";"))
                         .map(|v| unescape(&v))
                         .transpose()?
                 }
